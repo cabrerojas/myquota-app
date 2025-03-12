@@ -4,7 +4,7 @@ import {
   GoogleSignin,
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
-import { Router, useRouter } from "expo-router";
+import { Router } from "expo-router";
 
 const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
 
@@ -25,7 +25,7 @@ export const signIn = async (router: Router) => {
     const response = await GoogleSignin.signIn();
 
     if (isSuccessResponse(response)) {
-      const idToken = response.data.idToken;
+      const { idToken, user } = response.data;
 
       if (!idToken) {
         console.error("Error: No se obtuvo el idToken de Google.");
@@ -33,6 +33,8 @@ export const signIn = async (router: Router) => {
       }
 
       console.log("idToken obtenido:", idToken);
+
+      console.log("Usuario obtenido:", user);
 
       // 🔹 Enviar el idToken al backend
       const res = await fetch(
@@ -48,6 +50,7 @@ export const signIn = async (router: Router) => {
       if (data.token) {
         console.log("JWT recibido:", data.token);
         await AsyncStorage.setItem("jwt", data.token);
+        await AsyncStorage.setItem("user", JSON.stringify(user));
 
         // 🔹 Redirigir al Dashboard usando el router pasado desde el componente
         router.replace("/dashboard");
@@ -72,4 +75,12 @@ export const signOut = async (router: Router) => {
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
   }
+};
+
+export const getAuthHeaders = async () => {
+  const token = await AsyncStorage.getItem("jwt");
+  return {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
 };

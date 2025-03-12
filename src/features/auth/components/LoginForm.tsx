@@ -11,7 +11,10 @@ export default function LoginForm() {
       const user = await login(email, password);
       Alert.alert("Bienvenido", `Hola ${user.name}`);
     } catch (error) {
-      Alert.alert("Error");
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   };
 

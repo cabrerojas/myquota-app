@@ -1,14 +1,14 @@
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
+  StyleSheet,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { signOut } from "@/features/auth/hooks/useAuth";
-import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import MonthlyStats from "../components/MonthlyStats";
 
 export default function DashboardScreen() {
   interface Transaction {
@@ -20,12 +20,32 @@ export default function DashboardScreen() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
-  const userName = "Guillermo"; // Luego reemplazar con el nombre real del usuario
-
-  const router = useRouter();
+  const [userName, setUserName] = useState<string>("");
+  const [creditCards, setCreditCards] = useState<
+    { id: string; cardType: string; cardLastDigits: string }[]
+  >([]);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   useEffect(() => {
-    // 🔹 Simulación de datos, luego conectar con API
+    // Obtener nombre del usuario
+    AsyncStorage.getItem("user").then((user) => {
+      if (user) {
+        const parsedUser = JSON.parse(user);
+        if (parsedUser.givenName) {
+          setUserName(parsedUser.givenName);
+        }
+      }
+    });
+
+    // Obtener tarjetas de crédito
+    getCreditCards().then((cards) => {
+      setCreditCards(cards);
+      if (cards.length > 0) {
+        setSelectedCardId(cards[0].id); // Selecciona la primera tarjeta por defecto
+      }
+    });
+
+    // Simulación de datos de transacciones
     setTransactions([
       {
         id: "1",
@@ -41,14 +61,39 @@ export default function DashboardScreen() {
         date: "2024-02-28",
       },
     ]);
-    setMonthlyTotal(1443000); // Simulación de total mensual
+    setMonthlyTotal(1443000);
   }, []);
 
   return (
     <View style={styles.container}>
       <Text style={styles.welcome}>Hola, {userName} 👋</Text>
+
       <Text style={styles.subtitle}>Resumen del mes actual</Text>
       <Text style={styles.total}>${monthlyTotal.toLocaleString("es-CL")}</Text>
+
+      {/* Selección de Tarjeta de Crédito */}
+      <Text style={styles.sectionTitle}>Selecciona una Tarjeta</Text>
+      <FlatList
+        data={creditCards}
+        horizontal
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={[
+              styles.cardButton,
+              selectedCardId === item.id ? styles.selectedCard : null,
+            ]}
+            onPress={() => setSelectedCardId(item.id)}
+          >
+            <Text style={styles.cardText}>
+              {item.cardType} - {item.cardLastDigits}
+            </Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {/* Componente de Estadísticas Mensuales */}
+      {selectedCardId && <MonthlyStats creditCardId={selectedCardId} />}
 
       <Text style={styles.sectionTitle}>Últimas Transacciones</Text>
       <FlatList
@@ -78,16 +123,6 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: "#F8F9FA" },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  title: { fontSize: 24, fontWeight: "bold" },
-  logoutButton: {
-    padding: 8,
-  },
   welcome: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
   subtitle: { fontSize: 18, color: "#6C757D", marginBottom: 10 },
   total: {
@@ -116,4 +151,17 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  cardButton: {
+    padding: 10,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  selectedCard: {
+    backgroundColor: "#007BFF",
+  },
+  cardText: {
+    color: "#FFF",
+    fontWeight: "bold",
+  },
 });
