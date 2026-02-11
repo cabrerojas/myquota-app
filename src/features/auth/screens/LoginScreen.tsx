@@ -1,10 +1,11 @@
-import { View, Text, StyleSheet, Image } from "react-native";
-import { signIn } from "../hooks/useAuth";
+import { View, Text, StyleSheet, Image, ActivityIndicator } from "react-native";
+import { useGoogleSignIn } from "../hooks/useAuth";
 import { GoogleSigninButton } from "@react-native-google-signin/google-signin";
 import { useRouter } from "expo-router";
 
 export default function LoginScreen() {
-  const router = useRouter(); // ✅ Ahora `router` se define en el componente funcional
+  const router = useRouter();
+  const { signIn, isLoading } = useGoogleSignIn(router);
 
   return (
     <View style={styles.container}>
@@ -14,11 +15,14 @@ export default function LoginScreen() {
       />
       <Text style={styles.title}>Bienvenido a MyQuota</Text>
 
-      <GoogleSigninButton
-        onPress={() => {
-          signIn(router);
-        }}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4285F4" />
+          <Text style={styles.loadingText}>Iniciando sesión...</Text>
+        </View>
+      ) : (
+        <GoogleSigninButton onPress={signIn} />
+      )}
     </View>
   );
 }
@@ -39,6 +43,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
   },
   button: {
     flexDirection: "row",

@@ -1,4 +1,5 @@
 import { getAuthHeaders } from "@/features/auth/hooks/useAuth";
+import { API_BASE_URL } from "@/config/api";
 
 export const getQuotasByTransaction = async (
   creditCardId: string,
@@ -6,7 +7,7 @@ export const getQuotasByTransaction = async (
 ) => {
   const headers = await getAuthHeaders();
   const response = await fetch(
-    `https://myquota-backend-production.up.railway.app/api/creditCards/${creditCardId}/transactions/${transactionId}/quotas`,
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/quotas`,
     { headers },
   );
   return response.json();

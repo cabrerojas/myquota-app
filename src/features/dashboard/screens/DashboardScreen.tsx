@@ -4,10 +4,13 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import { importBankTransactions } from "@/features/transactions/services/transactionsApi";
 import MonthlyStats from "../components/MonthlyStats";
 
 export default function DashboardScreen() {
@@ -25,6 +28,28 @@ export default function DashboardScreen() {
     { id: string; cardType: string; cardLastDigits: string }[]
   >([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const handleImportTransactions = useCallback(async () => {
+    if (!selectedCardId) {
+      Alert.alert("Error", "Selecciona una tarjeta primero.");
+      return;
+    }
+    setIsRefreshing(true);
+    try {
+      await importBankTransactions(selectedCardId);
+      setRefreshKey((prev) => prev + 1); // Forzar recarga de MonthlyStats
+      Alert.alert("Éxito", "Transacciones importadas correctamente.");
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Error al importar transacciones"
+      );
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [selectedCardId]);
 
   useEffect(() => {
     // Obtener nombre del usuario
@@ -93,7 +118,20 @@ export default function DashboardScreen() {
       />
 
       {/* Componente de Estadísticas Mensuales */}
-      {selectedCardId && <MonthlyStats creditCardId={selectedCardId} />}
+      {selectedCardId && <MonthlyStats creditCardId={selectedCardId} key={`${selectedCardId}-${refreshKey}`} />}
+
+      {/* Botón de importar transacciones */}
+      <TouchableOpacity
+        style={[styles.refreshButton, isRefreshing && styles.buttonDisabled]}
+        onPress={handleImportTransactions}
+        disabled={isRefreshing}
+      >
+        {isRefreshing ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>🔄 Importar Transacciones del Banco</Text>
+        )}
+      </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>Últimas Transacciones</Text>
       <FlatList
@@ -149,6 +187,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     marginTop: 20,
+  },
+  refreshButton: {
+    backgroundColor: "#17A2B8",
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   cardButton: {
