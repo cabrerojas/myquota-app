@@ -65,7 +65,7 @@ export const useGoogleSignIn = (router: Router) => {
           await AsyncStorage.setItem("user", JSON.stringify(user));
 
           // 🔹 Redirigir al Dashboard
-          router.replace("/dashboard");
+          router.replace("/(drawer)/dashboard");
         } else {
           console.error("Error al autenticar con el backend:", data);
         }
@@ -83,7 +83,7 @@ export const useGoogleSignIn = (router: Router) => {
 export const signOut = async (router: Router) => {
   try {
     await GoogleSignin.signOut(); // Cerrar sesión en Google
-    await AsyncStorage.multiRemove(["jwt", "user"]); // Eliminar datos de sesión
+    await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]); // Eliminar datos de sesión
 
     console.log("Sesión cerrada.");
 
@@ -92,7 +92,7 @@ export const signOut = async (router: Router) => {
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
     // Aunque falle Google signOut, limpiamos sesión local y redirigimos
-    await AsyncStorage.multiRemove(["jwt", "user"]);
+    await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
     router.replace("/login");
   }
 };

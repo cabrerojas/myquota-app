@@ -1,16 +1,53 @@
 import { getAuthHeaders } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 
-export const getTransactionsByCreditCard = async (creditCardId: string) => {
+export interface ImportResult {
+  message: string;
+  importedCount: number;
+  orphanedCount: number;
+  orphanedTransactions: Array<{
+    id: string;
+    merchant: string;
+    amount: number;
+    currency: string;
+    transactionDate: string;
+  }>;
+  suggestedPeriod: {
+    month: string;
+    startDate: string;
+    endDate: string;
+  } | null;
+}
+
+export interface Transaction {
+  id: string;
+  amount: number;
+  currency: string;
+  cardType: string;
+  cardLastDigits: string;
+  merchant: string;
+  transactionDate: string;
+  bank: string;
+  creditCardId: string;
+}
+
+export const getTransactionsByCreditCard = async (
+  creditCardId: string,
+): Promise<Transaction[]> => {
   const headers = await getAuthHeaders();
   const response = await fetch(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions`,
     { headers },
   );
+  if (!response.ok) {
+    throw new Error("Error al obtener transacciones");
+  }
   return response.json();
 };
 
-export const importBankTransactions = async (creditCardId: string) => {
+export const importBankTransactions = async (
+  creditCardId: string,
+): Promise<ImportResult> => {
   const headers = await getAuthHeaders();
   const response = await fetch(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/import-bank-transactions`,

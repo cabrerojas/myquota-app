@@ -1,4 +1,4 @@
-import { View, Text, FlatList, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import { useEffect, useState } from "react";
 import { getMonthlyStats } from "../services/statsApi";
 
@@ -22,21 +22,17 @@ export default function MonthlyStats({ creditCardId }: MonthlyStatsProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Gastos Mensuales</Text>
-      <FlatList
-        data={monthlyStats}
-        keyExtractor={(item) => item.month}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.month}>{item.month}</Text>
-            <Text style={styles.amountCLP}>
-              CLP: ${item.totalCLP.toLocaleString("es-CL")}
-            </Text>
-            <Text style={styles.amountUSD}>
-              USD: ${item.totalDolar.toFixed(2)}
-            </Text>
-          </View>
-        )}
-      />
+      {monthlyStats.map((item) => (
+        <View key={item.month} style={styles.row}>
+          <Text style={styles.month}>{item.month}</Text>
+          <Text style={styles.amountCLP}>
+            CLP: ${item.totalCLP.toLocaleString("es-CL")}
+          </Text>
+          <Text style={styles.amountUSD}>
+            USD: ${item.totalDolar.toFixed(2)}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }

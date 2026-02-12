@@ -14,7 +14,7 @@ export default function Index() {
   if (isAuthenticated === null) return null; // Evita parpadeo al cargar
 
   return isAuthenticated ? (
-    <Redirect href="/dashboard" />
+    <Redirect href="/(drawer)/dashboard" />
   ) : (
     <Redirect href="/login" />
   );

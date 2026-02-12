@@ -4,6 +4,7 @@ module.exports = {
   plugins: ["prettier"],
   rules: {
     "prettier/prettier": "error",
+    "expo/use-dom-exports": "off",
   },
   ignorePatterns: ["/dist/*"],
 };
