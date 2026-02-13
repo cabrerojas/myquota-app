@@ -16,7 +16,7 @@ import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { getTransactionsByCreditCard, Transaction } from "@/features/transactions/services/transactionsApi";
 import {
   getQuotasByTransaction,
-  createQuota,
+  splitQuotas,
   updateQuota,
   Quota,
   QuotaWithTransaction,
@@ -137,30 +137,14 @@ export default function QuotasScreen() {
     }
     setCreating(true);
     try {
-      const cuotaAmount = Math.round(selectedTransaction.amount / n);
-      const startDate = new Date(selectedTransaction.transactionDate);
-
-      for (let i = 0; i < n; i++) {
-        const dueDate = new Date(startDate);
-        dueDate.setMonth(dueDate.getMonth() + i + 1);
-
-        await createQuota(selectedCardId, selectedTransaction.id, {
-          transactionId: selectedTransaction.id,
-          amount: i === n - 1
-            ? selectedTransaction.amount - cuotaAmount * (n - 1)
-            : cuotaAmount,
-          due_date: dueDate.toISOString(),
-          status: "pending",
-          currency: selectedTransaction.currency,
-        });
-      }
+      await splitQuotas(selectedCardId, selectedTransaction.id, n);
       Alert.alert("Éxito", `${n} cuotas creadas para ${selectedTransaction.merchant}`);
       setShowCreateModal(false);
       setSelectedTransaction(null);
       setNumQuotas("3");
       await fetchQuotas();
-    } catch {
-      Alert.alert("Error", "No se pudieron crear las cuotas");
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "No se pudieron crear las cuotas");
     } finally {
       setCreating(false);
     }

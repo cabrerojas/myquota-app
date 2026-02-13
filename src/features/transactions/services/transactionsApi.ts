@@ -4,6 +4,7 @@ import { API_BASE_URL } from "@/config/api";
 export interface ImportResult {
   message: string;
   importedCount: number;
+  quotasCreated: number;
   orphanedCount: number;
   orphanedTransactions: Array<{
     id: string;

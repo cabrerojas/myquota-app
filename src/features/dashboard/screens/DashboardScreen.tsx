@@ -24,6 +24,7 @@ import BillingPeriodFormModal from "@/features/billingPeriods/components/Billing
 import MonthlyStats from "../components/MonthlyStats";
 import MonthSummaryCard from "../components/MonthSummaryCard";
 import CreditCardAlertBanner from "../components/CreditCardAlertBanner";
+import DebtIndicatorCard from "../components/DebtIndicatorCard";
 
 interface CreditCard {
   id: string;
@@ -121,13 +122,18 @@ export default function DashboardScreen() {
         setOrphanedCount(result.orphanedCount);
         setShowOrphanModal(true);
       } else {
+        const parts: string[] = [];
+        if (result.importedCount > 0) {
+          parts.push(`${result.importedCount} transacciones importadas`);
+        }
+        if (result.quotasCreated > 0) {
+          parts.push(`${result.quotasCreated} cuotas creadas`);
+        }
         Alert.alert(
           "Éxito",
-          `Transacciones importadas correctamente.${
-            result.importedCount > 0
-              ? ` (${result.importedCount} nuevas)`
-              : " No hay nuevas transacciones."
-          }`,
+          parts.length > 0
+            ? parts.join(", ") + "."
+            : "No hay nuevas transacciones.",
         );
       }
     } catch (error) {
@@ -280,6 +286,9 @@ export default function DashboardScreen() {
           refreshKey={refreshKey}
         />
       )}
+
+      {/* Indicador de deuda en cuotas */}
+      <DebtIndicatorCard refreshKey={refreshKey} />
 
       {/* Estadísticas Mensuales */}
       {selectedCardId && (

@@ -65,6 +65,16 @@ export default function DrawerLayout() {
           }}
         />
         <Drawer.Screen
+          name="debtForecast"
+          options={{
+            title: "Proyección de Deuda",
+            drawerLabel: "Proyección Deuda",
+            drawerIcon: ({ color, size }) => (
+              <DrawerIcon name="trending-up-outline" color={color} size={size} />
+            ),
+          }}
+        />
+        <Drawer.Screen
           name="profile"
           options={{
             title: "Mi Perfil",

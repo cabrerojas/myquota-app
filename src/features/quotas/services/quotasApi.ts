@@ -90,3 +90,24 @@ export const deleteQuota = async (
     throw new Error("Error al eliminar cuota");
   }
 };
+
+export const splitQuotas = async (
+  creditCardId: string,
+  transactionId: string,
+  numberOfQuotas: number,
+): Promise<Quota[]> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/quotas/split`,
+    {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ numberOfQuotas }),
+    },
+  );
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || "Error al dividir en cuotas");
+  }
+  return response.json();
+};
