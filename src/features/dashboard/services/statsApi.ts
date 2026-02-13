@@ -9,3 +9,23 @@ export const getMonthlyStats = async (creditCardId: string) => {
   );
   return response.json();
 };
+
+export interface DebtSummary {
+  totalCLP: number;
+  totalUSD: number;
+  pendingCount: number;
+  monthsRemaining: number;
+  nextMonthCLP: number;
+  nextMonthUSD: number;
+}
+
+export const getDebtSummary = async (): Promise<DebtSummary> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE_URL}/stats/debt-summary`, {
+    headers,
+  });
+  if (!response.ok) {
+    throw new Error("Error fetching debt summary");
+  }
+  return response.json();
+};

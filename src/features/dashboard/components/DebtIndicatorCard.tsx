@@ -2,19 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
-import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
-import { getQuotasByTransaction } from "@/features/quotas/services/quotasApi";
-import { getBillingPeriodsByCreditCard, BillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
-
-interface DebtSummary {
-  totalCLP: number;
-  totalUSD: number;
-  pendingCount: number;
-  monthsRemaining: number;
-  nextMonthCLP: number;
-  nextMonthUSD: number;
-}
+import { getDebtSummary, DebtSummary } from "@/features/dashboard/services/statsApi";
 
 interface DebtIndicatorCardProps {
   refreshKey?: number;
@@ -26,82 +14,13 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDebtSummary();
+    fetchData();
   }, [refreshKey]);
 
-  const fetchDebtSummary = async () => {
+  const fetchData = async () => {
     try {
-      const cards = await getCreditCards();
-      let totalCLP = 0;
-      let totalUSD = 0;
-      let pendingCount = 0;
-      let nextMonthCLP = 0;
-      let nextMonthUSD = 0;
-      const periodKeys = new Set<string>();
-      const allBillingPeriods: BillingPeriod[] = [];
-
-      // Fetch billing periods for all cards
-      for (const card of cards) {
-        const periods = await getBillingPeriodsByCreditCard(card.id);
-        allBillingPeriods.push(...periods);
-      }
-
-      // Find which billing period contains today
-      const now = new Date();
-      const currentPeriod = allBillingPeriods.find((p) => {
-        const start = new Date(p.startDate).getTime();
-        const end = new Date(p.endDate).getTime();
-        return now.getTime() >= start && now.getTime() <= end;
-      });
-
-      // Helper to find period for a due_date
-      const findPeriod = (dueDate: string): string | null => {
-        const d = new Date(dueDate).getTime();
-        for (const p of allBillingPeriods) {
-          if (d >= new Date(p.startDate).getTime() && d <= new Date(p.endDate).getTime()) {
-            return p.month;
-          }
-        }
-        return null;
-      };
-
-      for (const card of cards) {
-        const txs = await getTransactionsByCreditCard(card.id);
-        for (const tx of txs) {
-          const quotas = await getQuotasByTransaction(card.id, tx.id);
-          const pending = quotas.filter((q) => q.status === "pending");
-
-          for (const q of pending) {
-            pendingCount++;
-            const periodMonth = findPeriod(q.due_date);
-            if (periodMonth) periodKeys.add(periodMonth);
-
-            if (q.currency === "Dolar") {
-              totalUSD += q.amount;
-            } else {
-              totalCLP += q.amount;
-            }
-
-            // "Next payment" = quotas in current billing period
-            if (currentPeriod && periodMonth === currentPeriod.month) {
-              if (q.currency === "Dolar") {
-                nextMonthUSD += q.amount;
-              } else {
-                nextMonthCLP += q.amount;
-              }
-            }
-          }
-        }
-      }
-
-      setSummary({
-        totalCLP,
-        totalUSD,
-        pendingCount,
-        monthsRemaining: periodKeys.size,
-        nextMonthCLP,
-        nextMonthUSD,
-      });
+      const data = await getDebtSummary();
+      setSummary(data);
     } catch (error) {
       console.error("Error fetching debt summary:", error);
     } finally {
