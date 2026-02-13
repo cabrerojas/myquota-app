@@ -44,7 +44,14 @@
           "iosUrlScheme": "com.googleusercontent.apps.843354250947-l6dap3uvdlcmd0hpasiinupavvo1cvcv"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#007BFF"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

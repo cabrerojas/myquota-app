@@ -25,6 +25,11 @@ import MonthlyStats from "../components/MonthlyStats";
 import MonthSummaryCard from "../components/MonthSummaryCard";
 import CreditCardAlertBanner from "../components/CreditCardAlertBanner";
 import DebtIndicatorCard from "../components/DebtIndicatorCard";
+import {
+  configureNotificationHandler,
+  setupAndroidChannel,
+  scheduleCardNotifications,
+} from "@/features/notifications/services/notificationService";
 
 interface CreditCard {
   id: string;
@@ -181,6 +186,11 @@ export default function DashboardScreen() {
       if (cards.length > 0) {
         setSelectedCardId(cards[0].id);
       }
+      // Programar notificaciones de cierre/vencimiento
+      configureNotificationHandler();
+      setupAndroidChannel().then(() => {
+        scheduleCardNotifications(cards).catch(console.warn);
+      });
     });
   }, []);
 

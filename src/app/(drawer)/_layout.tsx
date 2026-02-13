@@ -95,6 +95,16 @@ export default function DrawerLayout() {
           }}
         />
         <Drawer.Screen
+          name="notificationSettings"
+          options={{
+            title: "Notificaciones",
+            drawerLabel: "Notificaciones",
+            drawerIcon: ({ color, size }) => (
+              <DrawerIcon name="notifications-outline" color={color} size={size} />
+            ),
+          }}
+        />
+        <Drawer.Screen
           name="billingPeriods"
           options={{
             drawerItemStyle: { display: "none" },
