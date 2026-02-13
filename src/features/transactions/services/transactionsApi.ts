@@ -60,3 +60,33 @@ export const importBankTransactions = async (
   }
   return response.json();
 };
+
+export interface CreateManualTransactionDto {
+  merchant: string;
+  purchaseDate: string;
+  quotaAmount: number;
+  totalInstallments: number;
+  paidInstallments: number;
+  lastPaidMonth: string;
+  currency: string;
+}
+
+export const createManualTransaction = async (
+  creditCardId: string,
+  data: CreateManualTransactionDto,
+): Promise<{ message: string; quotasCreated: number }> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual`,
+    {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Error al crear transacción manual");
+  }
+  return response.json();
+};

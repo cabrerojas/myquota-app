@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
 import {
@@ -49,6 +50,7 @@ const parseCalendarKey = (key: string): number => {
 };
 
 export default function DebtForecastScreen() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [months, setMonths] = useState<MonthBucket[]>([]);
@@ -284,6 +286,7 @@ export default function DebtForecastScreen() {
   }
 
   return (
+    <View style={styles.wrapper}>
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
@@ -490,10 +493,21 @@ export default function DebtForecastScreen() {
         </>
       )}
     </ScrollView>
+
+      {/* FAB - Agregar Deuda */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/(drawer)/addDebt")}
+        activeOpacity={0.8}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: { flex: 1 },
   container: { flex: 1, backgroundColor: "#F8F9FA" },
   contentContainer: { padding: 16, paddingBottom: 40 },
   centered: {
@@ -767,5 +781,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#495057",
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#007BFF",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
 });

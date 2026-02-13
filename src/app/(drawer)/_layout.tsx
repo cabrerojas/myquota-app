@@ -98,6 +98,13 @@ export default function DrawerLayout() {
             title: "Detalle del Período",
           }}
         />
+        <Drawer.Screen
+          name="addDebt"
+          options={{
+            drawerItemStyle: { display: "none" },
+            title: "Agregar Deuda",
+          }}
+        />
       </Drawer>
     </GestureHandlerRootView>
   );
