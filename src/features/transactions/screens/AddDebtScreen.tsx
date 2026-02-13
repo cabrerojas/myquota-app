@@ -13,6 +13,7 @@ import {
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { createManualTransaction } from "@/features/transactions/services/transactionsApi";
 
@@ -36,7 +37,8 @@ export default function AddDebtScreen() {
   // Form state
   const [selectedCardId, setSelectedCardId] = useState<string>("");
   const [merchant, setMerchant] = useState("");
-  const [purchaseDate, setPurchaseDate] = useState("");
+  const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [quotaAmount, setQuotaAmount] = useState("");
   const [totalInstallments, setTotalInstallments] = useState("");
   const [paidInstallments, setPaidInstallments] = useState("");
@@ -80,8 +82,8 @@ export default function AddDebtScreen() {
     const lastPaidMonthStr = `${lastPaidYear}-${String(lastPaidMonth + 1).padStart(2, "0")}`;
 
     // Calcular fecha de compra estimada si no se especificó
-    const finalPurchaseDate = purchaseDate.trim()
-      ? purchaseDate.trim()
+    const finalPurchaseDate = purchaseDate
+      ? purchaseDate.toISOString().split("T")[0]
       : `${lastPaidYear}-${String(lastPaidMonth + 1).padStart(2, "0")}-01`;
 
     setSubmitting(true);
@@ -268,13 +270,36 @@ export default function AddDebtScreen() {
 
         {/* Purchase Date (optional) */}
         <Text style={styles.label}>Fecha de compra (opcional)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD (ej: 2025-04-01)"
-          value={purchaseDate}
-          onChangeText={setPurchaseDate}
-          placeholderTextColor="#ADB5BD"
-        />
+        <TouchableOpacity
+          style={styles.datePickerBtn}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Ionicons name="calendar-outline" size={18} color={purchaseDate ? "#212529" : "#ADB5BD"} />
+          <Text style={[styles.datePickerText, !purchaseDate && { color: "#ADB5BD" }]}>
+            {purchaseDate
+              ? purchaseDate.toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" })
+              : "Seleccionar fecha"}
+          </Text>
+          {purchaseDate && (
+            <TouchableOpacity onPress={() => setPurchaseDate(null)} style={styles.dateClearBtn}>
+              <Ionicons name="close-circle" size={18} color="#868E96" />
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={purchaseDate || new Date()}
+            mode="date"
+            display={Platform.OS === "ios" ? "spinner" : "default"}
+            maximumDate={new Date()}
+            onChange={(event: DateTimePickerEvent, selectedDate?: Date) => {
+              setShowDatePicker(Platform.OS === "ios");
+              if (event.type === "set" && selectedDate) {
+                setPurchaseDate(selectedDate);
+              }
+            }}
+          />
+        )}
 
         {/* Submit */}
         <TouchableOpacity
@@ -412,4 +437,22 @@ const styles = StyleSheet.create({
   },
   submitBtnDisabled: { opacity: 0.6 },
   submitText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  datePickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#DEE2E6",
+    borderRadius: 10,
+    padding: 14,
+  },
+  datePickerText: {
+    fontSize: 15,
+    color: "#212529",
+    flex: 1,
+  },
+  dateClearBtn: {
+    padding: 2,
+  },
 });
