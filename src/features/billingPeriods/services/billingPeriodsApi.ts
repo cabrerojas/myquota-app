@@ -94,3 +94,22 @@ export const deleteBillingPeriod = async (
     );
   }
 };
+
+export const payBillingPeriod = async (
+  creditCardId: string,
+  billingPeriodId: string,
+): Promise<{ paidCount: number; totalAmount: number }> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods/${billingPeriodId}/pay`,
+    {
+      method: "POST",
+      headers,
+    },
+  );
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "Error al pagar el período");
+  }
+  return response.json();
+};

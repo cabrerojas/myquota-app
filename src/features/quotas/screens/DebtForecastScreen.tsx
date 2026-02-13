@@ -5,6 +5,8 @@ import {
   ActivityIndicator,
   ScrollView,
   RefreshControl,
+  Alert,
+  TouchableOpacity,
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,7 +16,7 @@ import {
   getQuotasByTransaction,
   Quota,
 } from "@/features/quotas/services/quotasApi";
-import { getBillingPeriodsByCreditCard, BillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
+import { getBillingPeriodsByCreditCard, BillingPeriod, payBillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
 
 interface CreditCard {
   id: string;
@@ -23,12 +25,14 @@ interface CreditCard {
 }
 
 interface MonthBucket {
-  key: string; // "2025-07"
-  label: string; // "Jul 2025"
+  key: string; // billing period month or "2025-07"
+  label: string; // "Enero 2026"
   totalCLP: number;
   totalUSD: number;
   count: number;
   details: { merchant: string; amount: number; currency: string; quotaNumber: number; totalQuotas: number }[];
+  // For pay action: creditCardId -> billingPeriodId mapping
+  periodsByCard: { creditCardId: string; billingPeriodId: string }[];
 }
 
 interface QuotaEnriched extends Quota {
@@ -51,6 +55,7 @@ export default function DebtForecastScreen() {
   const [totalDebtCLP, setTotalDebtCLP] = useState(0);
   const [totalDebtUSD, setTotalDebtUSD] = useState(0);
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
+  const [paying, setPaying] = useState<string | null>(null);
 
   const fetchDebtForecast = useCallback(async () => {
     try {
@@ -134,6 +139,7 @@ export default function DebtForecastScreen() {
             totalUSD: 0,
             count: 0,
             details: [],
+            periodsByCard: [],
           });
         }
         const bucket = bucketMap.get(key)!;
@@ -150,6 +156,22 @@ export default function DebtForecastScreen() {
           quotaNumber: q.quotaNumber,
           totalQuotas: q.totalQuotas,
         });
+      }
+
+      // Populate periodsByCard for pay action
+      for (const p of allBillingPeriods) {
+        const bucket = bucketMap.get(p.month);
+        if (bucket) {
+          const existing = bucket.periodsByCard.find(
+            (pb) => pb.creditCardId === p.creditCardId && pb.billingPeriodId === p.id,
+          );
+          if (!existing) {
+            bucket.periodsByCard.push({
+              creditCardId: p.creditCardId,
+              billingPeriodId: p.id,
+            });
+          }
+        }
       }
 
       // Sort buckets: billing period keys first (by finding their startDate), then calendar keys
@@ -184,6 +206,49 @@ export default function DebtForecastScreen() {
     setRefreshing(true);
     await fetchDebtForecast();
     setRefreshing(false);
+  };
+
+  const handlePayPeriod = (month: MonthBucket) => {
+    if (month.periodsByCard.length === 0) {
+      Alert.alert("Sin período", "No hay período de facturación asociado a este mes.");
+      return;
+    }
+
+    const amountText = [
+      month.totalCLP > 0 ? `$${month.totalCLP.toLocaleString("es-CL")}` : "",
+      month.totalUSD > 0 ? `US$${month.totalUSD.toLocaleString("es-CL")}` : "",
+    ].filter(Boolean).join(" + ");
+
+    Alert.alert(
+      "Confirmar Pago",
+      `¿Marcar como pagadas las ${month.count} cuotas de ${month.label}?\n\nTotal: ${amountText}`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Pagar",
+          style: "default",
+          onPress: async () => {
+            setPaying(month.key);
+            try {
+              let totalPaid = 0;
+              for (const pb of month.periodsByCard) {
+                const result = await payBillingPeriod(pb.creditCardId, pb.billingPeriodId);
+                totalPaid += result.paidCount;
+              }
+              Alert.alert("Éxito", `${totalPaid} cuotas marcadas como pagadas`);
+              await fetchDebtForecast();
+            } catch (error) {
+              Alert.alert(
+                "Error",
+                error instanceof Error ? error.message : "No se pudo procesar el pago",
+              );
+            } finally {
+              setPaying(null);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -317,20 +382,37 @@ export default function DebtForecastScreen() {
                   </View>
 
                   {/* Expand/Collapse button */}
-                  <View
-                    style={styles.expandButton}
-                  >
-                    <Text
-                      style={styles.expandButtonText}
+                  <View style={styles.monthActions}>
+                    <TouchableOpacity
+                      style={styles.expandButton}
                       onPress={() => setExpandedMonth(isExpanded ? null : month.key)}
                     >
-                      {isExpanded ? "Ocultar detalle" : "Ver detalle"}
-                    </Text>
-                    <Ionicons
-                      name={isExpanded ? "chevron-up" : "chevron-down"}
-                      size={14}
-                      color="#007BFF"
-                    />
+                      <Ionicons
+                        name={isExpanded ? "chevron-up" : "chevron-down"}
+                        size={14}
+                        color="#007BFF"
+                      />
+                      <Text style={styles.expandButtonText}>
+                        {isExpanded ? "Ocultar" : "Detalle"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {month.periodsByCard.length > 0 && (
+                      <TouchableOpacity
+                        style={[styles.payButton, paying === month.key && { opacity: 0.6 }]}
+                        onPress={() => handlePayPeriod(month)}
+                        disabled={paying === month.key}
+                      >
+                        {paying === month.key ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-done" size={14} color="#fff" />
+                            <Text style={styles.payButtonText}>Pagar Período</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    )}
                   </View>
 
                   {/* Expanded details */}
@@ -554,21 +636,44 @@ const styles = StyleSheet.create({
     backgroundColor: "#007BFF",
   },
 
+  // Actions row
+  monthActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F3F5",
+    gap: 8,
+  },
+
   // Expand
   expandButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 4,
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
   },
   expandButtonText: {
     fontSize: 13,
     color: "#007BFF",
     fontWeight: "600",
+  },
+
+  // Pay button
+  payButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "#28A745",
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+  },
+  payButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
   },
 
   // Details
