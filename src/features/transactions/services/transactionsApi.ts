@@ -90,3 +90,64 @@ export const createManualTransaction = async (
   }
   return response.json();
 };
+
+export interface ManualTransaction {
+  id: string;
+  merchant: string;
+  amount: number;
+  currency: string;
+  transactionDate: string;
+  creditCardId: string;
+  source: "manual";
+  totalInstallments: number;
+  paidInstallments: number;
+}
+
+export const getManualTransactions = async (
+  creditCardId: string,
+): Promise<ManualTransaction[]> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual`,
+    { headers },
+  );
+  if (!response.ok) throw new Error("Error al obtener deudas manuales");
+  return response.json();
+};
+
+export const updateManualTransaction = async (
+  creditCardId: string,
+  transactionId: string,
+  data: CreateManualTransactionDto,
+): Promise<{ message: string; quotasCreated: number }> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual/${transactionId}`,
+    {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Error al actualizar deuda");
+  }
+  return response.json();
+};
+
+export const deleteManualTransaction = async (
+  creditCardId: string,
+  transactionId: string,
+): Promise<{ message: string; deletedQuotas: number }> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual/${transactionId}`,
+    { method: "DELETE", headers },
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Error al eliminar deuda");
+  }
+  return response.json();
+};

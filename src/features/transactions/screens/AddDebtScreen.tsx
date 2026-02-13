@@ -11,11 +11,11 @@ import {
   Platform,
 } from "react-native";
 import { useState, useEffect } from "react";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
-import { createManualTransaction } from "@/features/transactions/services/transactionsApi";
+import { createManualTransaction, updateManualTransaction } from "@/features/transactions/services/transactionsApi";
 
 interface CreditCard {
   id: string;
@@ -30,21 +30,39 @@ const MONTHS = [
 
 export default function AddDebtScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    editMode?: string;
+    transactionId?: string;
+    creditCardId?: string;
+    merchant?: string;
+    quotaAmount?: string;
+    totalInstallments?: string;
+    paidInstallments?: string;
+    currency?: string;
+    purchaseDate?: string;
+  }>();
+
+  const isEdit = params.editMode === "true";
+
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   // Form state
-  const [selectedCardId, setSelectedCardId] = useState<string>("");
-  const [merchant, setMerchant] = useState("");
-  const [purchaseDate, setPurchaseDate] = useState<Date | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string>(params.creditCardId || "");
+  const [merchant, setMerchant] = useState(params.merchant || "");
+  const [purchaseDate, setPurchaseDate] = useState<Date | null>(
+    params.purchaseDate ? new Date(params.purchaseDate) : null,
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [quotaAmount, setQuotaAmount] = useState("");
-  const [totalInstallments, setTotalInstallments] = useState("");
-  const [paidInstallments, setPaidInstallments] = useState("");
+  const [quotaAmount, setQuotaAmount] = useState(params.quotaAmount || "");
+  const [totalInstallments, setTotalInstallments] = useState(params.totalInstallments || "");
+  const [paidInstallments, setPaidInstallments] = useState(params.paidInstallments || "");
   const [lastPaidMonth, setLastPaidMonth] = useState<number>(new Date().getMonth()); // 0-11
   const [lastPaidYear, setLastPaidYear] = useState<number>(new Date().getFullYear());
-  const [currency, setCurrency] = useState<"CLP" | "Dolar">("CLP");
+  const [currency, setCurrency] = useState<"CLP" | "Dolar">(
+    (params.currency as "CLP" | "Dolar") || "CLP",
+  );
 
   useEffect(() => {
     loadCards();
@@ -88,7 +106,7 @@ export default function AddDebtScreen() {
 
     setSubmitting(true);
     try {
-      const result = await createManualTransaction(selectedCardId, {
+      const payload = {
         merchant: merchant.trim(),
         purchaseDate: finalPurchaseDate,
         quotaAmount: Number(quotaAmount),
@@ -96,11 +114,22 @@ export default function AddDebtScreen() {
         paidInstallments: Number(paidInstallments),
         lastPaidMonth: lastPaidMonthStr,
         currency,
-      });
+      };
+
+      let result;
+      if (isEdit && params.transactionId) {
+        result = await updateManualTransaction(
+          selectedCardId,
+          params.transactionId,
+          payload,
+        );
+      } else {
+        result = await createManualTransaction(selectedCardId, payload);
+      }
 
       Alert.alert(
-        "Deuda agregada",
-        `${result.quotasCreated} cuotas creadas para "${merchant.trim()}"`,
+        isEdit ? "Deuda actualizada" : "Deuda agregada",
+        `${result.quotasCreated} cuotas ${isEdit ? "actualizadas" : "creadas"} para "${merchant.trim()}"`,
         [{ text: "OK", onPress: () => router.back() }],
       );
     } catch (error) {
@@ -132,7 +161,7 @@ export default function AddDebtScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Card Selector */}
         <Text style={styles.sectionLabel}>Tarjeta de Crédito</Text>
-        <View style={styles.cardSelector}>
+        <View style={[styles.cardSelector, isEdit && { opacity: 0.6 }]}>
           {cards.map((card) => (
             <TouchableOpacity
               key={card.id}
@@ -140,7 +169,8 @@ export default function AddDebtScreen() {
                 styles.cardChip,
                 selectedCardId === card.id && styles.cardChipSelected,
               ]}
-              onPress={() => setSelectedCardId(card.id)}
+              onPress={() => !isEdit && setSelectedCardId(card.id)}
+              disabled={isEdit}
             >
               <Ionicons
                 name="card"
@@ -311,8 +341,8 @@ export default function AddDebtScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Ionicons name="add-circle" size={20} color="#fff" />
-              <Text style={styles.submitText}>Agregar Deuda</Text>
+              <Ionicons name={isEdit ? "checkmark-circle" : "add-circle"} size={20} color="#fff" />
+              <Text style={styles.submitText}>{isEdit ? "Guardar Cambios" : "Agregar Deuda"}</Text>
             </>
           )}
         </TouchableOpacity>

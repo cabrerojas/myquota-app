@@ -75,6 +75,16 @@ export default function DrawerLayout() {
           }}
         />
         <Drawer.Screen
+          name="manualDebts"
+          options={{
+            title: "Deudas Manuales",
+            drawerLabel: "Deudas Manuales",
+            drawerIcon: ({ color, size }) => (
+              <DrawerIcon name="create-outline" color={color} size={size} />
+            ),
+          }}
+        />
+        <Drawer.Screen
           name="profile"
           options={{
             title: "Mi Perfil",
@@ -102,7 +112,7 @@ export default function DrawerLayout() {
           name="addDebt"
           options={{
             drawerItemStyle: { display: "none" },
-            title: "Agregar Deuda",
+            title: "Deuda Manual",
           }}
         />
       </Drawer>
