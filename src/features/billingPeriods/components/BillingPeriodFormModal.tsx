@@ -22,11 +22,13 @@ interface BillingPeriodFormModalProps {
     month: string;
     startDate: string;
     endDate: string;
+    dueDate: string;
   }) => Promise<void>;
   initialData?: {
     month?: string;
     startDate?: string;
     endDate?: string;
+    dueDate?: string;
   };
   title?: string;
   isOrphanSuggestion?: boolean;
@@ -70,8 +72,10 @@ export default function BillingPeriodFormModal({
   const [month, setMonth] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
+  const [dueDate, setDueDate] = useState(new Date());
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [showDuePicker, setShowDuePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -79,10 +83,12 @@ export default function BillingPeriodFormModal({
       if (initialData.month) setMonth(initialData.month);
       if (initialData.startDate) setStartDate(new Date(initialData.startDate));
       if (initialData.endDate) setEndDate(new Date(initialData.endDate));
+      if (initialData.dueDate) setDueDate(new Date(initialData.dueDate));
     } else {
       setMonth("");
       setStartDate(new Date());
       setEndDate(new Date());
+      setDueDate(new Date());
     }
   }, [initialData, visible]);
 
@@ -96,6 +102,7 @@ export default function BillingPeriodFormModal({
         month: month.trim(),
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
+        dueDate: dueDate.toISOString(),
       });
       onClose();
     } catch {
@@ -115,7 +122,16 @@ export default function BillingPeriodFormModal({
     if (date) {
       setEndDate(date);
       setMonth(getMonthLabel(date));
+      // Suggest due date: 20 days after closing
+      const suggested = new Date(date);
+      suggested.setDate(suggested.getDate() + 20);
+      setDueDate(suggested);
     }
+  };
+
+  const onDueDateChange = (_: DateTimePickerEvent, date?: Date) => {
+    setShowDuePicker(Platform.OS === "ios");
+    if (date) setDueDate(date);
   };
 
   return (
@@ -188,6 +204,23 @@ export default function BillingPeriodFormModal({
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={onEndDateChange}
+              />
+            )}
+
+            {/* Fecha vencimiento */}
+            <Text style={styles.label}>Fecha de vencimiento (pago)</Text>
+            <TouchableOpacity
+              style={styles.dateButton}
+              onPress={() => setShowDuePicker(true)}
+            >
+              <Text style={styles.dateText}>📅 {formatDate(dueDate)}</Text>
+            </TouchableOpacity>
+            {showDuePicker && (
+              <DateTimePicker
+                value={dueDate}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={onDueDateChange}
               />
             )}
 

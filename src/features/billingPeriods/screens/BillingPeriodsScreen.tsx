@@ -75,6 +75,7 @@ export default function BillingPeriodsScreen({
     month: string;
     startDate: string;
     endDate: string;
+    dueDate: string;
   }) => {
     await createBillingPeriod(creditCardId, data);
     Alert.alert("Éxito", "Período de facturación creado correctamente.");
@@ -85,6 +86,7 @@ export default function BillingPeriodsScreen({
     month: string;
     startDate: string;
     endDate: string;
+    dueDate: string;
   }) => {
     if (!editingPeriod) return;
     await updateBillingPeriod(creditCardId, editingPeriod.id, data);
@@ -140,6 +142,7 @@ export default function BillingPeriodsScreen({
         month: editingPeriod.month,
         startDate: editingPeriod.startDate,
         endDate: editingPeriod.endDate,
+        dueDate: editingPeriod.dueDate,
       };
     }
     // Sugerir siguiente período basado en el más reciente
@@ -171,6 +174,11 @@ export default function BillingPeriodsScreen({
         month: `${monthNames[nextEnd.getMonth()]} ${nextEnd.getFullYear()}`,
         startDate: nextStart.toISOString(),
         endDate: nextEnd.toISOString(),
+        dueDate: (() => {
+          const d = new Date(nextEnd);
+          d.setDate(d.getDate() + 20);
+          return d.toISOString();
+        })(),
       };
     }
     return undefined;
@@ -198,6 +206,11 @@ export default function BillingPeriodsScreen({
           {formatDisplayDate(item.startDate)} —{" "}
           {formatDisplayDate(item.endDate)}
         </Text>
+        {item.dueDate && (
+          <Text style={styles.periodDueDate}>
+            Vence: {formatDisplayDate(item.dueDate)}
+          </Text>
+        )}
       </View>
       <View style={styles.periodActions}>
         <TouchableOpacity
@@ -337,6 +350,12 @@ const styles = StyleSheet.create({
   periodDates: {
     fontSize: 14,
     color: "#6C757D",
+  },
+  periodDueDate: {
+    fontSize: 13,
+    color: "#E67E22",
+    fontWeight: "500",
+    marginTop: 2,
   },
   periodActions: {
     flexDirection: "row",

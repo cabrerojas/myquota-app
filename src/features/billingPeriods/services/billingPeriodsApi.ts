@@ -7,6 +7,7 @@ export interface BillingPeriod {
   month: string;
   startDate: string;
   endDate: string;
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -16,6 +17,7 @@ export interface CreateBillingPeriodDto {
   month: string;
   startDate: string;
   endDate: string;
+  dueDate?: string;
 }
 
 export const getBillingPeriodsByCreditCard = async (

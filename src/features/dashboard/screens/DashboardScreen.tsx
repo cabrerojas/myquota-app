@@ -157,6 +157,7 @@ export default function DashboardScreen() {
     month: string;
     startDate: string;
     endDate: string;
+    dueDate: string;
   }) => {
     if (!selectedCardId) return;
     await createBillingPeriod(selectedCardId, data);
