@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
 import { getQuotasByTransaction } from "@/features/quotas/services/quotasApi";
+import { getBillingPeriodsByCreditCard, BillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
 
 interface DebtSummary {
   totalCLP: number;
@@ -36,13 +37,33 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
       let pendingCount = 0;
       let nextMonthCLP = 0;
       let nextMonthUSD = 0;
-      const monthKeys = new Set<string>();
+      const periodKeys = new Set<string>();
+      const allBillingPeriods: BillingPeriod[] = [];
 
+      // Fetch billing periods for all cards
+      for (const card of cards) {
+        const periods = await getBillingPeriodsByCreditCard(card.id);
+        allBillingPeriods.push(...periods);
+      }
+
+      // Find which billing period contains today
       const now = new Date();
-      const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-      const nextMonth = new Date(now);
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      const nextMonthKey = `${nextMonth.getFullYear()}-${String(nextMonth.getMonth() + 1).padStart(2, "0")}`;
+      const currentPeriod = allBillingPeriods.find((p) => {
+        const start = new Date(p.startDate).getTime();
+        const end = new Date(p.endDate).getTime();
+        return now.getTime() >= start && now.getTime() <= end;
+      });
+
+      // Helper to find period for a due_date
+      const findPeriod = (dueDate: string): string | null => {
+        const d = new Date(dueDate).getTime();
+        for (const p of allBillingPeriods) {
+          if (d >= new Date(p.startDate).getTime() && d <= new Date(p.endDate).getTime()) {
+            return p.month;
+          }
+        }
+        return null;
+      };
 
       for (const card of cards) {
         const txs = await getTransactionsByCreditCard(card.id);
@@ -52,9 +73,8 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
 
           for (const q of pending) {
             pendingCount++;
-            const date = new Date(q.due_date);
-            const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-            monthKeys.add(key);
+            const periodMonth = findPeriod(q.due_date);
+            if (periodMonth) periodKeys.add(periodMonth);
 
             if (q.currency === "Dolar") {
               totalUSD += q.amount;
@@ -62,8 +82,8 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
               totalCLP += q.amount;
             }
 
-            // Current or next month
-            if (key === currentMonthKey || key === nextMonthKey) {
+            // "Next payment" = quotas in current billing period
+            if (currentPeriod && periodMonth === currentPeriod.month) {
               if (q.currency === "Dolar") {
                 nextMonthUSD += q.amount;
               } else {
@@ -78,7 +98,7 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
         totalCLP,
         totalUSD,
         pendingCount,
-        monthsRemaining: monthKeys.size,
+        monthsRemaining: periodKeys.size,
         nextMonthCLP,
         nextMonthUSD,
       });

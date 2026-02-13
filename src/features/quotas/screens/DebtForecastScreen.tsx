@@ -14,6 +14,7 @@ import {
   getQuotasByTransaction,
   Quota,
 } from "@/features/quotas/services/quotasApi";
+import { getBillingPeriodsByCreditCard, BillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
 
 interface CreditCard {
   id: string;
@@ -37,6 +38,12 @@ interface QuotaEnriched extends Quota {
   totalQuotas: number;
 }
 
+// Parse "2026-03" fallback key to timestamp for sorting
+const parseCalendarKey = (key: string): number => {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1).getTime();
+};
+
 export default function DebtForecastScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,10 +56,16 @@ export default function DebtForecastScreen() {
     try {
       const cards = await getCreditCards();
       const allQuotas: QuotaEnriched[] = [];
+      const allBillingPeriods: BillingPeriod[] = [];
 
-      // Fetch all quotas across all cards
+      // Fetch all quotas and billing periods across all cards
       for (const card of cards) {
-        const txs = await getTransactionsByCreditCard(card.id);
+        const [txs, periods] = await Promise.all([
+          getTransactionsByCreditCard(card.id),
+          getBillingPeriodsByCreditCard(card.id),
+        ]);
+        allBillingPeriods.push(...periods);
+
         const results = await Promise.all(
           txs.map(async (tx) => {
             const quotas = await getQuotasByTransaction(card.id, tx.id);
@@ -74,20 +87,49 @@ export default function DebtForecastScreen() {
       // Filter only pending
       const pending = allQuotas.filter((q) => q.status === "pending");
 
-      // Group by month
+      // Sort billing periods by startDate
+      const sortedPeriods = [...allBillingPeriods].sort(
+        (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      );
+
+      // Find which billing period a quota's due_date falls into
+      const findPeriodForQuota = (dueDate: string): BillingPeriod | null => {
+        const d = new Date(dueDate).getTime();
+        for (const p of sortedPeriods) {
+          const start = new Date(p.startDate).getTime();
+          const end = new Date(p.endDate).getTime();
+          if (d >= start && d <= end) return p;
+        }
+        return null;
+      };
+
+      // Group by billing period; fall back to calendar month for unmatched
       const bucketMap = new Map<string, MonthBucket>();
       for (const q of pending) {
-        const date = new Date(q.due_date);
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        if (!bucketMap.has(key)) {
-          const label = date.toLocaleDateString("es-CL", {
+        const period = findPeriodForQuota(q.due_date);
+        let key: string;
+        let label: string;
+
+        if (period) {
+          // Use billing period month as key (e.g. "Enero 2026")
+          key = period.month;
+          label = period.month;
+        } else {
+          // Fallback: calendar month for quotas outside any billing period
+          const date = new Date(q.due_date);
+          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+          const monthLabel = date.toLocaleDateString("es-CL", {
             month: "long",
             year: "numeric",
             timeZone: "America/Santiago",
           });
+          label = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+        }
+
+        if (!bucketMap.has(key)) {
           bucketMap.set(key, {
             key,
-            label: label.charAt(0).toUpperCase() + label.slice(1),
+            label,
             totalCLP: 0,
             totalUSD: 0,
             count: 0,
@@ -110,10 +152,19 @@ export default function DebtForecastScreen() {
         });
       }
 
-      // Sort by month key
-      const sorted = Array.from(bucketMap.values()).sort((a, b) =>
-        a.key.localeCompare(b.key),
-      );
+      // Sort buckets: billing period keys first (by finding their startDate), then calendar keys
+      const periodStartMap = new Map<string, number>();
+      for (const p of sortedPeriods) {
+        if (!periodStartMap.has(p.month)) {
+          periodStartMap.set(p.month, new Date(p.startDate).getTime());
+        }
+      }
+
+      const sorted = Array.from(bucketMap.values()).sort((a, b) => {
+        const aTime = periodStartMap.get(a.key) ?? parseCalendarKey(a.key);
+        const bTime = periodStartMap.get(b.key) ?? parseCalendarKey(b.key);
+        return aTime - bTime;
+      });
       setMonths(sorted);
 
       // Totals
@@ -139,6 +190,18 @@ export default function DebtForecastScreen() {
     const prefix = currency === "Dolar" ? "US$" : "$";
     return `${prefix}${amount.toLocaleString("es-CL")}`;
   };
+
+  // Get current billing period label (e.g. "Febrero 2026") to highlight
+  const getCurrentPeriodLabel = () => {
+    const now = new Date();
+    const label = now.toLocaleDateString("es-CL", {
+      month: "long",
+      year: "numeric",
+      timeZone: "America/Santiago",
+    });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  };
+  const currentPeriodLabel = getCurrentPeriodLabel();
 
   // Find max month total for relative bar sizing
   const maxMonthTotal = Math.max(...months.map((m) => m.totalCLP + m.totalUSD * 900), 1);
@@ -204,11 +267,7 @@ export default function DebtForecastScreen() {
           {months.map((month, index) => {
             const barWidth = ((month.totalCLP + month.totalUSD * 900) / maxMonthTotal) * 100;
             const isExpanded = expandedMonth === month.key;
-            const isCurrentMonth = (() => {
-              const now = new Date();
-              const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-              return month.key === currentKey;
-            })();
+            const isCurrentMonth = month.label.toLowerCase() === currentPeriodLabel.toLowerCase();
 
             return (
               <View key={month.key}>
