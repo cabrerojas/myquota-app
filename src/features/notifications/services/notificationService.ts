@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { getBillingPeriodsByCreditCard } from "@/features/billingPeriods/services/billingPeriodsApi";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -16,8 +17,6 @@ export interface CreditCardForNotification {
   id: string;
   cardLastDigits: string;
   cardType: string;
-  billingPeriodEnd: string | Date;
-  dueDate: string | Date;
 }
 
 const SETTINGS_KEY = "@myquota_notification_settings";
@@ -91,16 +90,12 @@ export async function setupAndroidChannel() {
 // ─── Date Helpers ────────────────────────────────────────────────────────────
 
 /**
- * Given a date that may be in the past, compute the next occurrence
- * by advancing month-by-month until it's in the future.
+ * Find the next future occurrence of a date.
+ * If the date is already in the future, return it as-is.
  */
-function getNextOccurrence(dateInput: string | Date): Date {
+function getNextFutureDate(dateInput: string | Date): Date | null {
   const d = new Date(dateInput);
-  const now = new Date();
-  // Keep the same day-of-month, advance months until it's in the future
-  while (d <= now) {
-    d.setMonth(d.getMonth() + 1);
-  }
+  if (isNaN(d.getTime())) return null;
   return d;
 }
 
@@ -144,11 +139,34 @@ export async function scheduleCardNotifications(
   for (const card of cards) {
     const label = `${card.cardType} •${card.cardLastDigits}`;
 
+    // Fetch billing periods for this card and find the current/next one
+    let closingDate: Date | null = null;
+    let dueDateForCard: Date | null = null;
+
+    try {
+      const periods = await getBillingPeriodsByCreditCard(card.id);
+      // Find the next period whose endDate is in the future (sorted by endDate asc)
+      const upcoming = periods
+        .map((p) => ({
+          endDate: new Date(p.endDate),
+          dueDate: p.dueDate ? new Date(p.dueDate) : null,
+        }))
+        .filter((p) => p.endDate > now)
+        .sort((a, b) => a.endDate.getTime() - b.endDate.getTime());
+
+      if (upcoming.length > 0) {
+        closingDate = upcoming[0].endDate;
+        dueDateForCard = upcoming[0].dueDate;
+      }
+    } catch {
+      // If billing periods can't be fetched, skip this card
+      continue;
+    }
+
     // ── Cierre (billing period end) ──
-    if (card.billingPeriodEnd) {
-      const nextClosing = getNextOccurrence(card.billingPeriodEnd);
+    if (closingDate) {
       const closingTrigger = getTriggerDate(
-        nextClosing,
+        closingDate,
         settings.daysBeforeClosing,
         settings.notificationHour,
       );
@@ -158,7 +176,7 @@ export async function scheduleCardNotifications(
           settings.daysBeforeClosing === 1
             ? "mañana"
             : `en ${settings.daysBeforeClosing} días`;
-        const dateStr = nextClosing.toLocaleDateString("es-CL", {
+        const dateStr = closingDate.toLocaleDateString("es-CL", {
           day: "2-digit",
           month: "2-digit",
         });
@@ -182,11 +200,10 @@ export async function scheduleCardNotifications(
       }
     }
 
-    // ── Vencimiento (due date) ──
-    if (card.dueDate) {
-      const nextDue = getNextOccurrence(card.dueDate);
+    // ── Vencimiento (due date del período) ──
+    if (dueDateForCard) {
       const dueTrigger = getTriggerDate(
-        nextDue,
+        dueDateForCard,
         settings.daysBeforeDueDate,
         settings.notificationHour,
       );
@@ -196,7 +213,7 @@ export async function scheduleCardNotifications(
           settings.daysBeforeDueDate === 1
             ? "mañana"
             : `en ${settings.daysBeforeDueDate} días`;
-        const dateStr = nextDue.toLocaleDateString("es-CL", {
+        const dateStr = dueDateForCard.toLocaleDateString("es-CL", {
           day: "2-digit",
           month: "2-digit",
         });
