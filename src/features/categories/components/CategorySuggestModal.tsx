@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Modal, View, Text, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { matchCategoryByMerchant, createCategoryWithMerchant, Category } from "@/features/categories/services/categoryApi";
+import { matchCategoryByMerchant, createCategoryWithMerchant, Category, getAllCategories } from "@/features/categories/services/categoryApi";
 
 interface Props {
   visible: boolean;
@@ -14,6 +14,7 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
   const [suggestion, setSuggestion] = useState<{ categoryId: string; categoryName: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState(merchant);
+  const [matchedCategory, setMatchedCategory] = useState<Category | null>(null);
   // Emoji y color para la nueva categoría
   const getDefaultEmoji = (text: string) => {
     // Sugerir emoji por palabras clave simples
@@ -63,6 +64,38 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
       .then((s) => setSuggestion(s))
       .finally(() => setLoading(false));
   }, [visible, merchant]);
+
+  // Autocomplete / buscar categorías existentes mientras el usuario escribe
+  useEffect(() => {
+    if (!visible) return;
+    let mounted = true;
+    const handler = setTimeout(async () => {
+      if (!newName || newName.trim().length === 0) {
+        if (mounted) setMatchedCategory(null);
+        return;
+      }
+      try {
+        const all = await getAllCategories();
+        const normalize = (s = "") =>
+          s.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+        const found = all.find((c) => normalize(c.name) === normalize(newName));
+        if (mounted) {
+          setMatchedCategory(found ?? null);
+          if (found) {
+            // Prefill emoji/color with existing category to avoid accidental duplicates
+            setEmoji(found.icon ?? getDefaultEmoji(found.name));
+            setColor(found.color ?? getDefaultColor(found.name));
+          }
+        }
+      } catch (e) {
+        console.warn("Error fetching categories for autocomplete", e);
+      }
+    }, 300);
+    return () => {
+      mounted = false;
+      clearTimeout(handler);
+    };
+  }, [newName, visible]);
 
   const handleUseSuggestion = async () => {
     if (!suggestion) return;
@@ -115,6 +148,35 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
         pattern: merchant,
         isGlobal: true,
       });
+      // Si encontramos una categoría existente con el mismo nombre normalizado, preguntar antes de crear
+      if (matchedCategory) {
+        const useExisting = await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            "Categoría existente",
+            `La categoría "${matchedCategory.name}" ya existe. ¿Deseas usarla en lugar de crear una nueva?`,
+            [
+              { text: "Usar existente", onPress: () => resolve(true) },
+              { text: "Crear igual", onPress: () => resolve(false), style: "destructive" },
+              { text: "Cancelar", onPress: () => resolve(null as any), style: "cancel" },
+            ],
+            { cancelable: true },
+          );
+        });
+        if (useExisting === null) return;
+        if (useExisting) {
+          const created = await createCategoryWithMerchant({
+            name: matchedCategory.name,
+            merchantName: merchant,
+            pattern: merchant,
+            isGlobal: true,
+          });
+          onCategorySelected(created);
+          onClose();
+          return;
+        }
+        // else fallthrough to create a separate category
+      }
+
       const created = await createCategoryWithMerchant({
         name: newName.trim(),
         icon: emoji.trim(),
