@@ -38,3 +38,4 @@ yarn-error.*
 app-example
 /eas.json
 /.env
+.github

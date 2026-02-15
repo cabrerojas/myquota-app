@@ -14,8 +14,11 @@ import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
   getTransactionsByCreditCard,
   Transaction,
+  updateTransaction,
 } from "../services/transactionsApi";
-
+import { exportTransactionsToCSV } from '../services/exportTransactions';
+import { useRouter } from "expo-router";
+import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 interface CreditCard {
   id: string;
   cardType: string;
@@ -100,6 +103,24 @@ export default function TransactionsScreen() {
   const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>("all");
   const [monthFilter, setMonthFilter] = useState(0); // 0 = Todos
   const [showFilters, setShowFilters] = useState(false);
+  const [yearFilter, setYearFilter] = useState<number | null>(null);
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
+  const router = useRouter();
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [categoryModalMerchant, setCategoryModalMerchant] = useState<string | null>(null);
+  const [categoryModalTransactionId, setCategoryModalTransactionId] = useState<string | null>(null);
+  const [categoryModalCreditCardId, setCategoryModalCreditCardId] = useState<string | null>(null);
+
+  // Calcular años presentes en las transacciones
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    transactions.forEach((t) => {
+      const y = new Date(t.transactionDate).getFullYear();
+      years.add(y);
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [transactions]);
 
   // Load credit cards
   useEffect(() => {
@@ -161,9 +182,21 @@ export default function TransactionsScreen() {
       if (monthFilter > 0 && getMonthIndex(t.transactionDate) !== monthFilter) {
         return false;
       }
+      // Year
+      if (yearFilter !== null && new Date(t.transactionDate).getFullYear() !== yearFilter) {
+        return false;
+      }
+      // Monto mínimo
+      if (minAmount && t.amount < Number(minAmount)) {
+        return false;
+      }
+      // Monto máximo
+      if (maxAmount && t.amount > Number(maxAmount)) {
+        return false;
+      }
       return true;
     });
-  }, [transactions, searchQuery, currencyFilter, monthFilter]);
+  }, [transactions, searchQuery, currencyFilter, monthFilter, yearFilter, minAmount, maxAmount]);
 
   // Group by day
   const groupedTransactions = useMemo((): GroupedTransactions[] => {
@@ -195,7 +228,12 @@ export default function TransactionsScreen() {
   }, [filteredTransactions]);
 
   const activeFiltersCount =
-    (currencyFilter !== "all" ? 1 : 0) + (monthFilter > 0 ? 1 : 0);
+    (currencyFilter !== "all" ? 1 : 0) +
+    (monthFilter > 0 ? 1 : 0) +
+    (yearFilter !== null ? 1 : 0) +
+    (minAmount ? 1 : 0) +
+    (maxAmount ? 1 : 0) +
+    (searchQuery ? 1 : 0);
 
   if (loading) {
     return (
@@ -209,6 +247,7 @@ export default function TransactionsScreen() {
     <View style={styles.container}>
       {/* Card selector */}
       <View style={styles.cardSelectorContainer}>
+        <Text style={styles.filterLabel}>Tarjeta</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {creditCards.map((card) => (
             <TouchableOpacity
@@ -301,6 +340,38 @@ export default function TransactionsScreen() {
             ))}
           </View>
 
+          {/* Year filter */}
+          <Text style={styles.filterLabel}>Año</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthFilterScroll}>
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                yearFilter === null && styles.filterChipActive,
+              ]}
+              onPress={() => setYearFilter(null)}
+            >
+              <Text style={[
+                styles.filterChipText,
+                yearFilter === null && styles.filterChipTextActive,
+              ]}>Todos</Text>
+            </TouchableOpacity>
+            {availableYears.map((y) => (
+              <TouchableOpacity
+                key={y}
+                style={[
+                  styles.filterChip,
+                  yearFilter === y && styles.filterChipActive,
+                ]}
+                onPress={() => setYearFilter(y)}
+              >
+                <Text style={[
+                  styles.filterChipText,
+                  yearFilter === y && styles.filterChipTextActive,
+                ]}>{y}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
           {/* Month filter */}
           <Text style={styles.filterLabel}>Mes</Text>
           <ScrollView
@@ -329,12 +400,41 @@ export default function TransactionsScreen() {
             ))}
           </ScrollView>
 
+          {/* Monto mínimo/máximo */}
+          <Text style={styles.filterLabel}>Monto</Text>
+          <View style={styles.filterRow}>
+            <TextInput
+              style={styles.amountInput}
+              placeholder="Mínimo"
+              keyboardType="numeric"
+              value={minAmount}
+              onChangeText={setMinAmount}
+              placeholderTextColor="#ADB5BD"
+            />
+            <Text style={{ marginHorizontal: 8, color: "#495057" }}>—</Text>
+            <TextInput
+              style={styles.amountInput}
+              placeholder="Máximo"
+              keyboardType="numeric"
+              value={maxAmount}
+              onChangeText={setMaxAmount}
+              placeholderTextColor="#ADB5BD"
+            />
+          </View>
+
           {activeFiltersCount > 0 && (
             <TouchableOpacity
               style={styles.clearFilters}
               onPress={() => {
                 setCurrencyFilter("all");
                 setMonthFilter(0);
+                setYearFilter(null);
+                setMinAmount("");
+                setMaxAmount("");
+                setSearchQuery("");
+                if (creditCards.length > 0) {
+                  setSelectedCardId(creditCards[0].id);
+                }
               }}
             >
               <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
@@ -360,7 +460,29 @@ export default function TransactionsScreen() {
             </Text>
           )}
         </View>
+        <TouchableOpacity
+          style={styles.exportButton}
+          onPress={async () => {
+            setTimeout(async () => {
+              try {
+                await exportTransactionsToCSV(filteredTransactions.map(t => ({
+                  ...t,
+                  cardType: creditCards.find(c => c.id === selectedCardId)?.cardType,
+                  cardLastDigits: creditCards.find(c => c.id === selectedCardId)?.cardLastDigits,
+                })));
+              } catch (e) {
+                alert('Error al exportar transacciones');
+              }
+            }, 300);
+          }}
+        >
+          <Ionicons name="download-outline" size={20} color="#007BFF" />
+          <Text style={styles.exportButtonText}>Exportar</Text>
+        </TouchableOpacity>
       </View>
+      <Text style={styles.exportInfo}>
+        Solo se exportarán las transacciones filtradas actualmente.
+      </Text>
 
       {/* Transactions list */}
       {loadingTransactions ? (
@@ -386,7 +508,23 @@ export default function TransactionsScreen() {
           {groupedTransactions.map((group) => (
             <View key={group.day} style={styles.dayGroup}>
               <View style={styles.dayHeader}>
-                <Text style={styles.dayTitle}>{group.day}</Text>
+                <Text style={styles.dayTitle}>
+                  {group.day}
+                  {/* Mostrar año al final si no está incluido */}
+                  {(() => {
+                    // group.day es como "Viernes, 30 de Enero"
+                    // Tomamos el primer año de las transacciones del grupo
+                    if (group.transactions.length > 0) {
+                      const date = new Date(group.transactions[0].transactionDate);
+                      const year = date.getFullYear();
+                      // Si el año no está ya en el string, lo agregamos
+                      if (!group.day.includes(year.toString())) {
+                        return ` ${year}`;
+                      }
+                    }
+                    return '';
+                  })()}
+                </Text>
                 <View style={styles.dayTotals}>
                   {group.totalCLP > 0 && (
                     <Text style={styles.dayTotal}>
@@ -410,10 +548,29 @@ export default function TransactionsScreen() {
                       {formatDate(t.transactionDate)}
                     </Text>
                   </View>
-                  <Text style={styles.amount}>
-                    {t.currency === "Dolar" ? "US$" : "$"}
-                    {t.amount.toLocaleString("es-CL")}
-                  </Text>
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={styles.amount}>
+                      {t.currency === "Dolar" ? `US$${t.amount.toFixed(2)}` : `$${t.amount.toLocaleString("es-CL")}`}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.categoryBtn}
+                      onPress={() => {
+                        setCategoryModalMerchant(t.merchant);
+                        setCategoryModalTransactionId(t.id);
+                        setCategoryModalCreditCardId(selectedCardId);
+                        setCategoryModalVisible(true);
+                      }}
+                    >
+                      {t.categoryId ? (
+                        <View style={[styles.categoryPill, { backgroundColor: t.categoryColor || '#F1F3F5' }]}>
+                          <Text style={styles.categoryEmoji}>{t.categoryIcon || '🏷️'}</Text>
+                          <Text style={styles.categoryName} numberOfLines={1}>{t.categoryName}</Text>
+                        </View>
+                      ) : (
+                        <Ionicons name="pricetag-outline" size={16} color="#007BFF" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>
@@ -421,6 +578,46 @@ export default function TransactionsScreen() {
           <View style={{ height: 20 }} />
         </ScrollView>
       )}
+      <CategorySuggestModal
+        visible={categoryModalVisible}
+        merchant={categoryModalMerchant || ''}
+        onClose={() => setCategoryModalVisible(false)}
+        onCategorySelected={(category) => {
+          // Actualizar la transacción en backend y en estado local
+          const creditCardId = categoryModalCreditCardId;
+          const transactionId = categoryModalTransactionId;
+          if (!creditCardId || !transactionId) {
+            setCategoryModalVisible(false);
+            return;
+          }
+          (async () => {
+            try {
+              console.log('[TransactionsScreen] Updating transaction', { creditCardId, transactionId, categoryId: category.id });
+              const res = await updateTransaction(creditCardId, transactionId, { categoryId: category.id });
+              console.log('[TransactionsScreen] updateTransaction response', res);
+
+              // El backend devuelve { message, data } donde data es la transacción enriquecida
+              const updated = res?.data ?? res;
+
+              setTransactions((prev) => prev.map((t) =>
+                t.id === transactionId
+                  ? {
+                      ...t,
+                      categoryId: updated?.categoryId ?? category.id,
+                      categoryName: updated?.categoryName ?? category.name,
+                      categoryIcon: updated?.categoryIcon ?? category.icon,
+                      categoryColor: updated?.categoryColor ?? category.color,
+                    }
+                  : t
+              ));
+            } catch (e) {
+              console.error('Error updating transaction category', e);
+            } finally {
+              setCategoryModalVisible(false);
+            }
+          })();
+        }}
+      />
     </View>
   );
 }
@@ -464,6 +661,17 @@ const styles = StyleSheet.create({
   cardChipActive: {
     backgroundColor: "#007BFF",
   },
+  // Category pill
+  categoryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 16,
+    minWidth: 56,
+  },
+  categoryEmoji: { marginRight: 6, fontSize: 14 },
+  categoryName: { fontSize: 12, color: '#212529', maxWidth: 100 },
   cardChipText: {
     fontSize: 13,
     fontWeight: "600",
@@ -601,6 +809,28 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#007BFF",
   },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E9F5FF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginLeft: 10,
+  },
+  exportButtonText: {
+    color: '#007BFF',
+    fontWeight: '700',
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  exportInfo: {
+    fontSize: 11,
+    color: '#868E96',
+    textAlign: 'center',
+    marginBottom: 2,
+    marginTop: -8,
+  },
   // Day groups
   dayGroup: {
     marginHorizontal: 16,
@@ -669,5 +899,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: "#DC3545",
+  },
+  categoryBtn: {
+    marginTop: 6,
+  },
+  amountInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#DEE2E6",
+    borderRadius: 8,
+    padding: 8,
+    fontSize: 15,
+    backgroundColor: "#fff",
+    color: "#212529",
+    minWidth: 80,
+    textAlign: "right",
   },
 });

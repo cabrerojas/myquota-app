@@ -15,7 +15,14 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+
 import { createManualTransaction, updateManualTransaction } from "@/features/transactions/services/transactionsApi";
+import {
+  matchCategoryByMerchant,
+  createCategoryWithMerchant,
+  addGlobalCategoryToUser,
+} from "@/features/categories/services/categoryApi";
+import { Modal } from "react-native";
 
 interface CreditCard {
   id: string;
@@ -47,6 +54,10 @@ export default function AddDebtScreen() {
   const [cards, setCards] = useState<CreditCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [suggestedMatch, setSuggestedMatch] = useState<{ categoryId: string; categoryName: string } | null>(null);
+  const [suggestionProcessing, setSuggestionProcessing] = useState(false);
+  const [chosenCategoryId, setChosenCategoryId] = useState<string | undefined>(undefined);
 
   // Form state
   const [selectedCardId, setSelectedCardId] = useState<string>(params.creditCardId || "");
@@ -106,7 +117,18 @@ export default function AddDebtScreen() {
 
     setSubmitting(true);
     try {
-      const payload = {
+      // 1. Intentar auto-matching de categoría
+      const match = await matchCategoryByMerchant(merchant.trim());
+
+      // Si hay match y aún no tenemos una categoría elegida, mostrar modal de sugerencia
+      if (match && !chosenCategoryId) {
+        setSuggestedMatch(match);
+        setShowSuggestionModal(true);
+        setSubmitting(false);
+        return;
+      }
+
+      const payload: any = {
         merchant: merchant.trim(),
         purchaseDate: finalPurchaseDate,
         quotaAmount: Number(quotaAmount),
@@ -115,6 +137,8 @@ export default function AddDebtScreen() {
         lastPaidMonth: lastPaidMonthStr,
         currency,
       };
+
+      if (chosenCategoryId) payload.categoryId = chosenCategoryId;
 
       let result;
       if (isEdit && params.transactionId) {
@@ -127,9 +151,12 @@ export default function AddDebtScreen() {
         result = await createManualTransaction(selectedCardId, payload);
       }
 
+      let categoryInfo = '';
+      if (chosenCategoryId) categoryInfo = `Categoría asignada`;
+
       Alert.alert(
         isEdit ? "Deuda actualizada" : "Deuda agregada",
-        `${result.quotasCreated} cuotas ${isEdit ? "actualizadas" : "creadas"} para "${merchant.trim()}"`,
+        `${result.quotasCreated} cuotas ${isEdit ? "actualizadas" : "creadas"} para "${merchant.trim()}"${categoryInfo ? `\n${categoryInfo}` : ''}`,
         [{ text: "OK", onPress: () => router.back() }],
       );
     } catch (error) {
@@ -138,6 +165,49 @@ export default function AddDebtScreen() {
         error instanceof Error ? error.message : "No se pudo crear la deuda",
       );
     } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const submitAfterChoice = async (categoryId?: string) => {
+    setShowSuggestionModal(false);
+    setSuggestionProcessing(true);
+    try {
+      if (categoryId) setChosenCategoryId(categoryId);
+      // Re-run the submit flow but avoid re-checking match (we already did)
+      setSubmitting(true);
+      const lastPaidMonthStr = `${lastPaidYear}-${String(lastPaidMonth + 1).padStart(2, "0")}`;
+      const finalPurchaseDate = purchaseDate
+        ? purchaseDate.toISOString().split("T")[0]
+        : `${lastPaidYear}-${String(lastPaidMonth + 1).padStart(2, "0")}-01`;
+
+      const payload: any = {
+        merchant: merchant.trim(),
+        purchaseDate: finalPurchaseDate,
+        quotaAmount: Number(quotaAmount),
+        totalInstallments: Number(totalInstallments),
+        paidInstallments: Number(paidInstallments),
+        lastPaidMonth: lastPaidMonthStr,
+        currency,
+      };
+      if (categoryId) payload.categoryId = categoryId;
+
+      let result;
+      if (isEdit && params.transactionId) {
+        result = await updateManualTransaction(selectedCardId, params.transactionId!, payload);
+      } else {
+        result = await createManualTransaction(selectedCardId, payload);
+      }
+
+      Alert.alert(
+        isEdit ? "Deuda actualizada" : "Deuda agregada",
+        `${result.quotasCreated} cuotas ${isEdit ? "actualizadas" : "creadas"}`,
+        [{ text: "OK", onPress: () => router.back() }],
+      );
+    } catch (err) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Error");
+    } finally {
+      setSuggestionProcessing(false);
       setSubmitting(false);
     }
   };
@@ -191,13 +261,18 @@ export default function AddDebtScreen() {
 
         {/* Merchant */}
         <Text style={styles.label}>Comercio</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ej: TRAVEL TIENDA TCOMP"
-          value={merchant}
-          onChangeText={setMerchant}
-          placeholderTextColor="#ADB5BD"
-        />
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            placeholder="Ej: TRAVEL TIENDA TCOMP"
+            value={merchant}
+            onChangeText={setMerchant}
+            placeholderTextColor="#ADB5BD"
+          />
+          <TouchableOpacity style={{ padding: 10 }} onPress={() => router.push({ pathname: "/categories/select", params: { merchant } })}>
+            <Ionicons name="pricetag-outline" size={22} color="#007BFF" />
+          </TouchableOpacity>
+        </View>
 
         {/* Quota Amount */}
         <Text style={styles.label}>Monto de cada cuota</Text>
@@ -346,6 +421,69 @@ export default function AddDebtScreen() {
             </>
           )}
         </TouchableOpacity>
+
+        {/* Suggestion Modal */}
+        <Modal visible={showSuggestionModal} transparent animationType="fade">
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 20 }}>
+            <View style={{ backgroundColor: "#fff", borderRadius: 12, padding: 16 }}>
+              <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 8 }}>Categoría sugerida</Text>
+              <Text style={{ marginBottom: 12 }}>{suggestedMatch?.categoryName}</Text>
+
+              <TouchableOpacity
+                style={{ backgroundColor: "#007BFF", padding: 12, borderRadius: 8, marginBottom: 8 }}
+                onPress={async () => {
+                  if (!suggestedMatch) return;
+                  setSuggestionProcessing(true);
+                  try {
+                    // Copiar la categoría global a las del usuario y usarla
+                    const created = await addGlobalCategoryToUser(suggestedMatch.categoryId);
+                    await submitAfterChoice(created.id);
+                  } catch (err) {
+                    Alert.alert("Error", err instanceof Error ? err.message : "Error");
+                  } finally {
+                    setSuggestionProcessing(false);
+                  }
+                }}
+              >
+                <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Usar y copiar a mis categorías</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ backgroundColor: "#28A745", padding: 12, borderRadius: 8, marginBottom: 8 }}
+                onPress={async () => {
+                  // Crear nueva categoría personal y asociar el merchant
+                  setSuggestionProcessing(true);
+                  try {
+                    const created = await createCategoryWithMerchant({
+                      name: merchant.trim(),
+                      isGlobal: false,
+                      merchantName: merchant.trim(),
+                      pattern: merchant.trim(),
+                    });
+                    await submitAfterChoice(created.id);
+                  } catch (err) {
+                    Alert.alert("Error", err instanceof Error ? err.message : "Error");
+                  } finally {
+                    setSuggestionProcessing(false);
+                  }
+                }}
+              >
+                <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Crear categoría y asociar comercio</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ backgroundColor: "#6C757D", padding: 12, borderRadius: 8 }}
+                onPress={() => {
+                  setShowSuggestionModal(false);
+                  // proceed without category
+                  submitAfterChoice(undefined);
+                }}
+              >
+                <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Ignorar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
     </KeyboardAvoidingView>
   );

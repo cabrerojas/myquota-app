@@ -30,6 +30,11 @@ export interface Transaction {
   transactionDate: string;
   bank: string;
   creditCardId: string;
+  // Optional category fields
+  categoryId?: string;
+  categoryName?: string;
+  categoryIcon?: string;
+  categoryColor?: string;
 }
 
 export const getTransactionsByCreditCard = async (
@@ -148,6 +153,27 @@ export const deleteManualTransaction = async (
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Error al eliminar deuda");
+  }
+  return response.json();
+};
+
+export const updateTransaction = async (
+  creditCardId: string,
+  transactionId: string,
+  data: Partial<{ categoryId?: string }>,
+): Promise<any> => {
+  const headers = await getAuthHeaders();
+  const response = await fetch(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}`,
+    {
+      method: "PUT",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+  );
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Error updating transaction");
   }
   return response.json();
 };

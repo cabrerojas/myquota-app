@@ -16,7 +16,14 @@ export const matchCategoryByMerchant = async (
     body: JSON.stringify({ merchantName }),
   });
   if (!response.ok) return null;
-  return response.json();
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as CategoryMatch;
+  } catch (e) {
+    console.warn("categoryApi.matchCategoryByMerchant parse error", e);
+    return null;
+  }
 };
 
 export interface Category {
@@ -46,7 +53,14 @@ export const createCategoryWithMerchant = async (
     body: JSON.stringify(params),
   });
   if (!res.ok) throw new Error("Error creating category");
-  return res.json();
+  const text = await res.text();
+  if (!text) throw new Error("Empty response from server");
+  try {
+    return JSON.parse(text) as Category;
+  } catch (e) {
+    console.warn("categoryApi.createCategoryWithMerchant parse error", e);
+    throw new Error("Invalid response from server");
+  }
 };
 
 export const addMerchantToCategory = async (
@@ -78,7 +92,14 @@ export const getMerchantsForCategory = async (
     },
   );
   if (!res.ok) return [];
-  return res.json();
+  const text = await res.text();
+  if (!text) return [];
+  try {
+    return JSON.parse(text) as any[];
+  } catch (e) {
+    console.warn("categoryApi.getMerchantsForCategory parse error", e);
+    return [];
+  }
 };
 
 export const addGlobalCategoryToUser = async (
@@ -93,5 +114,29 @@ export const addGlobalCategoryToUser = async (
     },
   );
   if (!res.ok) throw new Error("Error adding global category to user");
-  return res.json();
+  const text = await res.text();
+  if (!text) throw new Error("Empty response from server");
+  try {
+    return JSON.parse(text) as Category;
+  } catch (e) {
+    console.warn("categoryApi.addGlobalCategoryToUser parse error", e);
+    throw new Error("Invalid response from server");
+  }
+};
+
+export const getAllCategories = async (): Promise<Category[]> => {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${API_BASE_URL}/categories`, {
+    method: "GET",
+    headers,
+  });
+  if (!res.ok) return [];
+  const text = await res.text();
+  if (!text) return [];
+  try {
+    return JSON.parse(text) as Category[];
+  } catch (e) {
+    console.warn("categoryApi.getAllCategories parse error", e);
+    return [];
+  }
 };
