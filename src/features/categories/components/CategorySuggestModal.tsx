@@ -68,8 +68,22 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
     if (!suggestion) return;
     setLoading(true);
     try {
-      // Aquí podrías hacer lógica extra si necesitas copiar la categoría al usuario
-      onCategorySelected({ id: suggestion.categoryId, name: suggestion.categoryName });
+      // Llamar al endpoint que asocia el comercio a la categoría y propaga la categoría
+      console.log('[CategorySuggestModal] using suggestion, calling createCategoryWithMerchant', {
+        name: suggestion.categoryName,
+        merchantName: merchant,
+        pattern: merchant,
+        isGlobal: true,
+      });
+      const created = await createCategoryWithMerchant({
+        name: suggestion.categoryName,
+        merchantName: merchant,
+        pattern: merchant,
+        isGlobal: true,
+      });
+
+      // created puede ser la categoría existente reutilizada o la recién creada
+      onCategorySelected({ id: created.id ?? suggestion.categoryId, name: created.name ?? suggestion.categoryName, icon: created.icon, color: created.color });
       onClose();
     } catch (e) {
       Alert.alert("Error", "No se pudo asignar la categoría sugerida");
