@@ -610,6 +610,12 @@ export default function TransactionsScreen() {
                     }
                   : t
               ));
+              // Refrescar listado para capturar propagación a otras transacciones
+              try {
+                await loadTransactions();
+              } catch (e) {
+                console.warn('Could not reload transactions after category assignment', e);
+              }
             } catch (e) {
               console.error('Error updating transaction category', e);
             } finally {
