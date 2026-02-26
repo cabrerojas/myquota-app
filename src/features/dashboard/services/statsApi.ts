@@ -1,13 +1,19 @@
-import { getAuthHeaders } from "../../auth/hooks/useAuth";
+import { requestWithAuth } from "../../auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 
 export const getMonthlyStats = async (creditCardId: string) => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/stats/monthly`,
-    { headers },
   );
-  return response.json();
+  const data = await response.json().catch(() => null);
+  if (!response.ok) {
+    const msg =
+      data && (data.message || data.error)
+        ? data.message || data.error
+        : `HTTP ${response.status}`;
+    throw new Error(`Error fetching monthly stats: ${msg}`);
+  }
+  return data;
 };
 
 export interface DebtSummary {
@@ -20,12 +26,14 @@ export interface DebtSummary {
 }
 
 export const getDebtSummary = async (): Promise<DebtSummary> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${API_BASE_URL}/stats/debt-summary`, {
-    headers,
-  });
+  const response = await requestWithAuth(`${API_BASE_URL}/stats/debt-summary`);
+  const data = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error("Error fetching debt summary");
+    const msg =
+      data && (data.message || data.error)
+        ? data.message || data.error
+        : `HTTP ${response.status}`;
+    throw new Error(`Error fetching debt summary: ${msg}`);
   }
-  return response.json();
+  return data as DebtSummary;
 };

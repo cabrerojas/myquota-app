@@ -1,4 +1,4 @@
-import { getAuthHeaders } from "@/features/auth/hooks/useAuth";
+import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 
 export interface ImportResult {
@@ -40,10 +40,8 @@ export interface Transaction {
 export const getTransactionsByCreditCard = async (
   creditCardId: string,
 ): Promise<Transaction[]> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions`,
-    { headers },
   );
   if (!response.ok) {
     throw new Error("Error al obtener transacciones");
@@ -54,10 +52,9 @@ export const getTransactionsByCreditCard = async (
 export const importBankTransactions = async (
   creditCardId: string,
 ): Promise<ImportResult> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/import-bank-transactions`,
-    { method: "POST", headers },
+    { method: "POST" },
   );
   if (!response.ok) {
     const error = await response.json();
@@ -80,12 +77,10 @@ export const createManualTransaction = async (
   creditCardId: string,
   data: CreateManualTransactionDto,
 ): Promise<{ message: string; quotasCreated: number }> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual`,
     {
       method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify(data),
     },
   );
@@ -111,10 +106,8 @@ export interface ManualTransaction {
 export const getManualTransactions = async (
   creditCardId: string,
 ): Promise<ManualTransaction[]> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual`,
-    { headers },
   );
   if (!response.ok) throw new Error("Error al obtener deudas manuales");
   return response.json();
@@ -125,12 +118,10 @@ export const updateManualTransaction = async (
   transactionId: string,
   data: CreateManualTransactionDto,
 ): Promise<{ message: string; quotasCreated: number }> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual/${transactionId}`,
     {
       method: "PUT",
-      headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify(data),
     },
   );
@@ -145,10 +136,9 @@ export const deleteManualTransaction = async (
   creditCardId: string,
   transactionId: string,
 ): Promise<{ message: string; deletedQuotas: number }> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/manual/${transactionId}`,
-    { method: "DELETE", headers },
+    { method: "DELETE" },
   );
   if (!response.ok) {
     const error = await response.json();
@@ -162,12 +152,10 @@ export const updateTransaction = async (
   transactionId: string,
   data: Partial<{ categoryId?: string }>,
 ): Promise<any> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}`,
     {
       method: "PUT",
-      headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify(data),
     },
   );

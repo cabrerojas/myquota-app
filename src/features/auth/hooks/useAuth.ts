@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import { useState, useCallback } from "react";
 
 import {
@@ -59,9 +60,19 @@ export const useGoogleSignIn = (router: Router) => {
         clearTimeout(timeout);
 
         const data = await res.json();
-        if (data.token) {
-          console.log("JWT recibido:", data.token);
-          await AsyncStorage.setItem("jwt", data.token);
+        // backend ahora devuelve { accessToken, refreshToken }
+        if (data.accessToken) {
+          console.log("Access token recibido");
+          try {
+            await SecureStore.setItemAsync("accessToken", data.accessToken);
+            if (data.refreshToken)
+              await SecureStore.setItemAsync("refreshToken", data.refreshToken);
+          } catch (err) {
+            console.warn("SecureStore error saving tokens:", err);
+          }
+
+          // mantener compatibilidad: guardar jwt en AsyncStorage (legacy)
+          await AsyncStorage.setItem("jwt", data.accessToken);
           await AsyncStorage.setItem("user", JSON.stringify(user));
 
           // 🔹 Redirigir al Dashboard
@@ -84,6 +95,12 @@ export const signOut = async (router: Router) => {
   try {
     await GoogleSignin.signOut(); // Cerrar sesión en Google
     await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]); // Eliminar datos de sesión
+    try {
+      await SecureStore.deleteItemAsync("accessToken");
+      await SecureStore.deleteItemAsync("refreshToken");
+    } catch (err) {
+      console.warn("SecureStore error deleting tokens:", err);
+    }
 
     console.log("Sesión cerrada.");
 
@@ -98,9 +115,77 @@ export const signOut = async (router: Router) => {
 };
 
 export const getAuthHeaders = async () => {
-  const token = await AsyncStorage.getItem("jwt");
-  return {
-    Authorization: `Bearer ${token}`,
+  // Preferir SecureStore (accessToken), fallback a legacy 'jwt' en AsyncStorage
+  let token: string | null = null;
+  try {
+    token = await SecureStore.getItemAsync("accessToken");
+  } catch (err) {
+    console.warn("SecureStore getItemAsync error:", err);
+  }
+  if (!token) token = await AsyncStorage.getItem("jwt");
+
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
 };
+
+async function attemptRefresh() {
+  let refreshToken: string | null = null;
+  try {
+    refreshToken = await SecureStore.getItemAsync("refreshToken");
+  } catch (err) {
+    console.warn("SecureStore getItemAsync error:", err);
+  }
+  if (!refreshToken) throw new Error("No refresh token");
+
+  const res = await fetch(`${API_BASE_URL}/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!res.ok) throw new Error("Refresh failed");
+  const data = await res.json();
+  if (data.accessToken) {
+    try {
+      await SecureStore.setItemAsync("accessToken", data.accessToken);
+      if (data.refreshToken)
+        await SecureStore.setItemAsync("refreshToken", data.refreshToken);
+    } catch (err) {
+      console.warn("SecureStore setItemAsync error:", err);
+    }
+    await AsyncStorage.setItem("jwt", data.accessToken); // legacy
+    return data.accessToken;
+  }
+  throw new Error("Invalid refresh response");
+}
+
+export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
+  const headers = {
+    ...((init?.headers as Record<string, string>) || {}),
+    ...(await getAuthHeaders()),
+  };
+  let res = await fetch(input, { ...init, headers });
+
+  if (res.status === 401) {
+    // intentar refresh una vez
+    try {
+      await attemptRefresh();
+      const headers2 = {
+        ...((init?.headers as Record<string, string>) || {}),
+        ...(await getAuthHeaders()),
+      };
+      res = await fetch(input, { ...init, headers: headers2 });
+    } catch (e) {
+      // si falla refresh, limpiar sesión
+      await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
+      await SecureStore.deleteItemAsync("accessToken");
+      await SecureStore.deleteItemAsync("refreshToken");
+      throw e;
+    }
+  }
+
+  return res;
+}

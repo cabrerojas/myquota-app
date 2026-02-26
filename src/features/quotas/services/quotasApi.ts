@@ -1,4 +1,4 @@
-import { getAuthHeaders } from "@/features/auth/hooks/useAuth";
+import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 
 export interface Quota {
@@ -25,10 +25,8 @@ export const getQuotasByTransaction = async (
   creditCardId: string,
   transactionId: string,
 ): Promise<Quota[]> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/quotas`,
-    { headers },
   );
   if (!response.ok) {
     return [];
@@ -41,12 +39,10 @@ export const createQuota = async (
   transactionId: string,
   data: Omit<Quota, "id">,
 ): Promise<Quota> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/quotas`,
     {
       method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify(data),
     },
   );
@@ -62,12 +58,10 @@ export const updateQuota = async (
   quotaId: string,
   data: Partial<Quota>,
 ): Promise<void> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/quotas/${quotaId}`,
     {
       method: "PUT",
-      headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify(data),
     },
   );
@@ -81,10 +75,9 @@ export const deleteQuota = async (
   transactionId: string,
   quotaId: string,
 ): Promise<void> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/quotas/${quotaId}`,
-    { method: "DELETE", headers },
+    { method: "DELETE" },
   );
   if (!response.ok) {
     throw new Error("Error al eliminar cuota");
@@ -96,14 +89,9 @@ export const splitQuotas = async (
   transactionId: string,
   numberOfQuotas: number,
 ): Promise<Quota[]> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/quotas/split`,
-    {
-      method: "POST",
-      headers: { ...headers, "Content-Type": "application/json" },
-      body: JSON.stringify({ numberOfQuotas }),
-    },
+    { method: "POST", body: JSON.stringify({ numberOfQuotas }) },
   );
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));

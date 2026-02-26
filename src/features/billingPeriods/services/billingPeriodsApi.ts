@@ -1,4 +1,4 @@
-import { getAuthHeaders } from "@/features/auth/hooks/useAuth";
+import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 
 export interface BillingPeriod {
@@ -23,10 +23,8 @@ export interface CreateBillingPeriodDto {
 export const getBillingPeriodsByCreditCard = async (
   creditCardId: string,
 ): Promise<BillingPeriod[]> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods`,
-    { headers },
   );
   if (!response.ok) {
     throw new Error("Error al obtener períodos de facturación");
@@ -38,12 +36,10 @@ export const createBillingPeriod = async (
   creditCardId: string,
   data: CreateBillingPeriodDto,
 ): Promise<BillingPeriod> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods`,
     {
       method: "POST",
-      headers,
       body: JSON.stringify(data),
     },
   );
@@ -59,12 +55,10 @@ export const updateBillingPeriod = async (
   billingPeriodId: string,
   data: Partial<CreateBillingPeriodDto>,
 ): Promise<BillingPeriod> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods/${billingPeriodId}`,
     {
       method: "PUT",
-      headers,
       body: JSON.stringify(data),
     },
   );
@@ -81,12 +75,10 @@ export const deleteBillingPeriod = async (
   creditCardId: string,
   billingPeriodId: string,
 ): Promise<void> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods/${billingPeriodId}`,
     {
       method: "DELETE",
-      headers,
     },
   );
   if (!response.ok) {
@@ -101,13 +93,9 @@ export const payBillingPeriod = async (
   creditCardId: string,
   billingPeriodId: string,
 ): Promise<{ paidCount: number; totalAmount: number }> => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(
+  const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods/${billingPeriodId}/pay`,
-    {
-      method: "POST",
-      headers,
-    },
+    { method: "POST" },
   );
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
