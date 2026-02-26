@@ -67,6 +67,13 @@ export const useGoogleSignIn = (router: Router) => {
             await SecureStore.setItemAsync("accessToken", data.accessToken);
             if (data.refreshToken)
               await SecureStore.setItemAsync("refreshToken", data.refreshToken);
+            // debug: confirm tokens saved
+            try {
+              const savedRt = await SecureStore.getItemAsync("refreshToken");
+              console.log("Saved refreshToken present:", !!savedRt);
+            } catch (e) {
+              console.warn("SecureStore getItemAsync debug error:", e);
+            }
           } catch (err) {
             console.warn("SecureStore error saving tokens:", err);
           }
@@ -138,7 +145,17 @@ async function attemptRefresh() {
   } catch (err) {
     console.warn("SecureStore getItemAsync error:", err);
   }
-  if (!refreshToken) throw new Error("No refresh token");
+  if (!refreshToken) {
+    // limpiar sesión local si no hay refresh token para forzar login
+    try {
+      await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
+      await SecureStore.deleteItemAsync("accessToken");
+      await SecureStore.deleteItemAsync("refreshToken");
+    } catch (e) {
+      console.warn("Error clearing storage when missing refresh token:", e);
+    }
+    throw new Error("No refresh token");
+  }
 
   const res = await fetch(`${API_BASE_URL}/refresh`, {
     method: "POST",
