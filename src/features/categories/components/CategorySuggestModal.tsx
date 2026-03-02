@@ -167,9 +167,7 @@ export default function CategorySuggestModal({
                         style={[
                           styles.historyChip,
                           {
-                            backgroundColor: item.categoryColor
-                              ? `${item.categoryColor}18`
-                              : "#F1F3F5",
+                            backgroundColor: item.categoryColor || "#E9ECEF",
                           },
                         ]}
                         onPress={() => handlePickFromHistory(item)}
@@ -177,15 +175,7 @@ export default function CategorySuggestModal({
                         <Text style={styles.historyEmoji}>
                           {item.categoryIcon || "🏷️"}
                         </Text>
-                        <Text
-                          style={[
-                            styles.historyName,
-                            item.categoryColor
-                              ? { color: item.categoryColor }
-                              : undefined,
-                          ]}
-                          numberOfLines={1}
-                        >
+                        <Text style={styles.historyName} numberOfLines={1}>
                           {item.categoryName}
                         </Text>
                         <Text style={styles.historyCount}>({item.count})</Text>
@@ -227,9 +217,7 @@ export default function CategorySuggestModal({
                       style={[
                         styles.categoryIconBg,
                         {
-                          backgroundColor: cat.color
-                            ? `${cat.color}18`
-                            : "#F1F3F5",
+                          backgroundColor: cat.color || "#E9ECEF",
                         },
                       ]}
                     >

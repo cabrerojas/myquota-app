@@ -371,24 +371,14 @@ export default function DashboardScreen() {
                         style={[
                           styles.txCategoryPill,
                           {
-                            backgroundColor: item.categoryColor
-                              ? `${item.categoryColor}18`
-                              : "#F1F3F5",
+                            backgroundColor: item.categoryColor || "#E9ECEF",
                           },
                         ]}
                       >
                         <Text style={styles.txCategoryEmoji}>
                           {item.categoryIcon || "🏷️"}
                         </Text>
-                        <Text
-                          style={[
-                            styles.txCategoryName,
-                            item.categoryColor
-                              ? { color: item.categoryColor }
-                              : undefined,
-                          ]}
-                          numberOfLines={1}
-                        >
+                        <Text style={styles.txCategoryName} numberOfLines={1}>
                           {item.categoryName}
                         </Text>
                       </View>
@@ -511,7 +501,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   txCategoryEmoji: { fontSize: 10 },
-  txCategoryName: { fontSize: 10, fontWeight: "600", color: "#495057" },
+  txCategoryName: { fontSize: 10, fontWeight: "600", color: "#212529" },
   txUncategorized: {
     flexDirection: "row",
     alignItems: "center",

@@ -610,24 +610,14 @@ export default function TransactionsScreen() {
                           style={[
                             styles.categoryPill,
                             {
-                              backgroundColor: t.categoryColor
-                                ? `${t.categoryColor}18`
-                                : "#F1F3F5",
+                              backgroundColor: t.categoryColor || "#E9ECEF",
                             },
                           ]}
                         >
                           <Text style={styles.categoryEmoji}>
                             {t.categoryIcon || "🏷️"}
                           </Text>
-                          <Text
-                            style={[
-                              styles.categoryName,
-                              t.categoryColor
-                                ? { color: t.categoryColor }
-                                : undefined,
-                            ]}
-                            numberOfLines={1}
-                          >
+                          <Text style={styles.categoryName} numberOfLines={1}>
                             {t.categoryName}
                           </Text>
                         </View>
@@ -750,14 +740,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 16,
-    gap: 0,
+    borderRadius: 12,
+    gap: 4,
   },
-  categoryEmoji: { marginRight: 4, fontSize: 13 },
+  categoryEmoji: { fontSize: 12 },
   categoryName: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#495057",
+    color: "#212529",
     maxWidth: 90,
   },
   cardChipText: {
