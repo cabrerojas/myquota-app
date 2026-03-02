@@ -609,22 +609,39 @@ export default function TransactionsScreen() {
                         <View
                           style={[
                             styles.categoryPill,
-                            { backgroundColor: t.categoryColor || "#F1F3F5" },
+                            {
+                              backgroundColor: t.categoryColor
+                                ? `${t.categoryColor}20`
+                                : "#F1F3F5",
+                            },
                           ]}
                         >
                           <Text style={styles.categoryEmoji}>
                             {t.categoryIcon || "🏷️"}
                           </Text>
-                          <Text style={styles.categoryName} numberOfLines={1}>
+                          <Text
+                            style={[
+                              styles.categoryName,
+                              t.categoryColor
+                                ? { color: t.categoryColor }
+                                : undefined,
+                            ]}
+                            numberOfLines={1}
+                          >
                             {t.categoryName}
                           </Text>
                         </View>
                       ) : (
-                        <Ionicons
-                          name="pricetag-outline"
-                          size={16}
-                          color="#007BFF"
-                        />
+                        <View style={styles.uncategorizedPill}>
+                          <Ionicons
+                            name="pricetag-outline"
+                            size={13}
+                            color="#F57C00"
+                          />
+                          <Text style={styles.uncategorizedText}>
+                            Categorizar
+                          </Text>
+                        </View>
                       )}
                     </TouchableOpacity>
                   </View>
@@ -732,12 +749,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 16,
-    minWidth: 56,
+    gap: 0,
   },
-  categoryEmoji: { marginRight: 6, fontSize: 14 },
-  categoryName: { fontSize: 12, color: "#212529", maxWidth: 100 },
+  categoryEmoji: { marginRight: 4, fontSize: 13 },
+  categoryName: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#495057",
+    maxWidth: 90,
+  },
   cardChipText: {
     fontSize: 13,
     fontWeight: "600",
@@ -967,7 +989,24 @@ const styles = StyleSheet.create({
     color: "#DC3545",
   },
   categoryBtn: {
-    marginTop: 6,
+    marginTop: 4,
+  },
+  uncategorizedPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#F57C00",
+    borderStyle: "dashed",
+    backgroundColor: "#FFF8E1",
+    gap: 4,
+  },
+  uncategorizedText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#F57C00",
   },
   amountInput: {
     flex: 1,
