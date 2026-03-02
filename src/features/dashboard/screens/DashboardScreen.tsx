@@ -362,9 +362,49 @@ export default function DashboardScreen() {
                   <Text style={styles.merchant} numberOfLines={1}>
                     {item.merchant}
                   </Text>
-                  <Text style={styles.transactionDate}>
-                    {formatTransactionDate(item.transactionDate)}
-                  </Text>
+                  <View style={styles.txMeta}>
+                    <Text style={styles.transactionDate}>
+                      {formatTransactionDate(item.transactionDate)}
+                    </Text>
+                    {item.categoryId ? (
+                      <View
+                        style={[
+                          styles.txCategoryPill,
+                          {
+                            backgroundColor: item.categoryColor
+                              ? `${item.categoryColor}18`
+                              : "#F1F3F5",
+                          },
+                        ]}
+                      >
+                        <Text style={styles.txCategoryEmoji}>
+                          {item.categoryIcon || "🏷️"}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.txCategoryName,
+                            item.categoryColor
+                              ? { color: item.categoryColor }
+                              : undefined,
+                          ]}
+                          numberOfLines={1}
+                        >
+                          {item.categoryName}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={styles.txUncategorized}>
+                        <Ionicons
+                          name="pricetag-outline"
+                          size={10}
+                          color="#F57C00"
+                        />
+                        <Text style={styles.txUncategorizedText}>
+                          Sin categoría
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
                 <View style={styles.transactionRight}>
                   <Text style={styles.negative}>
@@ -455,7 +495,36 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   merchant: { fontSize: 15, fontWeight: "500", color: "#212529" },
-  transactionDate: { fontSize: 12, color: "#868E96", marginTop: 2 },
+  txMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 2,
+  },
+  transactionDate: { fontSize: 12, color: "#868E96" },
+  txCategoryPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    gap: 3,
+  },
+  txCategoryEmoji: { fontSize: 10 },
+  txCategoryName: { fontSize: 10, fontWeight: "600", color: "#495057" },
+  txUncategorized: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "#F57C00",
+    backgroundColor: "#FFF8E1",
+  },
+  txUncategorizedText: { fontSize: 10, fontWeight: "600", color: "#F57C00" },
   negative: { color: "#DC3545", fontSize: 15, fontWeight: "bold" },
   emptyTransactions: {
     alignItems: "center",

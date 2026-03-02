@@ -611,7 +611,7 @@ export default function TransactionsScreen() {
                             styles.categoryPill,
                             {
                               backgroundColor: t.categoryColor
-                                ? `${t.categoryColor}20`
+                                ? `${t.categoryColor}18`
                                 : "#F1F3F5",
                             },
                           ]}

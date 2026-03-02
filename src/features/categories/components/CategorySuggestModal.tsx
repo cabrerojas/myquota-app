@@ -45,7 +45,7 @@ export default function CategorySuggestModal({
   // Create form state
   const [newName, setNewName] = useState("");
   const [emoji, setEmoji] = useState("🏷️");
-  const [color, setColor] = useState("#F7CAC9");
+  const [color, setColor] = useState("#1E88E5");
   const [creating, setCreating] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -70,7 +70,7 @@ export default function CategorySuggestModal({
     setSearchText("");
     setNewName("");
     setEmoji("🏷️");
-    setColor("#F7CAC9");
+    setColor("#1E88E5");
     loadData();
   }, [visible, loadData]);
 
@@ -97,7 +97,7 @@ export default function CategorySuggestModal({
       const created = await createCategoryWithMerchant({
         name: newName.trim(),
         icon: emoji.trim() || "🏷️",
-        color: color.trim() || "#F7CAC9",
+        color: color.trim() || "#1E88E5",
         isGlobal: true,
       });
       onCategorySelected(created);
@@ -167,7 +167,9 @@ export default function CategorySuggestModal({
                         style={[
                           styles.historyChip,
                           {
-                            backgroundColor: item.categoryColor || "#F1F3F5",
+                            backgroundColor: item.categoryColor
+                              ? `${item.categoryColor}18`
+                              : "#F1F3F5",
                           },
                         ]}
                         onPress={() => handlePickFromHistory(item)}
@@ -175,7 +177,15 @@ export default function CategorySuggestModal({
                         <Text style={styles.historyEmoji}>
                           {item.categoryIcon || "🏷️"}
                         </Text>
-                        <Text style={styles.historyName} numberOfLines={1}>
+                        <Text
+                          style={[
+                            styles.historyName,
+                            item.categoryColor
+                              ? { color: item.categoryColor }
+                              : undefined,
+                          ]}
+                          numberOfLines={1}
+                        >
                           {item.categoryName}
                         </Text>
                         <Text style={styles.historyCount}>({item.count})</Text>
@@ -216,7 +226,11 @@ export default function CategorySuggestModal({
                     <View
                       style={[
                         styles.categoryIconBg,
-                        { backgroundColor: cat.color || "#F1F3F5" },
+                        {
+                          backgroundColor: cat.color
+                            ? `${cat.color}18`
+                            : "#F1F3F5",
+                        },
                       ]}
                     >
                       <Text style={styles.categoryEmoji}>
@@ -289,14 +303,14 @@ export default function CategorySuggestModal({
                   />
                   <View style={styles.colorRow}>
                     {[
-                      "#F7CAC9",
-                      "#92A8D1",
-                      "#F9E79F",
-                      "#B5EAD7",
-                      "#FFDAC1",
-                      "#BFD8B8",
-                      "#E2F0CB",
-                      "#C7CEEA",
+                      "#E53935",
+                      "#1E88E5",
+                      "#F9A825",
+                      "#43A047",
+                      "#FB8C00",
+                      "#8E24AA",
+                      "#00897B",
+                      "#6D4C41",
                     ].map((c) => (
                       <TouchableOpacity
                         key={c}
