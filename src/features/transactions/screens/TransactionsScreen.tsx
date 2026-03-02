@@ -17,7 +17,7 @@ import {
   updateTransaction,
 } from "../services/transactionsApi";
 import { exportTransactionsToCSV } from "../services/exportTransactions";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
@@ -48,6 +48,7 @@ interface GroupedTransactions {
 }
 
 export default function TransactionsScreen() {
+  const params = useLocalSearchParams<{ filter?: string }>();
   const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -57,10 +58,15 @@ export default function TransactionsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>("all");
   const [monthFilter, setMonthFilter] = useState(0); // 0 = Todos
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(
+    params.filter === "uncategorized",
+  );
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
+  const [onlyUncategorized, setOnlyUncategorized] = useState(
+    params.filter === "uncategorized",
+  );
   const _router = useRouter();
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categoryModalMerchant, setCategoryModalMerchant] = useState<
@@ -128,6 +134,10 @@ export default function TransactionsScreen() {
   // Filter + search
   const filteredTransactions = useMemo(() => {
     return transactions.filter((t) => {
+      // Uncategorized filter
+      if (onlyUncategorized && t.categoryId) {
+        return false;
+      }
       // Search
       if (
         searchQuery &&
@@ -168,6 +178,7 @@ export default function TransactionsScreen() {
     yearFilter,
     minAmount,
     maxAmount,
+    onlyUncategorized,
   ]);
 
   // Group by day
@@ -205,7 +216,8 @@ export default function TransactionsScreen() {
     (yearFilter !== null ? 1 : 0) +
     (minAmount ? 1 : 0) +
     (maxAmount ? 1 : 0) +
-    (searchQuery ? 1 : 0);
+    (searchQuery ? 1 : 0) +
+    (onlyUncategorized ? 1 : 0);
 
   if (loading) {
     return (
@@ -288,6 +300,38 @@ export default function TransactionsScreen() {
       {/* Filters panel */}
       {showFilters && (
         <View style={styles.filtersPanel}>
+          {/* Uncategorized filter */}
+          <TouchableOpacity
+            style={[
+              styles.filterChip,
+              onlyUncategorized && styles.filterChipActive,
+              {
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 4,
+                alignSelf: "flex-start",
+                marginBottom: 12,
+              },
+            ]}
+            onPress={() => setOnlyUncategorized(!onlyUncategorized)}
+          >
+            <Ionicons
+              name={
+                onlyUncategorized ? "checkmark-circle" : "help-circle-outline"
+              }
+              size={16}
+              color={onlyUncategorized ? "#fff" : "#F57C00"}
+            />
+            <Text
+              style={[
+                styles.filterChipText,
+                onlyUncategorized && styles.filterChipTextActive,
+              ]}
+            >
+              Solo sin categoría
+            </Text>
+          </TouchableOpacity>
+
           {/* Currency filter */}
           <Text style={styles.filterLabel}>Moneda</Text>
           <View style={styles.filterRow}>
@@ -416,6 +460,7 @@ export default function TransactionsScreen() {
                 setMinAmount("");
                 setMaxAmount("");
                 setSearchQuery("");
+                setOnlyUncategorized(false);
                 if (creditCards.length > 0) {
                   setSelectedCardId(creditCards[0].id);
                 }

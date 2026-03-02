@@ -1,11 +1,22 @@
 import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
+import { View, Text } from "react-native";
+import { useEffect, useState } from "react";
+import { getUncategorizedCount } from "@/features/creditCards/services/creditCardsApi";
 
 // Small helper to avoid importing Ionicons in JSX options directly
 import { Ionicons } from "@expo/vector-icons";
 
 export default function DrawerLayout() {
+  const [uncategorizedCount, setUncategorizedCount] = useState(0);
+
+  useEffect(() => {
+    getUncategorizedCount()
+      .then((count) => setUncategorizedCount(count))
+      .catch(() => setUncategorizedCount(0));
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
@@ -41,7 +52,37 @@ export default function DrawerLayout() {
           name="transactions"
           options={{
             title: "Transacciones",
-            drawerLabel: "Transacciones",
+            drawerLabel: ({ color }) => (
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Text style={{ color, fontSize: 14, fontWeight: "500" }}>
+                  Transacciones
+                </Text>
+                {uncategorizedCount > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: "#F57C00",
+                      borderRadius: 10,
+                      minWidth: 20,
+                      height: 20,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginLeft: 8,
+                      paddingHorizontal: 6,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontSize: 11,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      {uncategorizedCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ),
             drawerIcon: ({ color, size }) => (
               <DrawerIcon name="receipt-outline" color={color} size={size} />
             ),

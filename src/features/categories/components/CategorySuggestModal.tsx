@@ -108,10 +108,12 @@ export default function CategorySuggestModal({
     }
   };
 
-  const filteredCategories = categories.filter((c) => {
-    if (!searchText.trim()) return true;
-    return c.name.toLowerCase().includes(searchText.toLowerCase());
-  });
+  const filteredCategories = categories
+    .filter((c) => {
+      if (!searchText.trim()) return true;
+      return c.name.toLowerCase().includes(searchText.toLowerCase());
+    })
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
 
   // Set of category IDs already in history, to visually mark them in the full list
   const historyIds = new Set(history.map((h) => h.categoryId));

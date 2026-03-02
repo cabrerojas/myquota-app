@@ -26,6 +26,17 @@ export const getCreditCards = async (): Promise<CreditCard[]> => {
   return [];
 };
 
+export const getUncategorizedCount = async (): Promise<number> => {
+  const response = await requestWithAuth(
+    `${API_BASE_URL}/creditCards/uncategorized-count`,
+  );
+  if (!response.ok) return 0;
+  const data = (await response.json().catch(() => null)) as {
+    uncategorizedCount?: number;
+  } | null;
+  return data?.uncategorizedCount ?? 0;
+};
+
 export const getCreditCardById = async (
   creditCardId: string,
 ): Promise<CreditCard> => {

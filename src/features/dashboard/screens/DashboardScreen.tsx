@@ -12,7 +12,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import {
+  getCreditCards,
+  getUncategorizedCount,
+} from "@/features/creditCards/services/creditCardsApi";
 import {
   importBankTransactions,
   ImportResult,
@@ -46,6 +49,7 @@ export default function DashboardScreen() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const [uncategorizedCount, setUncategorizedCount] = useState(0);
 
   const handlePullRefresh = useCallback(async () => {
     setIsPullRefreshing(true);
@@ -54,6 +58,8 @@ export default function DashboardScreen() {
       setCreditCards(cards);
       setAlertsDismissed(false);
       setRefreshKey((prev: number) => prev + 1);
+      const count = await getUncategorizedCount();
+      setUncategorizedCount(count);
     } catch (error) {
       console.error("Error refreshing:", error);
     } finally {
@@ -101,6 +107,11 @@ export default function DashboardScreen() {
     try {
       const result = await importBankTransactions(selectedCardId);
       setRefreshKey((prev: number) => prev + 1);
+
+      // Update uncategorized count from import result
+      if (typeof result.uncategorizedCount === "number") {
+        setUncategorizedCount(result.uncategorizedCount);
+      }
 
       // Verificar si hay transacciones huérfanas
       if (result.orphanedCount > 0 && result.suggestedPeriod) {
@@ -174,6 +185,11 @@ export default function DashboardScreen() {
         scheduleCardNotifications(cards).catch(console.warn);
       });
     });
+
+    // Obtener cantidad de transacciones sin categoría
+    getUncategorizedCount()
+      .then((count) => setUncategorizedCount(count))
+      .catch(console.warn);
   }, []);
 
   return (
@@ -276,6 +292,31 @@ export default function DashboardScreen() {
           <Text style={styles.importButtonText}>
             {isRefreshing ? "Importando..." : "Importar Transacciones"}
           </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Banner: transacciones pendientes por categorizar */}
+      {uncategorizedCount > 0 && (
+        <TouchableOpacity
+          style={styles.uncategorizedBanner}
+          onPress={() =>
+            router.push({
+              pathname: "/(drawer)/transactions",
+              params: { filter: "uncategorized" },
+            })
+          }
+          activeOpacity={0.7}
+        >
+          <View style={styles.uncategorizedBannerLeft}>
+            <Ionicons name="pricetag-outline" size={20} color="#F57C00" />
+            <Text style={styles.uncategorizedBannerText}>
+              {uncategorizedCount}{" "}
+              {uncategorizedCount === 1
+                ? "transacción sin categoría"
+                : "transacciones sin categoría"}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#F57C00" />
         </TouchableOpacity>
       )}
 
@@ -500,5 +541,28 @@ const styles = StyleSheet.create({
   },
   cardDigitsSelected: {
     color: "rgba(255,255,255,0.8)",
+  },
+  uncategorizedBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFF3E0",
+    borderWidth: 1,
+    borderColor: "#FFE0B2",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginTop: 12,
+  },
+  uncategorizedBannerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flex: 1,
+  },
+  uncategorizedBannerText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#E65100",
   },
 });

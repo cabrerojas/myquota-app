@@ -5,6 +5,7 @@ export interface ImportResult {
   message: string;
   importedCount: number;
   quotasCreated: number;
+  uncategorizedCount: number;
   orphanedCount: number;
   orphanedTransactions: {
     id: string;
