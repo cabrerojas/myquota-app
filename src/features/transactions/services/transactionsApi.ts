@@ -6,13 +6,13 @@ export interface ImportResult {
   importedCount: number;
   quotasCreated: number;
   orphanedCount: number;
-  orphanedTransactions: Array<{
+  orphanedTransactions: {
     id: string;
     merchant: string;
     amount: number;
     currency: string;
     transactionDate: string;
-  }>;
+  }[];
   suggestedPeriod: {
     month: string;
     startDate: string;
@@ -71,6 +71,7 @@ export interface CreateManualTransactionDto {
   paidInstallments: number;
   lastPaidMonth: string;
   currency: string;
+  categoryId?: string;
 }
 
 export const createManualTransaction = async (
@@ -147,11 +148,16 @@ export const deleteManualTransaction = async (
   return response.json();
 };
 
+interface UpdateTransactionResponse {
+  message?: string;
+  data?: Transaction;
+}
+
 export const updateTransaction = async (
   creditCardId: string,
   transactionId: string,
   data: Partial<{ categoryId?: string }>,
-): Promise<any> => {
+): Promise<UpdateTransactionResponse> => {
   const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}`,
     {

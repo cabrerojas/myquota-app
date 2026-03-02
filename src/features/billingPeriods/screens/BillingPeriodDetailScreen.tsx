@@ -156,7 +156,8 @@ export default function BillingPeriodDetailScreen({
           <Text style={styles.periodMonth}>{periodMonth}</Text>
         </View>
         <Text style={styles.periodDates}>
-          {formatDisplayDate(periodStartDate)} — {formatDisplayDate(periodEndDate)}
+          {formatDisplayDate(periodStartDate)} —{" "}
+          {formatDisplayDate(periodEndDate)}
         </Text>
 
         <View style={styles.totalsRow}>
@@ -170,7 +171,8 @@ export default function BillingPeriodDetailScreen({
             <View style={styles.totalBlock}>
               <Text style={styles.totalLabel}>Total USD</Text>
               <Text style={styles.totalUSD}>
-                US${totalUSD.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
+                US$
+                {totalUSD.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
               </Text>
             </View>
           )}
@@ -206,7 +208,10 @@ export default function BillingPeriodDetailScreen({
                 )}
                 {group.totalUSD > 0 && (
                   <Text style={styles.dayTotalUSD}>
-                    US${group.totalUSD.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
+                    US$
+                    {group.totalUSD.toLocaleString("es-CL", {
+                      minimumFractionDigits: 2,
+                    })}
                   </Text>
                 )}
               </View>

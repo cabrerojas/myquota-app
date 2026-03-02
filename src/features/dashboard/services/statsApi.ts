@@ -1,19 +1,31 @@
-import { requestWithAuth } from "../../auth/hooks/useAuth";
+import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 
-export const getMonthlyStats = async (creditCardId: string) => {
+export interface MonthlyStat {
+  month: string;
+  totalCLP: number;
+  totalDolar: number;
+  categoryBreakdown: {
+    [category: string]: { CLP: number; Dolar: number };
+  };
+}
+
+export const getMonthlyStats = async (
+  creditCardId: string,
+): Promise<MonthlyStat[]> => {
   const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/stats/monthly`,
   );
-  const data = await response.json().catch(() => null);
+  const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
+    const err = data as Record<string, string> | null;
     const msg =
-      data && (data.message || data.error)
-        ? data.message || data.error
+      err && (err.message || err.error)
+        ? err.message || err.error
         : `HTTP ${response.status}`;
     throw new Error(`Error fetching monthly stats: ${msg}`);
   }
-  return data;
+  return data as MonthlyStat[];
 };
 
 export interface DebtSummary {

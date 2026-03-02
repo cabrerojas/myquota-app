@@ -12,31 +12,29 @@ import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
-import { getMonthlyStats } from "@/features/dashboard/services/statsApi";
-
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-}
-
-interface MonthlyStat {
-  month: string;
-  totalCLP: number;
-  totalDolar: number;
-  categoryBreakdown: {
-    [category: string]: { CLP: number; Dolar: number };
-  };
-}
+import {
+  getMonthlyStats,
+  MonthlyStat,
+} from "@/features/dashboard/services/statsApi";
+import { CreditCardBasic } from "@/shared/types/creditCard";
 
 type ChartTab = "monthly" | "categories" | "usd";
 
 const screenWidth = Dimensions.get("window").width - 32;
 
 const CHART_COLORS = [
-  "#007BFF", "#DC3545", "#28A745", "#FFC107", "#17A2B8",
-  "#6F42C1", "#FD7E14", "#20C997", "#E83E8C", "#6C757D",
-  "#0056B3", "#C82333",
+  "#007BFF",
+  "#DC3545",
+  "#28A745",
+  "#FFC107",
+  "#17A2B8",
+  "#6F42C1",
+  "#FD7E14",
+  "#20C997",
+  "#E83E8C",
+  "#6C757D",
+  "#0056B3",
+  "#C82333",
 ];
 
 const chartConfig = {
@@ -62,7 +60,7 @@ const usdChartConfig = {
 };
 
 export default function ChartsScreen() {
-  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [stats, setStats] = useState<MonthlyStat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -201,14 +199,23 @@ export default function ChartsScreen() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       {/* Card Selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginBottom: 16 }}
+      >
         {creditCards.map((card) => (
           <TouchableOpacity
             key={card.id}
-            style={[styles.cardChip, selectedCardId === card.id && styles.cardChipActive]}
+            style={[
+              styles.cardChip,
+              selectedCardId === card.id && styles.cardChipActive,
+            ]}
             onPress={() => setSelectedCardId(card.id)}
           >
             <Ionicons
@@ -217,7 +224,10 @@ export default function ChartsScreen() {
               color={selectedCardId === card.id ? "#fff" : "#495057"}
             />
             <Text
-              style={[styles.cardChipText, selectedCardId === card.id && styles.cardChipTextActive]}
+              style={[
+                styles.cardChipText,
+                selectedCardId === card.id && styles.cardChipTextActive,
+              ]}
             >
               {card.cardType} •{card.cardLastDigits}
             </Text>
@@ -230,7 +240,9 @@ export default function ChartsScreen() {
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Total acumulado</Text>
-            <Text style={styles.summaryValue}>{formatCLP(totals.totalCLP)}</Text>
+            <Text style={styles.summaryValue}>
+              {formatCLP(totals.totalCLP)}
+            </Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Promedio mensual</Text>
@@ -253,11 +265,23 @@ export default function ChartsScreen() {
 
       {/* Tab Selector */}
       <View style={styles.tabRow}>
-        {([
-          { key: "monthly" as ChartTab, label: "Mensual CLP", icon: "bar-chart-outline" as const },
-          { key: "usd" as ChartTab, label: "Mensual USD", icon: "logo-usd" as const },
-          { key: "categories" as ChartTab, label: "Comercios", icon: "pie-chart-outline" as const },
-        ]).map((tab) => (
+        {[
+          {
+            key: "monthly" as ChartTab,
+            label: "Mensual CLP",
+            icon: "bar-chart-outline" as const,
+          },
+          {
+            key: "usd" as ChartTab,
+            label: "Mensual USD",
+            icon: "logo-usd" as const,
+          },
+          {
+            key: "categories" as ChartTab,
+            label: "Comercios",
+            icon: "pie-chart-outline" as const,
+          },
+        ].map((tab) => (
           <TouchableOpacity
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.tabActive]}
@@ -268,7 +292,12 @@ export default function ChartsScreen() {
               size={16}
               color={activeTab === tab.key ? "#fff" : "#495057"}
             />
-            <Text style={[styles.tabText, activeTab === tab.key && styles.tabTextActive]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab.key && styles.tabTextActive,
+              ]}
+            >
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -277,7 +306,11 @@ export default function ChartsScreen() {
 
       {/* Charts */}
       {loading ? (
-        <ActivityIndicator size="large" color="#007BFF" style={{ marginTop: 40 }} />
+        <ActivityIndicator
+          size="large"
+          color="#007BFF"
+          style={{ marginTop: 40 }}
+        />
       ) : stats.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="analytics-outline" size={56} color="#CED4DA" />
@@ -305,19 +338,26 @@ export default function ChartsScreen() {
                   showValuesOnTopOfBars
                 />
               ) : (
-                <Text style={styles.noDataText}>No hay gastos CLP en este período</Text>
+                <Text style={styles.noDataText}>
+                  No hay gastos CLP en este período
+                </Text>
               )}
 
               {/* Monthly breakdown */}
               <View style={styles.breakdownContainer}>
-                {[...stats].reverse().slice(0, 6).map((s) => (
-                  <View key={s.month} style={styles.breakdownRow}>
-                    <Text style={styles.breakdownMonth}>{s.month}</Text>
-                    <View style={styles.breakdownValues}>
-                      <Text style={styles.breakdownCLP}>{formatCLP(s.totalCLP)}</Text>
+                {[...stats]
+                  .reverse()
+                  .slice(0, 6)
+                  .map((s) => (
+                    <View key={s.month} style={styles.breakdownRow}>
+                      <Text style={styles.breakdownMonth}>{s.month}</Text>
+                      <View style={styles.breakdownValues}>
+                        <Text style={styles.breakdownCLP}>
+                          {formatCLP(s.totalCLP)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  ))}
               </View>
             </>
           )}
@@ -339,21 +379,28 @@ export default function ChartsScreen() {
                   showValuesOnTopOfBars
                 />
               ) : (
-                <Text style={styles.noDataText}>No hay gastos USD en este período</Text>
+                <Text style={styles.noDataText}>
+                  No hay gastos USD en este período
+                </Text>
               )}
 
               {/* USD Monthly breakdown */}
               <View style={styles.breakdownContainer}>
-                {[...stats].reverse().slice(0, 6).map((s) => (
-                  <View key={s.month} style={styles.breakdownRow}>
-                    <Text style={styles.breakdownMonth}>{s.month}</Text>
-                    <View style={styles.breakdownValues}>
-                      <Text style={[styles.breakdownCLP, { color: "#28A745" }]}>
-                        US${s.totalDolar.toFixed(2)}
-                      </Text>
+                {[...stats]
+                  .reverse()
+                  .slice(0, 6)
+                  .map((s) => (
+                    <View key={s.month} style={styles.breakdownRow}>
+                      <Text style={styles.breakdownMonth}>{s.month}</Text>
+                      <View style={styles.breakdownValues}>
+                        <Text
+                          style={[styles.breakdownCLP, { color: "#28A745" }]}
+                        >
+                          US${s.totalDolar.toFixed(2)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                ))}
+                  ))}
               </View>
             </>
           )}
@@ -361,7 +408,9 @@ export default function ChartsScreen() {
           {activeTab === "categories" && (
             <>
               <Text style={styles.chartTitle}>Distribución por comercio</Text>
-              <Text style={styles.chartSubtitle}>Todos los períodos (CLP equiv.)</Text>
+              <Text style={styles.chartSubtitle}>
+                Todos los períodos (CLP equiv.)
+              </Text>
               {getPieChartData().length > 0 ? (
                 <PieChart
                   data={getPieChartData()}
@@ -374,16 +423,25 @@ export default function ChartsScreen() {
                   absolute={false}
                 />
               ) : (
-                <Text style={styles.noDataText}>No hay datos de categorías</Text>
+                <Text style={styles.noDataText}>
+                  No hay datos de categorías
+                </Text>
               )}
 
               {/* Category list */}
               <View style={styles.categoryList}>
                 {getPieChartData().map((cat, idx) => (
                   <View key={idx} style={styles.categoryRow}>
-                    <View style={[styles.categoryDot, { backgroundColor: cat.color }]} />
+                    <View
+                      style={[
+                        styles.categoryDot,
+                        { backgroundColor: cat.color },
+                      ]}
+                    />
                     <Text style={styles.categoryName}>{cat.name}</Text>
-                    <Text style={styles.categoryAmount}>{formatCLP(cat.amount)}</Text>
+                    <Text style={styles.categoryAmount}>
+                      {formatCLP(cat.amount)}
+                    </Text>
                   </View>
                 ))}
               </View>
@@ -398,7 +456,12 @@ export default function ChartsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F9FA" },
   contentContainer: { padding: 16, paddingBottom: 40 },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+  },
 
   // Card chips
   cardChip: {
@@ -427,8 +490,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E9ECEF",
   },
-  summaryLabel: { fontSize: 11, color: "#868E96", textTransform: "uppercase", letterSpacing: 0.5 },
-  summaryValue: { fontSize: 18, fontWeight: "700", color: "#212529", marginTop: 4 },
+  summaryLabel: {
+    fontSize: 11,
+    color: "#868E96",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  summaryValue: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#212529",
+    marginTop: 4,
+  },
 
   highlightCard: {
     flexDirection: "row",
@@ -470,12 +543,27 @@ const styles = StyleSheet.create({
     borderColor: "#E9ECEF",
   },
   chartTitle: { fontSize: 16, fontWeight: "700", color: "#212529" },
-  chartSubtitle: { fontSize: 12, color: "#868E96", marginTop: 2, marginBottom: 14 },
+  chartSubtitle: {
+    fontSize: 12,
+    color: "#868E96",
+    marginTop: 2,
+    marginBottom: 14,
+  },
   chart: { borderRadius: 10, marginVertical: 8 },
-  noDataText: { textAlign: "center", color: "#868E96", paddingVertical: 30, fontSize: 14 },
+  noDataText: {
+    textAlign: "center",
+    color: "#868E96",
+    paddingVertical: 30,
+    fontSize: 14,
+  },
 
   // Breakdown
-  breakdownContainer: { marginTop: 16, borderTopWidth: 1, borderTopColor: "#F1F3F5", paddingTop: 12 },
+  breakdownContainer: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F3F5",
+    paddingTop: 12,
+  },
   breakdownRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -489,7 +577,12 @@ const styles = StyleSheet.create({
   breakdownCLP: { fontSize: 13, fontWeight: "600", color: "#007BFF" },
 
   // Categories
-  categoryList: { marginTop: 16, borderTopWidth: 1, borderTopColor: "#F1F3F5", paddingTop: 12 },
+  categoryList: {
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F3F5",
+    paddingTop: 12,
+  },
   categoryRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -501,6 +594,16 @@ const styles = StyleSheet.create({
 
   // Empty
   emptyContainer: { alignItems: "center", paddingVertical: 50 },
-  emptyTitle: { fontSize: 17, fontWeight: "600", color: "#495057", marginTop: 12 },
-  emptySubtitle: { fontSize: 13, color: "#868E96", marginTop: 6, textAlign: "center" },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#495057",
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: "#868E96",
+    marginTop: 6,
+    textAlign: "center",
+  },
 });

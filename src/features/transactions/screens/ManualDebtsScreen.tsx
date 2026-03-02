@@ -17,12 +17,7 @@ import {
   deleteManualTransaction,
   ManualTransaction,
 } from "@/features/transactions/services/transactionsApi";
-
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-}
+import { CreditCardBasic } from "@/shared/types/creditCard";
 
 interface ManualDebtItem extends ManualTransaction {
   cardLabel: string;
@@ -33,7 +28,7 @@ export default function ManualDebtsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [debts, setDebts] = useState<ManualDebtItem[]>([]);
-  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [_cards, setCards] = useState<CreditCardBasic[]>([]);
 
   const fetchDebts = useCallback(async () => {
     try {
@@ -132,7 +127,9 @@ export default function ManualDebtsScreen() {
       <FlatList
         data={debts}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={debts.length === 0 ? styles.emptyList : styles.list}
+        contentContainerStyle={
+          debts.length === 0 ? styles.emptyList : styles.list
+        }
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -179,7 +176,8 @@ export default function ManualDebtsScreen() {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Cuota</Text>
                   <Text style={styles.detailValue}>
-                    {prefix}{item.amount.toLocaleString("es-CL")}
+                    {prefix}
+                    {item.amount.toLocaleString("es-CL")}
                   </Text>
                 </View>
                 <View style={styles.detailItem}>
@@ -191,7 +189,8 @@ export default function ManualDebtsScreen() {
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Pendiente</Text>
                   <Text style={[styles.detailValue, { color: "#DC3545" }]}>
-                    {prefix}{totalDebt.toLocaleString("es-CL")}
+                    {prefix}
+                    {totalDebt.toLocaleString("es-CL")}
                   </Text>
                 </View>
               </View>

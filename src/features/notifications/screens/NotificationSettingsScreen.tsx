@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -78,10 +78,17 @@ export default function NotificationSettingsScreen() {
       } else {
         await cancelAllScheduledNotifications();
         setScheduledCount(0);
-        Alert.alert("Notificaciones desactivadas", "Se cancelaron todos los recordatorios.");
+        Alert.alert(
+          "Notificaciones desactivadas",
+          "Se cancelaron todos los recordatorios.",
+        );
       }
-    } catch (err: any) {
-      Alert.alert("Error", err.message || "No se pudieron guardar las preferencias");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "No se pudieron guardar las preferencias";
+      Alert.alert("Error", message);
     } finally {
       setSaving(false);
     }
@@ -120,7 +127,8 @@ export default function NotificationSettingsScreen() {
         </View>
         {scheduledCount > 0 && (
           <Text style={styles.scheduledInfo}>
-            {scheduledCount} notificación{scheduledCount !== 1 ? "es" : ""} programada
+            {scheduledCount} notificación{scheduledCount !== 1 ? "es" : ""}{" "}
+            programada
             {scheduledCount !== 1 ? "s" : ""}
           </Text>
         )}
@@ -131,7 +139,8 @@ export default function NotificationSettingsScreen() {
           {/* Days before closing */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>
-              <Ionicons name="calendar-outline" size={16} color="#495057" /> Días antes del cierre
+              <Ionicons name="calendar-outline" size={16} color="#495057" />{" "}
+              Días antes del cierre
             </Text>
             <Text style={styles.sectionDesc}>
               Recibir aviso antes de que cierre el período de facturación
@@ -149,7 +158,8 @@ export default function NotificationSettingsScreen() {
                   <Text
                     style={[
                       styles.chipText,
-                      settings.daysBeforeClosing === d && styles.chipTextSelected,
+                      settings.daysBeforeClosing === d &&
+                        styles.chipTextSelected,
                     ]}
                   >
                     {d} día{d !== 1 ? "s" : ""}
@@ -162,8 +172,8 @@ export default function NotificationSettingsScreen() {
           {/* Days before due date */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>
-              <Ionicons name="alert-circle-outline" size={16} color="#495057" /> Días antes del
-              vencimiento
+              <Ionicons name="alert-circle-outline" size={16} color="#495057" />{" "}
+              Días antes del vencimiento
             </Text>
             <Text style={styles.sectionDesc}>
               Recibir aviso antes de la fecha de pago
@@ -181,7 +191,8 @@ export default function NotificationSettingsScreen() {
                   <Text
                     style={[
                       styles.chipText,
-                      settings.daysBeforeDueDate === d && styles.chipTextSelected,
+                      settings.daysBeforeDueDate === d &&
+                        styles.chipTextSelected,
                     ]}
                   >
                     {d} día{d !== 1 ? "s" : ""}
@@ -194,7 +205,8 @@ export default function NotificationSettingsScreen() {
           {/* Notification hour */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>
-              <Ionicons name="time-outline" size={16} color="#495057" /> Hora de notificación
+              <Ionicons name="time-outline" size={16} color="#495057" /> Hora de
+              notificación
             </Text>
             <Text style={styles.sectionDesc}>
               ¿A qué hora quieres recibir los recordatorios?
@@ -212,7 +224,8 @@ export default function NotificationSettingsScreen() {
                   <Text
                     style={[
                       styles.chipText,
-                      settings.notificationHour === h && styles.chipTextSelected,
+                      settings.notificationHour === h &&
+                        styles.chipTextSelected,
                     ]}
                   >
                     {h.toString().padStart(2, "0")}:00
@@ -244,8 +257,9 @@ export default function NotificationSettingsScreen() {
       <View style={styles.infoBox}>
         <Ionicons name="information-circle-outline" size={18} color="#6C757D" />
         <Text style={styles.infoText}>
-          Los recordatorios se calculan con las fechas de cierre y vencimiento de tus tarjetas.
-          Se reprograman cada vez que abres la app o guardas cambios aquí.
+          Los recordatorios se calculan con las fechas de cierre y vencimiento
+          de tus tarjetas. Se reprograman cada vez que abres la app o guardas
+          cambios aquí.
         </Text>
       </View>
     </ScrollView>
@@ -280,7 +294,12 @@ const styles = StyleSheet.create({
     color: "#28A745",
     fontWeight: "500",
   },
-  sectionTitle: { fontSize: 15, fontWeight: "600", color: "#495057", marginBottom: 4 },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#495057",
+    marginBottom: 4,
+  },
   sectionDesc: { fontSize: 13, color: "#6C757D", marginBottom: 12 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {

@@ -13,25 +13,27 @@ import {
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
-import { getTransactionsByCreditCard, Transaction } from "@/features/transactions/services/transactionsApi";
+import {
+  getTransactionsByCreditCard,
+  Transaction,
+} from "@/features/transactions/services/transactionsApi";
 import {
   getQuotasByTransaction,
   splitQuotas,
   updateQuota,
-  Quota,
   QuotaWithTransaction,
 } from "@/features/quotas/services/quotasApi";
-
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-}
+import { CreditCardBasic } from "@/shared/types/creditCard";
+import {
+  formatCurrency,
+  formatDate,
+  formatShortDate,
+} from "@/shared/utils/format";
 
 type FilterMode = "pending" | "paid" | "all";
 
 export default function QuotasScreen() {
-  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [quotas, setQuotas] = useState<QuotaWithTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,8 @@ export default function QuotasScreen() {
   // Modal para crear cuotas
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] =
+    useState<Transaction | null>(null);
   const [numQuotas, setNumQuotas] = useState("3");
   const [creating, setCreating] = useState(false);
 
@@ -68,27 +71,31 @@ export default function QuotasScreen() {
           if (txQuotas.length === 0) return [];
 
           const sorted = [...txQuotas].sort(
-            (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+            (a, b) =>
+              new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
           );
           const paidCount = sorted.filter((q) => q.status === "paid").length;
 
-          return sorted.map((q, idx): QuotaWithTransaction => ({
-            ...q,
-            merchant: tx.merchant,
-            transactionDate: tx.transactionDate,
-            transactionAmount: tx.amount,
-            totalQuotas: sorted.length,
-            paidQuotas: paidCount,
-            pendingQuotas: sorted.length - paidCount,
-            quotaNumber: idx + 1,
-          }));
+          return sorted.map(
+            (q, idx): QuotaWithTransaction => ({
+              ...q,
+              merchant: tx.merchant,
+              transactionDate: tx.transactionDate,
+              transactionAmount: tx.amount,
+              totalQuotas: sorted.length,
+              paidQuotas: paidCount,
+              pendingQuotas: sorted.length - paidCount,
+              quotaNumber: idx + 1,
+            }),
+          );
         }),
       );
 
       const allQuotas = results.flat();
       // Sort by due date
       allQuotas.sort(
-        (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+        (a, b) =>
+          new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
       );
       setQuotas(allQuotas);
     } catch (error) {
@@ -138,13 +145,21 @@ export default function QuotasScreen() {
     setCreating(true);
     try {
       await splitQuotas(selectedCardId, selectedTransaction.id, n);
-      Alert.alert("Éxito", `${n} cuotas creadas para ${selectedTransaction.merchant}`);
+      Alert.alert(
+        "Éxito",
+        `${n} cuotas creadas para ${selectedTransaction.merchant}`,
+      );
       setShowCreateModal(false);
       setSelectedTransaction(null);
       setNumQuotas("3");
       await fetchQuotas();
     } catch (error) {
-      Alert.alert("Error", error instanceof Error ? error.message : "No se pudieron crear las cuotas");
+      Alert.alert(
+        "Error",
+        error instanceof Error
+          ? error.message
+          : "No se pudieron crear las cuotas",
+      );
     } finally {
       setCreating(false);
     }
@@ -155,40 +170,14 @@ export default function QuotasScreen() {
     const pending = quotas.filter((q) => q.status === "pending");
     const totalPending = pending.reduce((sum, q) => sum + q.amount, 0);
     const nextDue = pending.length > 0 ? pending[0] : null;
-    const uniqueTransactions = new Set(pending.map((q) => q.transactionId)).size;
-    return { totalPending, nextDue, uniqueTransactions, pendingCount: pending.length };
-  };
-
-  const formatCurrency = (amount: number, currency: string) => {
-    const prefix = currency === "Dolar" ? "US$" : "$";
-    return `${prefix}${amount.toLocaleString("es-CL")}`;
-  };
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("es-CL", {
-        timeZone: "America/Santiago",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return "";
-    }
-  };
-
-  const formatShortDate = (dateStr: string) => {
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString("es-CL", {
-        timeZone: "America/Santiago",
-        day: "2-digit",
-        month: "short",
-      });
-    } catch {
-      return "";
-    }
+    const uniqueTransactions = new Set(pending.map((q) => q.transactionId))
+      .size;
+    return {
+      totalPending,
+      nextDue,
+      uniqueTransactions,
+      pendingCount: pending.length,
+    };
   };
 
   const isDueSoon = (dateStr: string) => {
@@ -218,14 +207,23 @@ export default function QuotasScreen() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       {/* Card Selector */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ marginBottom: 16 }}
+      >
         {creditCards.map((card) => (
           <TouchableOpacity
             key={card.id}
-            style={[styles.cardChip, selectedCardId === card.id && styles.cardChipActive]}
+            style={[
+              styles.cardChip,
+              selectedCardId === card.id && styles.cardChipActive,
+            ]}
             onPress={() => setSelectedCardId(card.id)}
           >
             <Ionicons
@@ -234,7 +232,10 @@ export default function QuotasScreen() {
               color={selectedCardId === card.id ? "#fff" : "#495057"}
             />
             <Text
-              style={[styles.cardChipText, selectedCardId === card.id && styles.cardChipTextActive]}
+              style={[
+                styles.cardChipText,
+                selectedCardId === card.id && styles.cardChipTextActive,
+              ]}
             >
               {card.cardType} •{card.cardLastDigits}
             </Text>
@@ -254,7 +255,9 @@ export default function QuotasScreen() {
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
               <Ionicons name="cart-outline" size={20} color="#007BFF" />
-              <Text style={styles.summaryValue}>{summary.uniqueTransactions}</Text>
+              <Text style={styles.summaryValue}>
+                {summary.uniqueTransactions}
+              </Text>
               <Text style={styles.summaryLabel}>Compras</Text>
             </View>
             <View style={styles.summaryDivider} />
@@ -273,7 +276,10 @@ export default function QuotasScreen() {
                 Próximo vencimiento: {formatDate(summary.nextDue.due_date)}
                 {" — "}
                 <Text style={{ fontWeight: "600" }}>
-                  {formatCurrency(summary.nextDue.amount, summary.nextDue.currency)}
+                  {formatCurrency(
+                    summary.nextDue.amount,
+                    summary.nextDue.currency,
+                  )}
                 </Text>
               </Text>
             </View>
@@ -283,14 +289,29 @@ export default function QuotasScreen() {
 
       {/* Filter Tabs */}
       <View style={styles.filterRow}>
-        {([
-          { key: "pending" as FilterMode, label: "Pendientes", icon: "time-outline" as const },
-          { key: "paid" as FilterMode, label: "Pagadas", icon: "checkmark-circle-outline" as const },
-          { key: "all" as FilterMode, label: "Todas", icon: "list-outline" as const },
-        ]).map((f) => (
+        {[
+          {
+            key: "pending" as FilterMode,
+            label: "Pendientes",
+            icon: "time-outline" as const,
+          },
+          {
+            key: "paid" as FilterMode,
+            label: "Pagadas",
+            icon: "checkmark-circle-outline" as const,
+          },
+          {
+            key: "all" as FilterMode,
+            label: "Todas",
+            icon: "list-outline" as const,
+          },
+        ].map((f) => (
           <TouchableOpacity
             key={f.key}
-            style={[styles.filterTab, filter === f.key && styles.filterTabActive]}
+            style={[
+              styles.filterTab,
+              filter === f.key && styles.filterTabActive,
+            ]}
             onPress={() => setFilter(f.key)}
           >
             <Ionicons
@@ -298,7 +319,12 @@ export default function QuotasScreen() {
               size={16}
               color={filter === f.key ? "#fff" : "#495057"}
             />
-            <Text style={[styles.filterTabText, filter === f.key && styles.filterTabTextActive]}>
+            <Text
+              style={[
+                styles.filterTabText,
+                filter === f.key && styles.filterTabTextActive,
+              ]}
+            >
               {f.label}
             </Text>
           </TouchableOpacity>
@@ -316,7 +342,11 @@ export default function QuotasScreen() {
 
       {/* Quotas List */}
       {loading ? (
-        <ActivityIndicator size="small" color="#007BFF" style={{ marginTop: 20 }} />
+        <ActivityIndicator
+          size="small"
+          color="#007BFF"
+          style={{ marginTop: 20 }}
+        />
       ) : filteredQuotas.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="layers-outline" size={56} color="#CED4DA" />
@@ -328,13 +358,15 @@ export default function QuotasScreen() {
                 : "No hay cuotas"}
           </Text>
           <Text style={styles.emptySubtitle}>
-            Usa "Crear Cuotas" para dividir una compra en cuotas
+            Usa {'"'}Crear Cuotas{'"'} para dividir una compra en cuotas
           </Text>
         </View>
       ) : (
         filteredQuotas.map((quota) => {
-          const overdue = quota.status === "pending" && isOverdue(quota.due_date);
-          const dueSoon = quota.status === "pending" && !overdue && isDueSoon(quota.due_date);
+          const overdue =
+            quota.status === "pending" && isOverdue(quota.due_date);
+          const dueSoon =
+            quota.status === "pending" && !overdue && isDueSoon(quota.due_date);
 
           return (
             <View
@@ -355,23 +387,44 @@ export default function QuotasScreen() {
                   </Text>
                 </View>
                 <View style={styles.quotaHeaderRight}>
-                  <Text style={[styles.quotaAmount, overdue && { color: "#DC3545" }]}>
+                  <Text
+                    style={[
+                      styles.quotaAmount,
+                      overdue && { color: "#DC3545" },
+                    ]}
+                  >
                     {formatCurrency(quota.amount, quota.currency)}
                   </Text>
                   {quota.status === "paid" ? (
                     <View style={styles.paidBadge}>
-                      <Ionicons name="checkmark-circle" size={12} color="#28A745" />
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={12}
+                        color="#28A745"
+                      />
                       <Text style={styles.paidBadgeText}>Pagada</Text>
                     </View>
                   ) : overdue ? (
-                    <View style={[styles.paidBadge, { backgroundColor: "#FFF3F3" }]}>
+                    <View
+                      style={[styles.paidBadge, { backgroundColor: "#FFF3F3" }]}
+                    >
                       <Ionicons name="alert-circle" size={12} color="#DC3545" />
-                      <Text style={[styles.paidBadgeText, { color: "#DC3545" }]}>Vencida</Text>
+                      <Text
+                        style={[styles.paidBadgeText, { color: "#DC3545" }]}
+                      >
+                        Vencida
+                      </Text>
                     </View>
                   ) : dueSoon ? (
-                    <View style={[styles.paidBadge, { backgroundColor: "#FFF8E1" }]}>
+                    <View
+                      style={[styles.paidBadge, { backgroundColor: "#FFF8E1" }]}
+                    >
                       <Ionicons name="time" size={12} color="#F57C00" />
-                      <Text style={[styles.paidBadgeText, { color: "#F57C00" }]}>Pronto</Text>
+                      <Text
+                        style={[styles.paidBadgeText, { color: "#F57C00" }]}
+                      >
+                        Pronto
+                      </Text>
                     </View>
                   ) : null}
                 </View>
@@ -387,7 +440,8 @@ export default function QuotasScreen() {
                 <View style={styles.quotaDetailItem}>
                   <Ionicons name="receipt-outline" size={13} color="#868E96" />
                   <Text style={styles.quotaDetailText}>
-                    Compra: {formatCurrency(quota.transactionAmount, quota.currency)}
+                    Compra:{" "}
+                    {formatCurrency(quota.transactionAmount, quota.currency)}
                   </Text>
                 </View>
               </View>
@@ -415,7 +469,11 @@ export default function QuotasScreen() {
                   style={styles.markPaidButton}
                   onPress={() => handleMarkAsPaid(quota)}
                 >
-                  <Ionicons name="checkmark-done-outline" size={16} color="#28A745" />
+                  <Ionicons
+                    name="checkmark-done-outline"
+                    size={16}
+                    color="#28A745"
+                  />
                   <Text style={styles.markPaidText}>Marcar como pagada</Text>
                 </TouchableOpacity>
               )}
@@ -430,7 +488,12 @@ export default function QuotasScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Crear Cuotas</Text>
-              <TouchableOpacity onPress={() => { setShowCreateModal(false); setSelectedTransaction(null); }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowCreateModal(false);
+                  setSelectedTransaction(null);
+                }}
+              >
                 <Ionicons name="close" size={24} color="#495057" />
               </TouchableOpacity>
             </View>
@@ -442,7 +505,9 @@ export default function QuotasScreen() {
                 </Text>
                 <ScrollView style={{ maxHeight: 300 }}>
                   {transactions
-                    .filter((tx) => !quotas.some((q) => q.transactionId === tx.id))
+                    .filter(
+                      (tx) => !quotas.some((q) => q.transactionId === tx.id),
+                    )
                     .sort(
                       (a, b) =>
                         new Date(b.transactionDate).getTime() -
@@ -455,7 +520,10 @@ export default function QuotasScreen() {
                         onPress={() => setSelectedTransaction(tx)}
                       >
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.txOptionMerchant} numberOfLines={1}>
+                          <Text
+                            style={styles.txOptionMerchant}
+                            numberOfLines={1}
+                          >
                             {tx.merchant}
                           </Text>
                           <Text style={styles.txOptionDate}>
@@ -467,7 +535,9 @@ export default function QuotasScreen() {
                         </Text>
                       </TouchableOpacity>
                     ))}
-                  {transactions.filter((tx) => !quotas.some((q) => q.transactionId === tx.id)).length === 0 && (
+                  {transactions.filter(
+                    (tx) => !quotas.some((q) => q.transactionId === tx.id),
+                  ).length === 0 && (
                     <Text style={styles.noTxText}>
                       Todas las transacciones ya tienen cuotas asignadas
                     </Text>
@@ -477,9 +547,14 @@ export default function QuotasScreen() {
             ) : (
               <>
                 <View style={styles.selectedTxCard}>
-                  <Text style={styles.selectedTxMerchant}>{selectedTransaction.merchant}</Text>
+                  <Text style={styles.selectedTxMerchant}>
+                    {selectedTransaction.merchant}
+                  </Text>
                   <Text style={styles.selectedTxAmount}>
-                    {formatCurrency(selectedTransaction.amount, selectedTransaction.currency)}
+                    {formatCurrency(
+                      selectedTransaction.amount,
+                      selectedTransaction.currency,
+                    )}
                   </Text>
                   <Text style={styles.selectedTxDate}>
                     {formatDate(selectedTransaction.transactionDate)}
@@ -495,26 +570,33 @@ export default function QuotasScreen() {
                   placeholder="Ej: 3, 6, 12..."
                 />
 
-                {numQuotas && !isNaN(parseInt(numQuotas, 10)) && parseInt(numQuotas, 10) >= 2 && (
-                  <View style={styles.previewBox}>
-                    <Text style={styles.previewTitle}>Vista previa</Text>
-                    <Text style={styles.previewText}>
-                      {numQuotas} cuotas de ~
-                      {formatCurrency(
-                        Math.round(selectedTransaction.amount / parseInt(numQuotas, 10)),
-                        selectedTransaction.currency,
-                      )}
-                    </Text>
-                    <Text style={styles.previewText}>
-                      Primera cuota vence:{" "}
-                      {(() => {
-                        const d = new Date(selectedTransaction.transactionDate);
-                        d.setMonth(d.getMonth() + 1);
-                        return formatDate(d.toISOString());
-                      })()}
-                    </Text>
-                  </View>
-                )}
+                {numQuotas &&
+                  !isNaN(parseInt(numQuotas, 10)) &&
+                  parseInt(numQuotas, 10) >= 2 && (
+                    <View style={styles.previewBox}>
+                      <Text style={styles.previewTitle}>Vista previa</Text>
+                      <Text style={styles.previewText}>
+                        {numQuotas} cuotas de ~
+                        {formatCurrency(
+                          Math.round(
+                            selectedTransaction.amount /
+                              parseInt(numQuotas, 10),
+                          ),
+                          selectedTransaction.currency,
+                        )}
+                      </Text>
+                      <Text style={styles.previewText}>
+                        Primera cuota vence:{" "}
+                        {(() => {
+                          const d = new Date(
+                            selectedTransaction.transactionDate,
+                          );
+                          d.setMonth(d.getMonth() + 1);
+                          return formatDate(d.toISOString());
+                        })()}
+                      </Text>
+                    </View>
+                  )}
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
@@ -591,8 +673,18 @@ const styles = StyleSheet.create({
   },
   summaryItem: { alignItems: "center", flex: 1 },
   summaryDivider: { width: 1, height: 36, backgroundColor: "#E9ECEF" },
-  summaryValue: { fontSize: 16, fontWeight: "700", color: "#212529", marginTop: 4 },
-  summaryLabel: { fontSize: 11, color: "#868E96", marginTop: 2, textTransform: "uppercase" },
+  summaryValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#212529",
+    marginTop: 4,
+  },
+  summaryLabel: {
+    fontSize: 11,
+    color: "#868E96",
+    marginTop: 2,
+    textTransform: "uppercase",
+  },
   nextDueRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -643,8 +735,18 @@ const styles = StyleSheet.create({
 
   // Empty
   emptyContainer: { alignItems: "center", paddingVertical: 40 },
-  emptyTitle: { fontSize: 17, fontWeight: "600", color: "#495057", marginTop: 12 },
-  emptySubtitle: { fontSize: 13, color: "#868E96", marginTop: 6, textAlign: "center" },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#495057",
+    marginTop: 12,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: "#868E96",
+    marginTop: 6,
+    textAlign: "center",
+  },
 
   // Quota Card
   quotaCard: {
@@ -772,11 +874,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   selectedTxMerchant: { fontSize: 15, fontWeight: "600", color: "#212529" },
-  selectedTxAmount: { fontSize: 20, fontWeight: "700", color: "#DC3545", marginTop: 4 },
+  selectedTxAmount: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#DC3545",
+    marginTop: 4,
+  },
   selectedTxDate: { fontSize: 12, color: "#868E96", marginTop: 4 },
 
   // Input
-  inputLabel: { fontSize: 14, fontWeight: "600", color: "#495057", marginBottom: 6 },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#495057",
+    marginBottom: 6,
+  },
   input: {
     borderWidth: 1,
     borderColor: "#DEE2E6",
@@ -795,7 +907,12 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 16,
   },
-  previewTitle: { fontSize: 13, fontWeight: "700", color: "#007BFF", marginBottom: 4 },
+  previewTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#007BFF",
+    marginBottom: 4,
+  },
   previewText: { fontSize: 13, color: "#495057", marginTop: 2 },
 
   // Modal actions

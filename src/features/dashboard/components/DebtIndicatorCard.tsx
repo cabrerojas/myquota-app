@@ -2,13 +2,18 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getDebtSummary, DebtSummary } from "@/features/dashboard/services/statsApi";
+import {
+  getDebtSummary,
+  DebtSummary,
+} from "@/features/dashboard/services/statsApi";
 
 interface DebtIndicatorCardProps {
   refreshKey?: number;
 }
 
-export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps) {
+export default function DebtIndicatorCard({
+  refreshKey,
+}: DebtIndicatorCardProps) {
   const router = useRouter();
   const [summary, setSummary] = useState<DebtSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -28,11 +33,20 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
     }
   };
 
-  if (loading || !summary || (summary.totalCLP === 0 && summary.totalUSD === 0)) {
+  if (
+    loading ||
+    !summary ||
+    (summary.totalCLP === 0 && summary.totalUSD === 0)
+  ) {
     return null;
   }
 
-  const severityColor = summary.pendingCount > 20 ? "#DC3545" : summary.pendingCount > 10 ? "#F57C00" : "#007BFF";
+  const severityColor =
+    summary.pendingCount > 20
+      ? "#DC3545"
+      : summary.pendingCount > 10
+        ? "#F57C00"
+        : "#007BFF";
 
   return (
     <TouchableOpacity
@@ -41,7 +55,9 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
       activeOpacity={0.7}
     >
       <View style={styles.header}>
-        <View style={[styles.iconCircle, { backgroundColor: severityColor + "15" }]}>
+        <View
+          style={[styles.iconCircle, { backgroundColor: severityColor + "15" }]}
+        >
           <Ionicons name="trending-up" size={20} color={severityColor} />
         </View>
         <View style={styles.headerText}>
@@ -64,7 +80,9 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
               </Text>
             )}
             {summary.totalUSD > 0 && (
-              <Text style={[styles.amountValue, { color: "#0056B3", fontSize: 14 }]}>
+              <Text
+                style={[styles.amountValue, { color: "#0056B3", fontSize: 14 }]}
+              >
                 US${summary.totalUSD.toLocaleString("es-CL")}
               </Text>
             )}
@@ -80,7 +98,12 @@ export default function DebtIndicatorCard({ refreshKey }: DebtIndicatorCardProps
                 </Text>
               )}
               {summary.nextMonthUSD > 0 && (
-                <Text style={[styles.nextPayValue, { color: "#0056B3", fontSize: 13 }]}>
+                <Text
+                  style={[
+                    styles.nextPayValue,
+                    { color: "#0056B3", fontSize: 13 },
+                  ]}
+                >
                   US${summary.nextMonthUSD.toLocaleString("es-CL")}
                 </Text>
               )}

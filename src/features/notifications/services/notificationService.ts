@@ -93,7 +93,7 @@ export async function setupAndroidChannel() {
  * Find the next future occurrence of a date.
  * If the date is already in the future, return it as-is.
  */
-function getNextFutureDate(dateInput: string | Date): Date | null {
+function _getNextFutureDate(dateInput: string | Date): Date | null {
   const d = new Date(dateInput);
   if (isNaN(d.getTime())) return null;
   return d;

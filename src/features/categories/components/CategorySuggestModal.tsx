@@ -1,6 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Modal, View, Text, TouchableOpacity, TextInput, ActivityIndicator, StyleSheet, Alert, KeyboardAvoidingView, Platform } from "react-native";
-import { matchCategoryByMerchant, createCategoryWithMerchant, Category, getAllCategories } from "@/features/categories/services/categoryApi";
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import {
+  matchCategoryByMerchant,
+  createCategoryWithMerchant,
+  Category,
+  getAllCategories,
+} from "@/features/categories/services/categoryApi";
 
 interface Props {
   visible: boolean;
@@ -9,9 +25,17 @@ interface Props {
   onCategorySelected: (category: Category) => void;
 }
 
-export default function CategorySuggestModal({ visible, merchant, onClose, onCategorySelected }: Props) {
+export default function CategorySuggestModal({
+  visible,
+  merchant,
+  onClose,
+  onCategorySelected,
+}: Props) {
   const [loading, setLoading] = useState(true);
-  const [suggestion, setSuggestion] = useState<{ categoryId: string; categoryName: string } | null>(null);
+  const [suggestion, setSuggestion] = useState<{
+    categoryId: string;
+    categoryName: string;
+  } | null>(null);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState(merchant);
   const [matchedCategory, setMatchedCategory] = useState<Category | null>(null);
@@ -29,14 +53,20 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
     if (lower.includes("hogar")) return "🏠";
     if (lower.includes("tecnolog")) return "💻";
     if (lower.includes("deporte")) return "🏃";
-    if (lower.includes("luz") || lower.includes("agua") || lower.includes("gas")) return "💡";
+    if (
+      lower.includes("luz") ||
+      lower.includes("agua") ||
+      lower.includes("gas")
+    )
+      return "💡";
     // Por defecto, usar la primera letra como emoji
     return text.trim() ? text.trim()[0].toUpperCase() : "🏷️";
   };
   const getDefaultColor = (text: string) => {
     // Generar color pastel simple basado en el texto
     let hash = 0;
-    for (let i = 0; i < text.length; i++) hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < text.length; i++)
+      hash = text.charCodeAt(i) + ((hash << 5) - hash);
     const h = Math.abs(hash) % 360;
     return `hsl(${h}, 70%, 80%)`;
   };
@@ -77,7 +107,11 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
       try {
         const all = await getAllCategories();
         const normalize = (s = "") =>
-          s.trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
+          s
+            .trim()
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "");
         const found = all.find((c) => normalize(c.name) === normalize(newName));
         if (mounted) {
           setMatchedCategory(found ?? null);
@@ -102,12 +136,15 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
     setLoading(true);
     try {
       // Llamar al endpoint que asocia el comercio a la categoría y propaga la categoría
-      console.log('[CategorySuggestModal] using suggestion, calling createCategoryWithMerchant', {
-        name: suggestion.categoryName,
-        merchantName: merchant,
-        pattern: merchant,
-        isGlobal: true,
-      });
+      console.log(
+        "[CategorySuggestModal] using suggestion, calling createCategoryWithMerchant",
+        {
+          name: suggestion.categoryName,
+          merchantName: merchant,
+          pattern: merchant,
+          isGlobal: true,
+        },
+      );
       const created = await createCategoryWithMerchant({
         name: suggestion.categoryName,
         merchantName: merchant,
@@ -116,9 +153,14 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
       });
 
       // created puede ser la categoría existente reutilizada o la recién creada
-      onCategorySelected({ id: created.id ?? suggestion.categoryId, name: created.name ?? suggestion.categoryName, icon: created.icon, color: created.color });
+      onCategorySelected({
+        id: created.id ?? suggestion.categoryId,
+        name: created.name ?? suggestion.categoryName,
+        icon: created.icon,
+        color: created.color,
+      });
       onClose();
-    } catch (e) {
+    } catch {
       Alert.alert("Error", "No se pudo asignar la categoría sugerida");
     } finally {
       setLoading(false);
@@ -150,14 +192,22 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
       });
       // Si encontramos una categoría existente con el mismo nombre normalizado, preguntar antes de crear
       if (matchedCategory) {
-        const useExisting = await new Promise<boolean>((resolve) => {
+        const useExisting = await new Promise<boolean | null>((resolve) => {
           Alert.alert(
             "Categoría existente",
             `La categoría "${matchedCategory.name}" ya existe. ¿Deseas usarla en lugar de crear una nueva?`,
             [
               { text: "Usar existente", onPress: () => resolve(true) },
-              { text: "Crear igual", onPress: () => resolve(false), style: "destructive" },
-              { text: "Cancelar", onPress: () => resolve(null as any), style: "cancel" },
+              {
+                text: "Crear igual",
+                onPress: () => resolve(false),
+                style: "destructive",
+              },
+              {
+                text: "Cancelar",
+                onPress: () => resolve(null),
+                style: "cancel",
+              },
             ],
             { cancelable: true },
           );
@@ -187,7 +237,7 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
       });
       onCategorySelected(created);
       onClose();
-    } catch (e) {
+    } catch {
       Alert.alert("Error", "No se pudo crear la categoría");
     } finally {
       setCreating(false);
@@ -195,7 +245,12 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -209,18 +264,23 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
             <>
               <Text style={styles.suggestLabel}>Sugerencia</Text>
               <Text style={styles.suggestName}>{suggestion.categoryName}</Text>
-              <TouchableOpacity style={styles.suggestBtn} onPress={handleUseSuggestion}>
+              <TouchableOpacity
+                style={styles.suggestBtn}
+                onPress={handleUseSuggestion}
+              >
                 <Text style={styles.suggestBtnText}>Usar esta categoría</Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
-              <Text style={styles.noSuggest}>No hay sugerencias para este comercio.</Text>
+              <Text style={styles.noSuggest}>
+                No hay sugerencias para este comercio.
+              </Text>
               <TextInput
                 style={styles.input}
                 placeholder="Nombre de la nueva categoría"
                 value={newName}
-                onChangeText={t => {
+                onChangeText={(t) => {
                   setNewName(t);
                   setEmoji(getDefaultEmoji(t));
                   setColor(getDefaultColor(t));
@@ -240,24 +300,50 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
                 <View style={{ flex: 1, marginLeft: 8 }}>
                   <Text style={styles.inputLabel}>Color</Text>
                   <TextInput
-                    style={[styles.input, { backgroundColor: color, color: '#212529' }]}
+                    style={[
+                      styles.input,
+                      { backgroundColor: color, color: "#212529" },
+                    ]}
                     placeholder="#AABBCC o hsl()"
                     value={color}
                     onChangeText={setColor}
                   />
                   <View style={styles.colorRow}>
-                    {['#F7CAC9','#92A8D1','#F9E79F','#B5EAD7','#FFDAC1','#BFD8B8','#E2F0CB','#C7CEEA'].map((c) => (
+                    {[
+                      "#F7CAC9",
+                      "#92A8D1",
+                      "#F9E79F",
+                      "#B5EAD7",
+                      "#FFDAC1",
+                      "#BFD8B8",
+                      "#E2F0CB",
+                      "#C7CEEA",
+                    ].map((c) => (
                       <TouchableOpacity
                         key={c}
-                        style={[styles.colorSwatch, { backgroundColor: c, borderColor: color === c ? '#007BFF' : '#fff' }]}
+                        style={[
+                          styles.colorSwatch,
+                          {
+                            backgroundColor: c,
+                            borderColor: color === c ? "#007BFF" : "#fff",
+                          },
+                        ]}
                         onPress={() => setColor(c)}
                       />
                     ))}
                   </View>
                 </View>
               </View>
-              <TouchableOpacity style={styles.createBtn} onPress={handleCreate} disabled={creating}>
-                {creating ? <ActivityIndicator color="#fff" /> : <Text style={styles.createBtnText}>Crear categoría</Text>}
+              <TouchableOpacity
+                style={styles.createBtn}
+                onPress={handleCreate}
+                disabled={creating}
+              >
+                {creating ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.createBtnText}>Crear categoría</Text>
+                )}
               </TouchableOpacity>
             </>
           )}
@@ -271,10 +357,21 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
 }
 
 const styles = StyleSheet.create({
-    rowInputs: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-    inputLabel: { fontSize: 13, color: '#868E96', marginBottom: 2, marginLeft: 2 },
-    colorRow: { flexDirection: 'row', gap: 4, marginTop: 4 },
-    colorSwatch: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, marginRight: 2 },
+  rowInputs: { flexDirection: "row", gap: 8, marginBottom: 8 },
+  inputLabel: {
+    fontSize: 13,
+    color: "#868E96",
+    marginBottom: 2,
+    marginLeft: 2,
+  },
+  colorRow: { flexDirection: "row", gap: 4, marginTop: 4 },
+  colorSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginRight: 2,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -290,11 +387,26 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: "700", marginBottom: 16 },
   suggestLabel: { fontWeight: "700", color: "#007BFF", marginBottom: 4 },
   suggestName: { fontSize: 16, marginBottom: 12 },
-  suggestBtn: { backgroundColor: "#007BFF", padding: 12, borderRadius: 8, marginBottom: 16 },
+  suggestBtn: {
+    backgroundColor: "#007BFF",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
   suggestBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
   noSuggest: { color: "#888", marginBottom: 12 },
-  input: { backgroundColor: "#f6f6f6", padding: 10, borderRadius: 8, marginBottom: 12 },
-  createBtn: { backgroundColor: "#28A745", padding: 12, borderRadius: 8, marginBottom: 16 },
+  input: {
+    backgroundColor: "#f6f6f6",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  createBtn: {
+    backgroundColor: "#28A745",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
   createBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
   closeBtn: { alignSelf: "center", marginTop: 8 },
   closeBtnText: { color: "#007BFF", fontWeight: "600" },

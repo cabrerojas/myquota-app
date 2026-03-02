@@ -15,23 +15,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signOut } from "@/features/auth/hooks/useAuth";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import Constants from "expo-constants";
-
-interface UserInfo {
-  givenName?: string;
-  familyName?: string;
-  email?: string;
-  photo?: string;
-}
-
-interface CreditCardSummary {
-  total: number;
-  active: number;
-}
+import { UserInfo } from "@/shared/types/user";
+import { CreditCardSummary } from "@/shared/types/creditCard";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const [user, setUser] = useState<UserInfo | null>(null);
-  const [cardsSummary, setCardsSummary] = useState<CreditCardSummary>({ total: 0, active: 0 });
+  const [cardsSummary, setCardsSummary] = useState<CreditCardSummary>({
+    total: 0,
+    active: 0,
+  });
 
   useEffect(() => {
     AsyncStorage.getItem("user").then((data) => {
@@ -42,7 +35,8 @@ export default function ProfileScreen() {
       .then((cards) => {
         setCardsSummary({
           total: cards.length,
-          active: cards.filter((c: { status: string }) => c.status === "active").length,
+          active: cards.filter((c: { status: string }) => c.status === "active")
+            .length,
         });
       })
       .catch(() => {});
@@ -51,18 +45,14 @@ export default function ProfileScreen() {
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
 
   const handleLogout = () => {
-    Alert.alert(
-      "Cerrar sesión",
-      "¿Estás seguro de que deseas cerrar sesión?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Cerrar sesión",
-          style: "destructive",
-          onPress: () => signOut(router),
-        },
-      ],
-    );
+    Alert.alert("Cerrar sesión", "¿Estás seguro de que deseas cerrar sesión?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Cerrar sesión",
+        style: "destructive",
+        onPress: () => signOut(router),
+      },
+    ]);
   };
 
   const handleClearCache = () => {
@@ -173,8 +163,9 @@ export default function ProfileScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() =>
-            Linking.openURL("https://github.com/gcabr/myquota-app/issues")
-              .catch(() => {})
+            Linking.openURL(
+              "https://github.com/gcabr/myquota-app/issues",
+            ).catch(() => {})
           }
         >
           <SettingsRow
@@ -219,14 +210,17 @@ function SettingsRow({
 }) {
   return (
     <View style={settingsStyles.row}>
-      <Ionicons name={icon} size={20} color="#495057" style={settingsStyles.icon} />
+      <Ionicons
+        name={icon}
+        size={20}
+        color="#495057"
+        style={settingsStyles.icon}
+      />
       <View style={settingsStyles.labelContainer}>
         <Text style={settingsStyles.label}>{label}</Text>
         {detail && <Text style={settingsStyles.detail}>{detail}</Text>}
       </View>
-      {value ? (
-        <Text style={settingsStyles.value}>{value}</Text>
-      ) : null}
+      {value ? <Text style={settingsStyles.value}>{value}</Text> : null}
       {showChevron && (
         <Ionicons name="chevron-forward" size={16} color="#ADB5BD" />
       )}

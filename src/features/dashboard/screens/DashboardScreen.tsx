@@ -30,36 +30,17 @@ import {
   setupAndroidChannel,
   scheduleCardNotifications,
 } from "@/features/notifications/services/notificationService";
+import { CreditCardWithLimits } from "@/shared/types/creditCard";
+import { formatShortDate } from "@/shared/utils/format";
 
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-  nationalAmountUsed: number;
-  nationalTotalLimit: number;
-  internationalAmountUsed: number;
-  internationalTotalLimit: number;
-}
-
-const formatTransactionDate = (dateStr: string): string => {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("es-CL", {
-      timeZone: "America/Santiago",
-      day: "2-digit",
-      month: "short",
-    });
-  } catch {
-    return "";
-  }
-};
+const formatTransactionDate = formatShortDate;
 
 export default function DashboardScreen() {
   const router = useRouter();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [userName, setUserName] = useState<string>("");
-  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [creditCards, setCreditCards] = useState<CreditCardWithLimits[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -165,7 +146,7 @@ export default function DashboardScreen() {
     setRefreshKey((prev: number) => prev + 1);
   };
 
-  const getSelectedCardLabel = () => {
+  const _getSelectedCardLabel = () => {
     const card = creditCards.find((c) => c.id === selectedCardId);
     return card ? `${card.cardType} - ${card.cardLastDigits}` : "";
   };
@@ -201,7 +182,10 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={isPullRefreshing} onRefresh={handlePullRefresh} />
+        <RefreshControl
+          refreshing={isPullRefreshing}
+          onRefresh={handlePullRefresh}
+        />
       }
     >
       <Text style={styles.welcome}>Hola, {userName} 👋</Text>
@@ -210,56 +194,61 @@ export default function DashboardScreen() {
       <Text style={styles.sectionTitle}>Mis Tarjetas</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {creditCards.map((item) => {
-          const natPercent = item.nationalTotalLimit > 0
-            ? (item.nationalAmountUsed / item.nationalTotalLimit) * 100
-            : 0;
-          const intPercent = item.internationalTotalLimit > 0
-            ? (item.internationalAmountUsed / item.internationalTotalLimit) * 100
-            : 0;
+          const natPercent =
+            item.nationalTotalLimit > 0
+              ? (item.nationalAmountUsed / item.nationalTotalLimit) * 100
+              : 0;
+          const intPercent =
+            item.internationalTotalLimit > 0
+              ? (item.internationalAmountUsed / item.internationalTotalLimit) *
+                100
+              : 0;
           const maxPercent = Math.max(natPercent, intPercent);
           const hasAlert = maxPercent >= 80;
 
           return (
-          <TouchableOpacity
-            key={item.id}
-            style={[
-              styles.cardButton,
-              selectedCardId === item.id && styles.selectedCard,
-              hasAlert && selectedCardId !== item.id && styles.cardButtonAlert,
-            ]}
-            onPress={() => setSelectedCardId(item.id)}
-          >
-            {hasAlert && (
-              <View style={styles.alertBadge}>
-                <Ionicons
-                  name={maxPercent >= 95 ? "alert-circle" : "warning"}
-                  size={14}
-                  color={maxPercent >= 95 ? "#DC3545" : "#F57C00"}
-                />
-              </View>
-            )}
-            <Ionicons
-              name="card-outline"
-              size={22}
-              color={selectedCardId === item.id ? "#fff" : "#495057"}
-            />
-            <Text
+            <TouchableOpacity
+              key={item.id}
               style={[
-                styles.cardType,
-                selectedCardId === item.id && styles.cardTypeSelected,
+                styles.cardButton,
+                selectedCardId === item.id && styles.selectedCard,
+                hasAlert &&
+                  selectedCardId !== item.id &&
+                  styles.cardButtonAlert,
               ]}
+              onPress={() => setSelectedCardId(item.id)}
             >
-              {item.cardType}
-            </Text>
-            <Text
-              style={[
-                styles.cardDigits,
-                selectedCardId === item.id && styles.cardDigitsSelected,
-              ]}
-            >
-              **** {item.cardLastDigits}
-            </Text>
-          </TouchableOpacity>
+              {hasAlert && (
+                <View style={styles.alertBadge}>
+                  <Ionicons
+                    name={maxPercent >= 95 ? "alert-circle" : "warning"}
+                    size={14}
+                    color={maxPercent >= 95 ? "#DC3545" : "#F57C00"}
+                  />
+                </View>
+              )}
+              <Ionicons
+                name="card-outline"
+                size={22}
+                color={selectedCardId === item.id ? "#fff" : "#495057"}
+              />
+              <Text
+                style={[
+                  styles.cardType,
+                  selectedCardId === item.id && styles.cardTypeSelected,
+                ]}
+              >
+                {item.cardType}
+              </Text>
+              <Text
+                style={[
+                  styles.cardDigits,
+                  selectedCardId === item.id && styles.cardDigitsSelected,
+                ]}
+              >
+                **** {item.cardLastDigits}
+              </Text>
+            </TouchableOpacity>
           );
         })}
       </ScrollView>
@@ -372,7 +361,12 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8F9FA" },
   contentContainer: { padding: 20, paddingBottom: 40 },
-  welcome: { fontSize: 22, fontWeight: "bold", marginBottom: 4, color: "#212529" },
+  welcome: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 4,
+    color: "#212529",
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "700",

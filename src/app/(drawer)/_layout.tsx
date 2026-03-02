@@ -2,6 +2,9 @@ import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
 
+// Small helper to avoid importing Ionicons in JSX options directly
+import { Ionicons } from "@expo/vector-icons";
+
 export default function DrawerLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -70,7 +73,11 @@ export default function DrawerLayout() {
             title: "Proyección de Deuda",
             drawerLabel: "Proyección Deuda",
             drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="trending-up-outline" color={color} size={size} />
+              <DrawerIcon
+                name="trending-up-outline"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
@@ -100,7 +107,11 @@ export default function DrawerLayout() {
             title: "Notificaciones",
             drawerLabel: "Notificaciones",
             drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="notifications-outline" color={color} size={size} />
+              <DrawerIcon
+                name="notifications-outline"
+                color={color}
+                size={size}
+              />
             ),
           }}
         />
@@ -129,9 +140,6 @@ export default function DrawerLayout() {
     </GestureHandlerRootView>
   );
 }
-
-// Small helper to avoid importing Ionicons in JSX options directly
-import { Ionicons } from "@expo/vector-icons";
 function DrawerIcon({
   name,
   color,

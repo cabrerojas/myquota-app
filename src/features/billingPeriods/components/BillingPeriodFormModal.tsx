@@ -14,6 +14,7 @@ import { useState, useEffect } from "react";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
+import { formatDateInput } from "@/shared/utils/format";
 
 interface BillingPeriodFormModalProps {
   visible: boolean;
@@ -35,12 +36,7 @@ interface BillingPeriodFormModalProps {
   orphanedCount?: number;
 }
 
-const formatDate = (date: Date): string => {
-  const day = date.getDate().toString().padStart(2, "0");
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-};
+const formatDate = formatDateInput;
 
 const MONTH_NAMES = [
   "Enero",

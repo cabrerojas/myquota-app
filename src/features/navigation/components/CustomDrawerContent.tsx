@@ -16,13 +16,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signOut } from "@/features/auth/hooks/useAuth";
-
-interface UserInfo {
-  givenName?: string;
-  familyName?: string;
-  email?: string;
-  photo?: string;
-}
+import { UserInfo } from "@/shared/types/user";
 
 export default function CustomDrawerContent(
   props: DrawerContentComponentProps,
@@ -56,8 +50,6 @@ export default function CustomDrawerContent(
       {/* Items del drawer */}
       <DrawerContentScrollView {...props} contentContainerStyle={{ flex: 1 }}>
         <DrawerItemList {...props} />
-
-
       </DrawerContentScrollView>
 
       {/* Footer: Cerrar sesión */}

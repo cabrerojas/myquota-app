@@ -1,15 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-interface CreditCardWithLimits {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-  nationalAmountUsed: number;
-  nationalTotalLimit: number;
-  internationalAmountUsed: number;
-  internationalTotalLimit: number;
-}
+import { CreditCardWithLimits } from "@/shared/types/creditCard";
 
 interface CreditCardAlertBannerProps {
   creditCards: CreditCardWithLimits[];
@@ -83,7 +74,10 @@ export default function CreditCardAlertBanner({
       </View>
 
       {alerts.map((alert, index) => (
-        <View key={`${alert.card.id}-${alert.type}-${index}`} style={styles.alertRow}>
+        <View
+          key={`${alert.card.id}-${alert.type}-${index}`}
+          style={styles.alertRow}
+        >
           <View style={styles.alertDot}>
             <View
               style={[
@@ -106,8 +100,7 @@ export default function CreditCardAlertBanner({
               style={[
                 styles.alertPercent,
                 {
-                  color:
-                    alert.level === "critical" ? "#DC3545" : "#F57C00",
+                  color: alert.level === "critical" ? "#DC3545" : "#F57C00",
                 },
               ]}
             >

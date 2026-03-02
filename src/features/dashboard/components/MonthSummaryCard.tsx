@@ -14,7 +14,7 @@ interface MonthSummaryCardProps {
   refreshKey?: number;
 }
 
-const MONTH_NAMES: Record<string, string> = {
+const _MONTH_NAMES: Record<string, string> = {
   Enero: "Enero",
   Febrero: "Febrero",
   Marzo: "Marzo",
@@ -110,7 +110,11 @@ export default function MonthSummaryCard({
       {/* Header con gradiente simulado */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="wallet-outline" size={20} color="rgba(255,255,255,0.9)" />
+          <Ionicons
+            name="wallet-outline"
+            size={20}
+            color="rgba(255,255,255,0.9)"
+          />
           <Text style={styles.headerTitle}>Resumen {monthDisplayName}</Text>
         </View>
       </View>
@@ -136,9 +140,7 @@ export default function MonthSummaryCard({
             >
               <Ionicons
                 name={
-                  variationDirection === "up"
-                    ? "trending-up"
-                    : "trending-down"
+                  variationDirection === "up" ? "trending-up" : "trending-down"
                 }
                 size={14}
                 color={variationDirection === "up" ? "#DC3545" : "#28A745"}
@@ -162,7 +164,8 @@ export default function MonthSummaryCard({
           <View style={styles.usdRow}>
             <Text style={styles.usdLabel}>Total Dólar</Text>
             <Text style={styles.amountUSD}>
-              US${totalUSD.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
+              US$
+              {totalUSD.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
             </Text>
           </View>
         )}
@@ -172,7 +175,8 @@ export default function MonthSummaryCard({
           <View style={styles.comparisonRow}>
             <Ionicons name="time-outline" size={13} color="#ADB5BD" />
             <Text style={styles.comparisonText}>
-              {getPreviousMonthName().split(" ")[0]}: ${prevCLP.toLocaleString("es-CL")}
+              {getPreviousMonthName().split(" ")[0]}: $
+              {prevCLP.toLocaleString("es-CL")}
             </Text>
           </View>
         )}

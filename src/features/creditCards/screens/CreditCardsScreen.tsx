@@ -11,20 +11,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "../services/creditCardsApi";
-
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-  cardHolderName: string;
-  status: string;
-  nationalTotalLimit: number;
-  nationalAmountUsed: number;
-  nationalAmountAvailable: number;
-  internationalTotalLimit: number;
-  internationalAmountUsed: number;
-  internationalAmountAvailable: number;
-}
+import { CreditCard } from "@/shared/types/creditCard";
+import { formatCLP } from "@/shared/utils/format";
 
 export default function CreditCardsScreen() {
   const router = useRouter();
@@ -67,9 +55,7 @@ export default function CreditCardsScreen() {
     return "#007BFF";
   };
 
-  const formatCurrency = (amount: number): string => {
-    return `$${amount.toLocaleString("es-CL")}`;
-  };
+  const formatCurrency = formatCLP;
 
   const getUsagePercent = (used: number, total: number): number => {
     if (total <= 0) return 0;
@@ -269,17 +255,9 @@ export default function CreditCardsScreen() {
                   })
                 }
               >
-                <Ionicons
-                  name="calendar-outline"
-                  size={18}
-                  color="#007BFF"
-                />
+                <Ionicons name="calendar-outline" size={18} color="#007BFF" />
                 <Text style={styles.actionText}>Ver Períodos</Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color="#007BFF"
-                />
+                <Ionicons name="chevron-forward" size={16} color="#007BFF" />
               </TouchableOpacity>
             </View>
           </View>

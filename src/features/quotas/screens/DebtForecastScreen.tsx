@@ -17,13 +17,12 @@ import {
   getQuotasByTransaction,
   Quota,
 } from "@/features/quotas/services/quotasApi";
-import { getBillingPeriodsByCreditCard, BillingPeriod, payBillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
-
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-}
+import {
+  getBillingPeriodsByCreditCard,
+  BillingPeriod,
+  payBillingPeriod,
+} from "@/features/billingPeriods/services/billingPeriodsApi";
+import { formatCurrency } from "@/shared/utils/format";
 
 interface MonthBucket {
   key: string; // billing period month or "2025-07"
@@ -31,7 +30,13 @@ interface MonthBucket {
   totalCLP: number;
   totalUSD: number;
   count: number;
-  details: { merchant: string; amount: number; currency: string; quotaNumber: number; totalQuotas: number }[];
+  details: {
+    merchant: string;
+    amount: number;
+    currency: string;
+    quotaNumber: number;
+    totalQuotas: number;
+  }[];
   // For pay action: creditCardId -> billingPeriodId mapping
   periodsByCard: { creditCardId: string; billingPeriodId: string }[];
 }
@@ -80,7 +85,8 @@ export default function DebtForecastScreen() {
           txs.map(async (tx) => {
             const quotas = await getQuotasByTransaction(card.id, tx.id);
             const sorted = [...quotas].sort(
-              (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+              (a, b) =>
+                new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
             );
             return sorted.map((q, idx) => ({
               ...q,
@@ -99,7 +105,8 @@ export default function DebtForecastScreen() {
 
       // Sort billing periods by startDate
       const sortedPeriods = [...allBillingPeriods].sort(
-        (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
       );
 
       // Find which billing period a quota's due_date falls into
@@ -168,7 +175,8 @@ export default function DebtForecastScreen() {
         const bucket = bucketMap.get(p.month);
         if (bucket) {
           const existing = bucket.periodsByCard.find(
-            (pb) => pb.creditCardId === p.creditCardId && pb.billingPeriodId === p.id,
+            (pb) =>
+              pb.creditCardId === p.creditCardId && pb.billingPeriodId === p.id,
           );
           if (!existing) {
             bucket.periodsByCard.push({
@@ -195,8 +203,16 @@ export default function DebtForecastScreen() {
       setMonths(sorted);
 
       // Totals
-      setTotalDebtCLP(pending.filter((q) => q.currency !== "Dolar").reduce((s, q) => s + q.amount, 0));
-      setTotalDebtUSD(pending.filter((q) => q.currency === "Dolar").reduce((s, q) => s + q.amount, 0));
+      setTotalDebtCLP(
+        pending
+          .filter((q) => q.currency !== "Dolar")
+          .reduce((s, q) => s + q.amount, 0),
+      );
+      setTotalDebtUSD(
+        pending
+          .filter((q) => q.currency === "Dolar")
+          .reduce((s, q) => s + q.amount, 0),
+      );
     } catch (error) {
       console.error("Error fetching debt forecast:", error);
     }
@@ -215,14 +231,19 @@ export default function DebtForecastScreen() {
 
   const handlePayPeriod = (month: MonthBucket) => {
     if (month.periodsByCard.length === 0) {
-      Alert.alert("Sin período", "No hay período de facturación asociado a este mes.");
+      Alert.alert(
+        "Sin período",
+        "No hay período de facturación asociado a este mes.",
+      );
       return;
     }
 
     const amountText = [
       month.totalCLP > 0 ? `$${month.totalCLP.toLocaleString("es-CL")}` : "",
       month.totalUSD > 0 ? `US$${month.totalUSD.toLocaleString("es-CL")}` : "",
-    ].filter(Boolean).join(" + ");
+    ]
+      .filter(Boolean)
+      .join(" + ");
 
     Alert.alert(
       "Confirmar Pago",
@@ -237,7 +258,10 @@ export default function DebtForecastScreen() {
             try {
               let totalPaid = 0;
               for (const pb of month.periodsByCard) {
-                const result = await payBillingPeriod(pb.creditCardId, pb.billingPeriodId);
+                const result = await payBillingPeriod(
+                  pb.creditCardId,
+                  pb.billingPeriodId,
+                );
                 totalPaid += result.paidCount;
               }
               Alert.alert("Éxito", `${totalPaid} cuotas marcadas como pagadas`);
@@ -245,7 +269,9 @@ export default function DebtForecastScreen() {
             } catch (error) {
               Alert.alert(
                 "Error",
-                error instanceof Error ? error.message : "No se pudo procesar el pago",
+                error instanceof Error
+                  ? error.message
+                  : "No se pudo procesar el pago",
               );
             } finally {
               setPaying(null);
@@ -254,11 +280,6 @@ export default function DebtForecastScreen() {
         },
       ],
     );
-  };
-
-  const formatCurrency = (amount: number, currency: string) => {
-    const prefix = currency === "Dolar" ? "US$" : "$";
-    return `${prefix}${amount.toLocaleString("es-CL")}`;
   };
 
   // Get current billing period label (e.g. "Febrero 2026") to highlight
@@ -274,7 +295,10 @@ export default function DebtForecastScreen() {
   const currentPeriodLabel = getCurrentPeriodLabel();
 
   // Find max month total for relative bar sizing
-  const maxMonthTotal = Math.max(...months.map((m) => m.totalCLP + m.totalUSD * 900), 1);
+  const maxMonthTotal = Math.max(
+    ...months.map((m) => m.totalCLP + m.totalUSD * 900),
+    1,
+  );
 
   if (loading) {
     return (
@@ -287,212 +311,249 @@ export default function DebtForecastScreen() {
 
   return (
     <View style={styles.wrapper}>
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {/* Total Debt Card */}
-      <View style={styles.totalCard}>
-        <View style={styles.totalCardHeader}>
-          <Ionicons name="trending-up-outline" size={24} color="#DC3545" />
-          <Text style={styles.totalCardTitle}>Deuda Total Pendiente</Text>
-        </View>
-        <View style={styles.totalAmounts}>
-          {totalDebtCLP > 0 && (
-            <Text style={styles.totalAmount}>${totalDebtCLP.toLocaleString("es-CL")}</Text>
-          )}
-          {totalDebtUSD > 0 && (
-            <Text style={[styles.totalAmount, { color: "#0056B3" }]}>
-              US${totalDebtUSD.toLocaleString("es-CL")}
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Total Debt Card */}
+        <View style={styles.totalCard}>
+          <View style={styles.totalCardHeader}>
+            <Ionicons name="trending-up-outline" size={24} color="#DC3545" />
+            <Text style={styles.totalCardTitle}>Deuda Total Pendiente</Text>
+          </View>
+          <View style={styles.totalAmounts}>
+            {totalDebtCLP > 0 && (
+              <Text style={styles.totalAmount}>
+                ${totalDebtCLP.toLocaleString("es-CL")}
+              </Text>
+            )}
+            {totalDebtUSD > 0 && (
+              <Text style={[styles.totalAmount, { color: "#0056B3" }]}>
+                US${totalDebtUSD.toLocaleString("es-CL")}
+              </Text>
+            )}
+            {totalDebtCLP === 0 && totalDebtUSD === 0 && (
+              <Text style={[styles.totalAmount, { color: "#28A745" }]}>
+                Sin deuda
+              </Text>
+            )}
+          </View>
+          <View style={styles.totalMeta}>
+            <Ionicons name="calendar-outline" size={14} color="#868E96" />
+            <Text style={styles.totalMetaText}>
+              {months.length} {months.length === 1 ? "mes" : "meses"} restantes
             </Text>
-          )}
-          {totalDebtCLP === 0 && totalDebtUSD === 0 && (
-            <Text style={[styles.totalAmount, { color: "#28A745" }]}>Sin deuda</Text>
-          )}
+            <View style={styles.totalMetaDot} />
+            <Ionicons name="layers-outline" size={14} color="#868E96" />
+            <Text style={styles.totalMetaText}>
+              {months.reduce((s, m) => s + m.count, 0)} cuotas pendientes
+            </Text>
+          </View>
         </View>
-        <View style={styles.totalMeta}>
-          <Ionicons name="calendar-outline" size={14} color="#868E96" />
-          <Text style={styles.totalMetaText}>
-            {months.length} {months.length === 1 ? "mes" : "meses"} restantes
-          </Text>
-          <View style={styles.totalMetaDot} />
-          <Ionicons name="layers-outline" size={14} color="#868E96" />
-          <Text style={styles.totalMetaText}>
-            {months.reduce((s, m) => s + m.count, 0)} cuotas pendientes
-          </Text>
-        </View>
-      </View>
 
-      {/* Monthly Breakdown */}
-      {months.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="happy-outline" size={56} color="#28A745" />
-          <Text style={styles.emptyTitle}>¡Sin deudas pendientes!</Text>
-          <Text style={styles.emptySubtitle}>No tienes cuotas pendientes de pago</Text>
-        </View>
-      ) : (
-        <>
-          <Text style={styles.sectionTitle}>Proyección Mensual</Text>
-          {months.map((month, index) => {
-            const barWidth = ((month.totalCLP + month.totalUSD * 900) / maxMonthTotal) * 100;
-            const isExpanded = expandedMonth === month.key;
-            const isCurrentMonth = month.label.toLowerCase() === currentPeriodLabel.toLowerCase();
+        {/* Monthly Breakdown */}
+        {months.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="happy-outline" size={56} color="#28A745" />
+            <Text style={styles.emptyTitle}>¡Sin deudas pendientes!</Text>
+            <Text style={styles.emptySubtitle}>
+              No tienes cuotas pendientes de pago
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text style={styles.sectionTitle}>Proyección Mensual</Text>
+            {months.map((month, index) => {
+              const barWidth =
+                ((month.totalCLP + month.totalUSD * 900) / maxMonthTotal) * 100;
+              const isExpanded = expandedMonth === month.key;
+              const isCurrentMonth =
+                month.label.toLowerCase() === currentPeriodLabel.toLowerCase();
 
-            return (
-              <View key={month.key}>
-                <View
-                  style={[
-                    styles.monthCard,
-                    isCurrentMonth && styles.monthCardCurrent,
-                    index === 0 && styles.monthCardFirst,
-                  ]}
-                >
-                  {/* Month header */}
-                  <View style={styles.monthHeader}>
-                    <View style={styles.monthHeaderLeft}>
-                      {isCurrentMonth && (
-                        <View style={styles.currentBadge}>
-                          <Text style={styles.currentBadgeText}>ESTE MES</Text>
-                        </View>
-                      )}
-                      <Text style={styles.monthLabel}>{month.label}</Text>
-                      <Text style={styles.monthCount}>
-                        {month.count} {month.count === 1 ? "cuota" : "cuotas"}
-                      </Text>
-                    </View>
-                    <View style={styles.monthHeaderRight}>
-                      {month.totalCLP > 0 && (
-                        <Text style={styles.monthAmount}>
-                          ${month.totalCLP.toLocaleString("es-CL")}
-                        </Text>
-                      )}
-                      {month.totalUSD > 0 && (
-                        <Text style={[styles.monthAmountUSD]}>
-                          US${month.totalUSD.toLocaleString("es-CL")}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-
-                  {/* Bar chart */}
-                  <View style={styles.barContainer}>
-                    <View
-                      style={[
-                        styles.barFill,
-                        { width: `${Math.max(barWidth, 3)}%` },
-                        isCurrentMonth && styles.barFillCurrent,
-                      ]}
-                    />
-                  </View>
-
-                  {/* Expand/Collapse button */}
-                  <View style={styles.monthActions}>
-                    <TouchableOpacity
-                      style={styles.expandButton}
-                      onPress={() => setExpandedMonth(isExpanded ? null : month.key)}
-                    >
-                      <Ionicons
-                        name={isExpanded ? "chevron-up" : "chevron-down"}
-                        size={14}
-                        color="#007BFF"
-                      />
-                      <Text style={styles.expandButtonText}>
-                        {isExpanded ? "Ocultar" : "Detalle"}
-                      </Text>
-                    </TouchableOpacity>
-
-                    {month.periodsByCard.length > 0 && (
-                      <TouchableOpacity
-                        style={[styles.payButton, paying === month.key && { opacity: 0.6 }]}
-                        onPress={() => handlePayPeriod(month)}
-                        disabled={paying === month.key}
-                      >
-                        {paying === month.key ? (
-                          <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                          <>
-                            <Ionicons name="checkmark-done" size={14} color="#fff" />
-                            <Text style={styles.payButtonText}>Pagar Período</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    )}
-                  </View>
-
-                  {/* Expanded details */}
-                  {isExpanded && (
-                    <View style={styles.detailsContainer}>
-                      {month.details
-                        .sort((a, b) => b.amount - a.amount)
-                        .map((d, i) => (
-                          <View key={i} style={styles.detailRow}>
-                            <View style={styles.detailLeft}>
-                              <Text style={styles.detailMerchant} numberOfLines={1}>
-                                {d.merchant}
-                              </Text>
-                              <Text style={styles.detailQuota}>
-                                Cuota {d.quotaNumber}/{d.totalQuotas}
-                              </Text>
-                            </View>
-                            <Text style={styles.detailAmount}>
-                              {formatCurrency(d.amount, d.currency)}
+              return (
+                <View key={month.key}>
+                  <View
+                    style={[
+                      styles.monthCard,
+                      isCurrentMonth && styles.monthCardCurrent,
+                      index === 0 && styles.monthCardFirst,
+                    ]}
+                  >
+                    {/* Month header */}
+                    <View style={styles.monthHeader}>
+                      <View style={styles.monthHeaderLeft}>
+                        {isCurrentMonth && (
+                          <View style={styles.currentBadge}>
+                            <Text style={styles.currentBadgeText}>
+                              ESTE MES
                             </Text>
                           </View>
-                        ))}
+                        )}
+                        <Text style={styles.monthLabel}>{month.label}</Text>
+                        <Text style={styles.monthCount}>
+                          {month.count} {month.count === 1 ? "cuota" : "cuotas"}
+                        </Text>
+                      </View>
+                      <View style={styles.monthHeaderRight}>
+                        {month.totalCLP > 0 && (
+                          <Text style={styles.monthAmount}>
+                            ${month.totalCLP.toLocaleString("es-CL")}
+                          </Text>
+                        )}
+                        {month.totalUSD > 0 && (
+                          <Text style={[styles.monthAmountUSD]}>
+                            US${month.totalUSD.toLocaleString("es-CL")}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                  )}
-                </View>
-              </View>
-            );
-          })}
 
-          {/* Cumulative projection */}
-          <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Acumulado</Text>
-          <View style={styles.cumulativeCard}>
-            {(() => {
-              let runningCLP = 0;
-              let runningUSD = 0;
-              return months.map((month, idx) => {
-                runningCLP += month.totalCLP;
-                runningUSD += month.totalUSD;
-                const progress = ((idx + 1) / months.length) * 100;
-                return (
-                  <View key={month.key} style={styles.cumulativeRow}>
-                    <View style={styles.cumulativeLeft}>
+                    {/* Bar chart */}
+                    <View style={styles.barContainer}>
                       <View
                         style={[
-                          styles.cumulativeDot,
-                          idx === months.length - 1 && styles.cumulativeDotLast,
+                          styles.barFill,
+                          { width: `${Math.max(barWidth, 3)}%` },
+                          isCurrentMonth && styles.barFillCurrent,
                         ]}
                       />
-                      {idx < months.length - 1 && <View style={styles.cumulativeLine} />}
-                      <Text style={styles.cumulativeMonth}>{month.label}</Text>
                     </View>
-                    <View style={styles.cumulativeRight}>
-                      <View style={styles.cumulativeBarBg}>
+
+                    {/* Expand/Collapse button */}
+                    <View style={styles.monthActions}>
+                      <TouchableOpacity
+                        style={styles.expandButton}
+                        onPress={() =>
+                          setExpandedMonth(isExpanded ? null : month.key)
+                        }
+                      >
+                        <Ionicons
+                          name={isExpanded ? "chevron-up" : "chevron-down"}
+                          size={14}
+                          color="#007BFF"
+                        />
+                        <Text style={styles.expandButtonText}>
+                          {isExpanded ? "Ocultar" : "Detalle"}
+                        </Text>
+                      </TouchableOpacity>
+
+                      {month.periodsByCard.length > 0 && (
+                        <TouchableOpacity
+                          style={[
+                            styles.payButton,
+                            paying === month.key && { opacity: 0.6 },
+                          ]}
+                          onPress={() => handlePayPeriod(month)}
+                          disabled={paying === month.key}
+                        >
+                          {paying === month.key ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <>
+                              <Ionicons
+                                name="checkmark-done"
+                                size={14}
+                                color="#fff"
+                              />
+                              <Text style={styles.payButtonText}>
+                                Pagar Período
+                              </Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    {/* Expanded details */}
+                    {isExpanded && (
+                      <View style={styles.detailsContainer}>
+                        {month.details
+                          .sort((a, b) => b.amount - a.amount)
+                          .map((d, i) => (
+                            <View key={i} style={styles.detailRow}>
+                              <View style={styles.detailLeft}>
+                                <Text
+                                  style={styles.detailMerchant}
+                                  numberOfLines={1}
+                                >
+                                  {d.merchant}
+                                </Text>
+                                <Text style={styles.detailQuota}>
+                                  Cuota {d.quotaNumber}/{d.totalQuotas}
+                                </Text>
+                              </View>
+                              <Text style={styles.detailAmount}>
+                                {formatCurrency(d.amount, d.currency)}
+                              </Text>
+                            </View>
+                          ))}
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+
+            {/* Cumulative projection */}
+            <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
+              Acumulado
+            </Text>
+            <View style={styles.cumulativeCard}>
+              {(() => {
+                let runningCLP = 0;
+                let runningUSD = 0;
+                return months.map((month, idx) => {
+                  runningCLP += month.totalCLP;
+                  runningUSD += month.totalUSD;
+                  const progress = ((idx + 1) / months.length) * 100;
+                  return (
+                    <View key={month.key} style={styles.cumulativeRow}>
+                      <View style={styles.cumulativeLeft}>
                         <View
                           style={[
-                            styles.cumulativeBarFill,
-                            { width: `${progress}%` },
+                            styles.cumulativeDot,
+                            idx === months.length - 1 &&
+                              styles.cumulativeDotLast,
                           ]}
                         />
+                        {idx < months.length - 1 && (
+                          <View style={styles.cumulativeLine} />
+                        )}
+                        <Text style={styles.cumulativeMonth}>
+                          {month.label}
+                        </Text>
                       </View>
-                      <Text style={styles.cumulativeAmount}>
-                        {runningCLP > 0 ? `$${runningCLP.toLocaleString("es-CL")}` : ""}
-                        {runningCLP > 0 && runningUSD > 0 ? " + " : ""}
-                        {runningUSD > 0 ? `US$${runningUSD.toLocaleString("es-CL")}` : ""}
-                      </Text>
+                      <View style={styles.cumulativeRight}>
+                        <View style={styles.cumulativeBarBg}>
+                          <View
+                            style={[
+                              styles.cumulativeBarFill,
+                              { width: `${progress}%` },
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.cumulativeAmount}>
+                          {runningCLP > 0
+                            ? `$${runningCLP.toLocaleString("es-CL")}`
+                            : ""}
+                          {runningCLP > 0 && runningUSD > 0 ? " + " : ""}
+                          {runningUSD > 0
+                            ? `US$${runningUSD.toLocaleString("es-CL")}`
+                            : ""}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                );
-              });
-            })()}
-          </View>
-        </>
-      )}
-    </ScrollView>
+                  );
+                });
+              })()}
+            </View>
+          </>
+        )}
+      </ScrollView>
 
       {/* FAB - Agregar Deuda */}
       <TouchableOpacity
@@ -715,7 +776,12 @@ const styles = StyleSheet.create({
 
   // Empty
   emptyContainer: { alignItems: "center", paddingVertical: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: "700", color: "#28A745", marginTop: 16 },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#28A745",
+    marginTop: 16,
+  },
   emptySubtitle: { fontSize: 14, color: "#868E96", marginTop: 6 },
 
   // Cumulative

@@ -9,30 +9,42 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native";
 import { useState, useEffect } from "react";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 
-import { createManualTransaction, updateManualTransaction } from "@/features/transactions/services/transactionsApi";
+import {
+  createManualTransaction,
+  updateManualTransaction,
+  CreateManualTransactionDto,
+} from "@/features/transactions/services/transactionsApi";
 import {
   matchCategoryByMerchant,
   createCategoryWithMerchant,
   addGlobalCategoryToUser,
 } from "@/features/categories/services/categoryApi";
-import { Modal } from "react-native";
 
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-}
+import { CreditCardBasic } from "@/shared/types/creditCard";
 
 const MONTHS = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
 export default function AddDebtScreen() {
@@ -51,26 +63,41 @@ export default function AddDebtScreen() {
 
   const isEdit = params.editMode === "true";
 
-  const [cards, setCards] = useState<CreditCard[]>([]);
+  const [cards, setCards] = useState<CreditCardBasic[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
-  const [suggestedMatch, setSuggestedMatch] = useState<{ categoryId: string; categoryName: string } | null>(null);
-  const [suggestionProcessing, setSuggestionProcessing] = useState(false);
-  const [chosenCategoryId, setChosenCategoryId] = useState<string | undefined>(undefined);
+  const [suggestedMatch, setSuggestedMatch] = useState<{
+    categoryId: string;
+    categoryName: string;
+  } | null>(null);
+  const [_suggestionProcessing, setSuggestionProcessing] = useState(false);
+  const [chosenCategoryId, setChosenCategoryId] = useState<string | undefined>(
+    undefined,
+  );
 
   // Form state
-  const [selectedCardId, setSelectedCardId] = useState<string>(params.creditCardId || "");
+  const [selectedCardId, setSelectedCardId] = useState<string>(
+    params.creditCardId || "",
+  );
   const [merchant, setMerchant] = useState(params.merchant || "");
   const [purchaseDate, setPurchaseDate] = useState<Date | null>(
     params.purchaseDate ? new Date(params.purchaseDate) : null,
   );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [quotaAmount, setQuotaAmount] = useState(params.quotaAmount || "");
-  const [totalInstallments, setTotalInstallments] = useState(params.totalInstallments || "");
-  const [paidInstallments, setPaidInstallments] = useState(params.paidInstallments || "");
-  const [lastPaidMonth, setLastPaidMonth] = useState<number>(new Date().getMonth()); // 0-11
-  const [lastPaidYear, setLastPaidYear] = useState<number>(new Date().getFullYear());
+  const [totalInstallments, setTotalInstallments] = useState(
+    params.totalInstallments || "",
+  );
+  const [paidInstallments, setPaidInstallments] = useState(
+    params.paidInstallments || "",
+  );
+  const [lastPaidMonth, setLastPaidMonth] = useState<number>(
+    new Date().getMonth(),
+  ); // 0-11
+  const [lastPaidYear, setLastPaidYear] = useState<number>(
+    new Date().getFullYear(),
+  );
   const [currency, setCurrency] = useState<"CLP" | "Dolar">(
     (params.currency as "CLP" | "Dolar") || "CLP",
   );
@@ -84,7 +111,7 @@ export default function AddDebtScreen() {
       const data = await getCreditCards();
       setCards(data);
       if (data.length > 0) setSelectedCardId(data[0].id);
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "No se pudieron cargar las tarjetas");
     } finally {
       setLoading(false);
@@ -93,19 +120,41 @@ export default function AddDebtScreen() {
 
   const handleSubmit = async () => {
     // Validaciones
-    if (!selectedCardId) { Alert.alert("Error", "Selecciona una tarjeta"); return; }
-    if (!merchant.trim()) { Alert.alert("Error", "Ingresa el nombre del comercio"); return; }
-    if (!quotaAmount || isNaN(Number(quotaAmount)) || Number(quotaAmount) <= 0) {
-      Alert.alert("Error", "Ingresa un monto de cuota válido"); return;
+    if (!selectedCardId) {
+      Alert.alert("Error", "Selecciona una tarjeta");
+      return;
     }
-    if (!totalInstallments || isNaN(Number(totalInstallments)) || Number(totalInstallments) <= 0) {
-      Alert.alert("Error", "Ingresa el total de cuotas"); return;
+    if (!merchant.trim()) {
+      Alert.alert("Error", "Ingresa el nombre del comercio");
+      return;
     }
-    if (paidInstallments === "" || isNaN(Number(paidInstallments)) || Number(paidInstallments) < 0) {
-      Alert.alert("Error", "Ingresa las cuotas ya pagadas"); return;
+    if (
+      !quotaAmount ||
+      isNaN(Number(quotaAmount)) ||
+      Number(quotaAmount) <= 0
+    ) {
+      Alert.alert("Error", "Ingresa un monto de cuota válido");
+      return;
+    }
+    if (
+      !totalInstallments ||
+      isNaN(Number(totalInstallments)) ||
+      Number(totalInstallments) <= 0
+    ) {
+      Alert.alert("Error", "Ingresa el total de cuotas");
+      return;
+    }
+    if (
+      paidInstallments === "" ||
+      isNaN(Number(paidInstallments)) ||
+      Number(paidInstallments) < 0
+    ) {
+      Alert.alert("Error", "Ingresa las cuotas ya pagadas");
+      return;
     }
     if (Number(paidInstallments) >= Number(totalInstallments)) {
-      Alert.alert("Error", "Las cuotas pagadas deben ser menor al total"); return;
+      Alert.alert("Error", "Las cuotas pagadas deben ser menor al total");
+      return;
     }
 
     const lastPaidMonthStr = `${lastPaidYear}-${String(lastPaidMonth + 1).padStart(2, "0")}`;
@@ -128,7 +177,7 @@ export default function AddDebtScreen() {
         return;
       }
 
-      const payload: any = {
+      const payload: CreateManualTransactionDto = {
         merchant: merchant.trim(),
         purchaseDate: finalPurchaseDate,
         quotaAmount: Number(quotaAmount),
@@ -136,9 +185,8 @@ export default function AddDebtScreen() {
         paidInstallments: Number(paidInstallments),
         lastPaidMonth: lastPaidMonthStr,
         currency,
+        ...(chosenCategoryId ? { categoryId: chosenCategoryId } : {}),
       };
-
-      if (chosenCategoryId) payload.categoryId = chosenCategoryId;
 
       let result;
       if (isEdit && params.transactionId) {
@@ -151,12 +199,12 @@ export default function AddDebtScreen() {
         result = await createManualTransaction(selectedCardId, payload);
       }
 
-      let categoryInfo = '';
+      let categoryInfo = "";
       if (chosenCategoryId) categoryInfo = `Categoría asignada`;
 
       Alert.alert(
         isEdit ? "Deuda actualizada" : "Deuda agregada",
-        `${result.quotasCreated} cuotas ${isEdit ? "actualizadas" : "creadas"} para "${merchant.trim()}"${categoryInfo ? `\n${categoryInfo}` : ''}`,
+        `${result.quotasCreated} cuotas ${isEdit ? "actualizadas" : "creadas"} para "${merchant.trim()}"${categoryInfo ? `\n${categoryInfo}` : ""}`,
         [{ text: "OK", onPress: () => router.back() }],
       );
     } catch (error) {
@@ -181,7 +229,7 @@ export default function AddDebtScreen() {
         ? purchaseDate.toISOString().split("T")[0]
         : `${lastPaidYear}-${String(lastPaidMonth + 1).padStart(2, "0")}-01`;
 
-      const payload: any = {
+      const payload: CreateManualTransactionDto = {
         merchant: merchant.trim(),
         purchaseDate: finalPurchaseDate,
         quotaAmount: Number(quotaAmount),
@@ -189,12 +237,16 @@ export default function AddDebtScreen() {
         paidInstallments: Number(paidInstallments),
         lastPaidMonth: lastPaidMonthStr,
         currency,
+        ...(categoryId ? { categoryId } : {}),
       };
-      if (categoryId) payload.categoryId = categoryId;
 
       let result;
       if (isEdit && params.transactionId) {
-        result = await updateManualTransaction(selectedCardId, params.transactionId!, payload);
+        result = await updateManualTransaction(
+          selectedCardId,
+          params.transactionId!,
+          payload,
+        );
       } else {
         result = await createManualTransaction(selectedCardId, payload);
       }
@@ -228,7 +280,10 @@ export default function AddDebtScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+      >
         {/* Card Selector */}
         <Text style={styles.sectionLabel}>Tarjeta de Crédito</Text>
         <View style={[styles.cardSelector, isEdit && { opacity: 0.6 }]}>
@@ -269,7 +324,15 @@ export default function AddDebtScreen() {
             onChangeText={setMerchant}
             placeholderTextColor="#ADB5BD"
           />
-          <TouchableOpacity style={{ padding: 10 }} onPress={() => router.push({ pathname: "/categories/select", params: { merchant } })}>
+          <TouchableOpacity
+            style={{ padding: 10 }}
+            onPress={() =>
+              router.push({
+                pathname: "/categories/select",
+                params: { merchant },
+              })
+            }
+          >
             <Ionicons name="pricetag-outline" size={22} color="#007BFF" />
           </TouchableOpacity>
         </View>
@@ -287,16 +350,36 @@ export default function AddDebtScreen() {
           />
           <View style={styles.currencyToggle}>
             <TouchableOpacity
-              style={[styles.currencyBtn, currency === "CLP" && styles.currencyBtnActive]}
+              style={[
+                styles.currencyBtn,
+                currency === "CLP" && styles.currencyBtnActive,
+              ]}
               onPress={() => setCurrency("CLP")}
             >
-              <Text style={[styles.currencyText, currency === "CLP" && styles.currencyTextActive]}>CLP</Text>
+              <Text
+                style={[
+                  styles.currencyText,
+                  currency === "CLP" && styles.currencyTextActive,
+                ]}
+              >
+                CLP
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.currencyBtn, currency === "Dolar" && styles.currencyBtnActive]}
+              style={[
+                styles.currencyBtn,
+                currency === "Dolar" && styles.currencyBtnActive,
+              ]}
               onPress={() => setCurrency("Dolar")}
             >
-              <Text style={[styles.currencyText, currency === "Dolar" && styles.currencyTextActive]}>USD</Text>
+              <Text
+                style={[
+                  styles.currencyText,
+                  currency === "Dolar" && styles.currencyTextActive,
+                ]}
+              >
+                USD
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -328,28 +411,43 @@ export default function AddDebtScreen() {
         </View>
 
         {/* Remaining info */}
-        {totalInstallments && paidInstallments !== "" && Number(totalInstallments) > Number(paidInstallments) && (
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={16} color="#007BFF" />
-            <Text style={styles.infoText}>
-              Te quedan {Number(totalInstallments) - Number(paidInstallments)} cuotas pendientes
-              {quotaAmount ? ` = $${((Number(totalInstallments) - Number(paidInstallments)) * Number(quotaAmount)).toLocaleString("es-CL")} total` : ""}
-            </Text>
-          </View>
-        )}
+        {totalInstallments &&
+          paidInstallments !== "" &&
+          Number(totalInstallments) > Number(paidInstallments) && (
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={16} color="#007BFF" />
+              <Text style={styles.infoText}>
+                Te quedan {Number(totalInstallments) - Number(paidInstallments)}{" "}
+                cuotas pendientes
+                {quotaAmount
+                  ? ` = $${((Number(totalInstallments) - Number(paidInstallments)) * Number(quotaAmount)).toLocaleString("es-CL")} total`
+                  : ""}
+              </Text>
+            </View>
+          )}
 
         {/* Last Paid Month */}
         <Text style={styles.label}>Mes del último pago realizado</Text>
         <View style={styles.monthPicker}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.monthScroll}
+          >
             {MONTHS.map((m, idx) => (
               <TouchableOpacity
                 key={idx}
-                style={[styles.monthChip, lastPaidMonth === idx && styles.monthChipSelected]}
+                style={[
+                  styles.monthChip,
+                  lastPaidMonth === idx && styles.monthChipSelected,
+                ]}
                 onPress={() => setLastPaidMonth(idx)}
               >
                 <Text
-                  style={[styles.monthChipText, lastPaidMonth === idx && styles.monthChipTextSelected]}
+                  style={[
+                    styles.monthChipText,
+                    lastPaidMonth === idx && styles.monthChipTextSelected,
+                  ]}
                 >
                   {m.substring(0, 3)}
                 </Text>
@@ -360,11 +458,17 @@ export default function AddDebtScreen() {
             {years.map((y) => (
               <TouchableOpacity
                 key={y}
-                style={[styles.yearChip, lastPaidYear === y && styles.yearChipSelected]}
+                style={[
+                  styles.yearChip,
+                  lastPaidYear === y && styles.yearChipSelected,
+                ]}
                 onPress={() => setLastPaidYear(y)}
               >
                 <Text
-                  style={[styles.yearChipText, lastPaidYear === y && styles.yearChipTextSelected]}
+                  style={[
+                    styles.yearChipText,
+                    lastPaidYear === y && styles.yearChipTextSelected,
+                  ]}
                 >
                   {y}
                 </Text>
@@ -379,14 +483,30 @@ export default function AddDebtScreen() {
           style={styles.datePickerBtn}
           onPress={() => setShowDatePicker(true)}
         >
-          <Ionicons name="calendar-outline" size={18} color={purchaseDate ? "#212529" : "#ADB5BD"} />
-          <Text style={[styles.datePickerText, !purchaseDate && { color: "#ADB5BD" }]}>
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color={purchaseDate ? "#212529" : "#ADB5BD"}
+          />
+          <Text
+            style={[
+              styles.datePickerText,
+              !purchaseDate && { color: "#ADB5BD" },
+            ]}
+          >
             {purchaseDate
-              ? purchaseDate.toLocaleDateString("es-CL", { day: "2-digit", month: "long", year: "numeric" })
+              ? purchaseDate.toLocaleDateString("es-CL", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })
               : "Seleccionar fecha"}
           </Text>
           {purchaseDate && (
-            <TouchableOpacity onPress={() => setPurchaseDate(null)} style={styles.dateClearBtn}>
+            <TouchableOpacity
+              onPress={() => setPurchaseDate(null)}
+              style={styles.dateClearBtn}
+            >
               <Ionicons name="close-circle" size={18} color="#868E96" />
             </TouchableOpacity>
           )}
@@ -416,40 +536,84 @@ export default function AddDebtScreen() {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <Ionicons name={isEdit ? "checkmark-circle" : "add-circle"} size={20} color="#fff" />
-              <Text style={styles.submitText}>{isEdit ? "Guardar Cambios" : "Agregar Deuda"}</Text>
+              <Ionicons
+                name={isEdit ? "checkmark-circle" : "add-circle"}
+                size={20}
+                color="#fff"
+              />
+              <Text style={styles.submitText}>
+                {isEdit ? "Guardar Cambios" : "Agregar Deuda"}
+              </Text>
             </>
           )}
         </TouchableOpacity>
 
         {/* Suggestion Modal */}
         <Modal visible={showSuggestionModal} transparent animationType="fade">
-          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 20 }}>
-            <View style={{ backgroundColor: "#fff", borderRadius: 12, padding: 16 }}>
-              <Text style={{ fontSize: 16, fontWeight: "700", marginBottom: 8 }}>Categoría sugerida</Text>
-              <Text style={{ marginBottom: 12 }}>{suggestedMatch?.categoryName}</Text>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(0,0,0,0.4)",
+              justifyContent: "center",
+              padding: 20,
+            }}
+          >
+            <View
+              style={{ backgroundColor: "#fff", borderRadius: 12, padding: 16 }}
+            >
+              <Text
+                style={{ fontSize: 16, fontWeight: "700", marginBottom: 8 }}
+              >
+                Categoría sugerida
+              </Text>
+              <Text style={{ marginBottom: 12 }}>
+                {suggestedMatch?.categoryName}
+              </Text>
 
               <TouchableOpacity
-                style={{ backgroundColor: "#007BFF", padding: 12, borderRadius: 8, marginBottom: 8 }}
+                style={{
+                  backgroundColor: "#007BFF",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
                 onPress={async () => {
                   if (!suggestedMatch) return;
                   setSuggestionProcessing(true);
                   try {
                     // Copiar la categoría global a las del usuario y usarla
-                    const created = await addGlobalCategoryToUser(suggestedMatch.categoryId);
+                    const created = await addGlobalCategoryToUser(
+                      suggestedMatch.categoryId,
+                    );
                     await submitAfterChoice(created.id);
                   } catch (err) {
-                    Alert.alert("Error", err instanceof Error ? err.message : "Error");
+                    Alert.alert(
+                      "Error",
+                      err instanceof Error ? err.message : "Error",
+                    );
                   } finally {
                     setSuggestionProcessing(false);
                   }
                 }}
               >
-                <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Usar y copiar a mis categorías</Text>
+                <Text
+                  style={{
+                    color: "#fff",
+                    textAlign: "center",
+                    fontWeight: "700",
+                  }}
+                >
+                  Usar y copiar a mis categorías
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={{ backgroundColor: "#28A745", padding: 12, borderRadius: 8, marginBottom: 8 }}
+                style={{
+                  backgroundColor: "#28A745",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 8,
+                }}
                 onPress={async () => {
                   // Crear nueva categoría personal y asociar el merchant
                   setSuggestionProcessing(true);
@@ -462,24 +626,47 @@ export default function AddDebtScreen() {
                     });
                     await submitAfterChoice(created.id);
                   } catch (err) {
-                    Alert.alert("Error", err instanceof Error ? err.message : "Error");
+                    Alert.alert(
+                      "Error",
+                      err instanceof Error ? err.message : "Error",
+                    );
                   } finally {
                     setSuggestionProcessing(false);
                   }
                 }}
               >
-                <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Crear categoría y asociar comercio</Text>
+                <Text
+                  style={{
+                    color: "#fff",
+                    textAlign: "center",
+                    fontWeight: "700",
+                  }}
+                >
+                  Crear categoría y asociar comercio
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={{ backgroundColor: "#6C757D", padding: 12, borderRadius: 8 }}
+                style={{
+                  backgroundColor: "#6C757D",
+                  padding: 12,
+                  borderRadius: 8,
+                }}
                 onPress={() => {
                   setShowSuggestionModal(false);
                   // proceed without category
                   submitAfterChoice(undefined);
                 }}
               >
-                <Text style={{ color: "#fff", textAlign: "center", fontWeight: "700" }}>Ignorar</Text>
+                <Text
+                  style={{
+                    color: "#fff",
+                    textAlign: "center",
+                    fontWeight: "700",
+                  }}
+                >
+                  Ignorar
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

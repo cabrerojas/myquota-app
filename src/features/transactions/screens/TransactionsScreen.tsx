@@ -16,14 +16,11 @@ import {
   Transaction,
   updateTransaction,
 } from "../services/transactionsApi";
-import { exportTransactionsToCSV } from '../services/exportTransactions';
+import { exportTransactionsToCSV } from "../services/exportTransactions";
 import { useRouter } from "expo-router";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
-interface CreditCard {
-  id: string;
-  cardType: string;
-  cardLastDigits: string;
-}
+import { CreditCardBasic } from "@/shared/types/creditCard";
+import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 
 type CurrencyFilter = "all" | "CLP" | "Dolar";
 
@@ -43,48 +40,6 @@ const MONTH_FILTERS = [
   "Diciembre",
 ];
 
-const formatDate = (dateStr: string): string => {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("es-CL", {
-      timeZone: "America/Santiago",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return "";
-  }
-};
-
-const getDayKey = (dateStr: string): string => {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("es-CL", {
-      timeZone: "America/Santiago",
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-  } catch {
-    return "";
-  }
-};
-
-const getMonthIndex = (dateStr: string): number => {
-  try {
-    const date = new Date(dateStr);
-    // Get month in Chile timezone
-    const monthStr = date.toLocaleDateString("es-CL", {
-      timeZone: "America/Santiago",
-      month: "numeric",
-    });
-    return parseInt(monthStr, 10);
-  } catch {
-    return 0;
-  }
-};
-
 interface GroupedTransactions {
   day: string;
   transactions: Transaction[];
@@ -93,7 +48,7 @@ interface GroupedTransactions {
 }
 
 export default function TransactionsScreen() {
-  const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
+  const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,11 +61,17 @@ export default function TransactionsScreen() {
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
-  const router = useRouter();
+  const _router = useRouter();
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
-  const [categoryModalMerchant, setCategoryModalMerchant] = useState<string | null>(null);
-  const [categoryModalTransactionId, setCategoryModalTransactionId] = useState<string | null>(null);
-  const [categoryModalCreditCardId, setCategoryModalCreditCardId] = useState<string | null>(null);
+  const [categoryModalMerchant, setCategoryModalMerchant] = useState<
+    string | null
+  >(null);
+  const [categoryModalTransactionId, setCategoryModalTransactionId] = useState<
+    string | null
+  >(null);
+  const [categoryModalCreditCardId, setCategoryModalCreditCardId] = useState<
+    string | null
+  >(null);
 
   // Calcular años presentes en las transacciones
   const availableYears = useMemo(() => {
@@ -183,7 +144,10 @@ export default function TransactionsScreen() {
         return false;
       }
       // Year
-      if (yearFilter !== null && new Date(t.transactionDate).getFullYear() !== yearFilter) {
+      if (
+        yearFilter !== null &&
+        new Date(t.transactionDate).getFullYear() !== yearFilter
+      ) {
         return false;
       }
       // Monto mínimo
@@ -196,7 +160,15 @@ export default function TransactionsScreen() {
       }
       return true;
     });
-  }, [transactions, searchQuery, currencyFilter, monthFilter, yearFilter, minAmount, maxAmount]);
+  }, [
+    transactions,
+    searchQuery,
+    currencyFilter,
+    monthFilter,
+    yearFilter,
+    minAmount,
+    maxAmount,
+  ]);
 
   // Group by day
   const groupedTransactions = useMemo((): GroupedTransactions[] => {
@@ -342,7 +314,11 @@ export default function TransactionsScreen() {
 
           {/* Year filter */}
           <Text style={styles.filterLabel}>Año</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthFilterScroll}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.monthFilterScroll}
+          >
             <TouchableOpacity
               style={[
                 styles.filterChip,
@@ -350,10 +326,14 @@ export default function TransactionsScreen() {
               ]}
               onPress={() => setYearFilter(null)}
             >
-              <Text style={[
-                styles.filterChipText,
-                yearFilter === null && styles.filterChipTextActive,
-              ]}>Todos</Text>
+              <Text
+                style={[
+                  styles.filterChipText,
+                  yearFilter === null && styles.filterChipTextActive,
+                ]}
+              >
+                Todos
+              </Text>
             </TouchableOpacity>
             {availableYears.map((y) => (
               <TouchableOpacity
@@ -364,10 +344,14 @@ export default function TransactionsScreen() {
                 ]}
                 onPress={() => setYearFilter(y)}
               >
-                <Text style={[
-                  styles.filterChipText,
-                  yearFilter === y && styles.filterChipTextActive,
-                ]}>{y}</Text>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    yearFilter === y && styles.filterChipTextActive,
+                  ]}
+                >
+                  {y}
+                </Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -456,7 +440,8 @@ export default function TransactionsScreen() {
           )}
           {totals.usd > 0 && (
             <Text style={styles.summaryAmountUSD}>
-              US${totals.usd.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
+              US$
+              {totals.usd.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
             </Text>
           )}
         </View>
@@ -465,13 +450,18 @@ export default function TransactionsScreen() {
           onPress={async () => {
             setTimeout(async () => {
               try {
-                await exportTransactionsToCSV(filteredTransactions.map(t => ({
-                  ...t,
-                  cardType: creditCards.find(c => c.id === selectedCardId)?.cardType,
-                  cardLastDigits: creditCards.find(c => c.id === selectedCardId)?.cardLastDigits,
-                })));
-              } catch (e) {
-                alert('Error al exportar transacciones');
+                await exportTransactionsToCSV(
+                  filteredTransactions.map((t) => ({
+                    ...t,
+                    cardType: creditCards.find((c) => c.id === selectedCardId)
+                      ?.cardType,
+                    cardLastDigits: creditCards.find(
+                      (c) => c.id === selectedCardId,
+                    )?.cardLastDigits,
+                  })),
+                );
+              } catch {
+                alert("Error al exportar transacciones");
               }
             }, 300);
           }}
@@ -515,14 +505,16 @@ export default function TransactionsScreen() {
                     // group.day es como "Viernes, 30 de Enero"
                     // Tomamos el primer año de las transacciones del grupo
                     if (group.transactions.length > 0) {
-                      const date = new Date(group.transactions[0].transactionDate);
+                      const date = new Date(
+                        group.transactions[0].transactionDate,
+                      );
                       const year = date.getFullYear();
                       // Si el año no está ya en el string, lo agregamos
                       if (!group.day.includes(year.toString())) {
                         return ` ${year}`;
                       }
                     }
-                    return '';
+                    return "";
                   })()}
                 </Text>
                 <View style={styles.dayTotals}>
@@ -533,7 +525,10 @@ export default function TransactionsScreen() {
                   )}
                   {group.totalUSD > 0 && (
                     <Text style={styles.dayTotalUSD}>
-                      US${group.totalUSD.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
+                      US$
+                      {group.totalUSD.toLocaleString("es-CL", {
+                        minimumFractionDigits: 2,
+                      })}
                     </Text>
                   )}
                 </View>
@@ -550,7 +545,9 @@ export default function TransactionsScreen() {
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
                     <Text style={styles.amount}>
-                      {t.currency === "Dolar" ? `US$${t.amount.toFixed(2)}` : `$${t.amount.toLocaleString("es-CL")}`}
+                      {t.currency === "Dolar"
+                        ? `US$${t.amount.toFixed(2)}`
+                        : `$${t.amount.toLocaleString("es-CL")}`}
                     </Text>
                     <TouchableOpacity
                       style={styles.categoryBtn}
@@ -562,12 +559,25 @@ export default function TransactionsScreen() {
                       }}
                     >
                       {t.categoryId ? (
-                        <View style={[styles.categoryPill, { backgroundColor: t.categoryColor || '#F1F3F5' }]}>
-                          <Text style={styles.categoryEmoji}>{t.categoryIcon || '🏷️'}</Text>
-                          <Text style={styles.categoryName} numberOfLines={1}>{t.categoryName}</Text>
+                        <View
+                          style={[
+                            styles.categoryPill,
+                            { backgroundColor: t.categoryColor || "#F1F3F5" },
+                          ]}
+                        >
+                          <Text style={styles.categoryEmoji}>
+                            {t.categoryIcon || "🏷️"}
+                          </Text>
+                          <Text style={styles.categoryName} numberOfLines={1}>
+                            {t.categoryName}
+                          </Text>
                         </View>
                       ) : (
-                        <Ionicons name="pricetag-outline" size={16} color="#007BFF" />
+                        <Ionicons
+                          name="pricetag-outline"
+                          size={16}
+                          color="#007BFF"
+                        />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -580,7 +590,7 @@ export default function TransactionsScreen() {
       )}
       <CategorySuggestModal
         visible={categoryModalVisible}
-        merchant={categoryModalMerchant || ''}
+        merchant={categoryModalMerchant || ""}
         onClose={() => setCategoryModalVisible(false)}
         onCategorySelected={(category) => {
           // Actualizar la transacción en backend y en estado local
@@ -592,32 +602,46 @@ export default function TransactionsScreen() {
           }
           (async () => {
             try {
-              console.log('[TransactionsScreen] Updating transaction', { creditCardId, transactionId, categoryId: category.id });
-              const res = await updateTransaction(creditCardId, transactionId, { categoryId: category.id });
-              console.log('[TransactionsScreen] updateTransaction response', res);
+              console.log("[TransactionsScreen] Updating transaction", {
+                creditCardId,
+                transactionId,
+                categoryId: category.id,
+              });
+              const res = await updateTransaction(creditCardId, transactionId, {
+                categoryId: category.id,
+              });
+              console.log(
+                "[TransactionsScreen] updateTransaction response",
+                res,
+              );
 
               // El backend devuelve { message, data } donde data es la transacción enriquecida
-              const updated = res?.data ?? res;
+              const updated: Partial<Transaction> = res?.data ?? {};
 
-              setTransactions((prev) => prev.map((t) =>
-                t.id === transactionId
-                  ? {
-                      ...t,
-                      categoryId: updated?.categoryId ?? category.id,
-                      categoryName: updated?.categoryName ?? category.name,
-                      categoryIcon: updated?.categoryIcon ?? category.icon,
-                      categoryColor: updated?.categoryColor ?? category.color,
-                    }
-                  : t
-              ));
+              setTransactions((prev) =>
+                prev.map((t) =>
+                  t.id === transactionId
+                    ? {
+                        ...t,
+                        categoryId: updated.categoryId ?? category.id,
+                        categoryName: updated.categoryName ?? category.name,
+                        categoryIcon: updated.categoryIcon ?? category.icon,
+                        categoryColor: updated.categoryColor ?? category.color,
+                      }
+                    : t,
+                ),
+              );
               // Refrescar listado para capturar propagación a otras transacciones
               try {
                 await loadTransactions();
               } catch (e) {
-                console.warn('Could not reload transactions after category assignment', e);
+                console.warn(
+                  "Could not reload transactions after category assignment",
+                  e,
+                );
               }
             } catch (e) {
-              console.error('Error updating transaction category', e);
+              console.error("Error updating transaction category", e);
             } finally {
               setCategoryModalVisible(false);
             }
@@ -669,15 +693,15 @@ const styles = StyleSheet.create({
   },
   // Category pill
   categoryPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 16,
     minWidth: 56,
   },
   categoryEmoji: { marginRight: 6, fontSize: 14 },
-  categoryName: { fontSize: 12, color: '#212529', maxWidth: 100 },
+  categoryName: { fontSize: 12, color: "#212529", maxWidth: 100 },
   cardChipText: {
     fontSize: 13,
     fontWeight: "600",
@@ -816,24 +840,24 @@ const styles = StyleSheet.create({
     color: "#007BFF",
   },
   exportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#E9F5FF',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E9F5FF",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginLeft: 10,
   },
   exportButtonText: {
-    color: '#007BFF',
-    fontWeight: '700',
+    color: "#007BFF",
+    fontWeight: "700",
     fontSize: 14,
     marginLeft: 6,
   },
   exportInfo: {
     fontSize: 11,
-    color: '#868E96',
-    textAlign: 'center',
+    color: "#868E96",
+    textAlign: "center",
     marginBottom: 2,
     marginTop: -8,
   },

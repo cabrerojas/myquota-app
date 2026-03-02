@@ -80,9 +80,15 @@ export const addMerchantToCategory = async (
   if (!res.ok) throw new Error("Error adding merchant to category");
 };
 
+export interface Merchant {
+  id: string;
+  name: string;
+  pattern?: string;
+}
+
 export const getMerchantsForCategory = async (
   categoryId: string,
-): Promise<any[]> => {
+): Promise<Merchant[]> => {
   const res = await requestWithAuth(
     `${API_BASE_URL}/categories/${categoryId}/merchants`,
   );
@@ -90,7 +96,7 @@ export const getMerchantsForCategory = async (
   const text = await res.text();
   if (!text) return [];
   try {
-    return JSON.parse(text) as any[];
+    return JSON.parse(text) as Merchant[];
   } catch (e) {
     console.warn("categoryApi.getMerchantsForCategory parse error", e);
     return [];

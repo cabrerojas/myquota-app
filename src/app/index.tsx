@@ -8,7 +8,9 @@ export default function Index() {
 
   useEffect(() => {
     (async () => {
-      const token = (await SecureStore.getItemAsync("accessToken")) || (await AsyncStorage.getItem("jwt"));
+      const token =
+        (await SecureStore.getItemAsync("accessToken")) ||
+        (await AsyncStorage.getItem("jwt"));
       setIsAuthenticated(!!token);
     })();
   }, []);
