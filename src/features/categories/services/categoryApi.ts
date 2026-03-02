@@ -135,3 +135,32 @@ export const getAllCategories = async (): Promise<Category[]> => {
     return [];
   }
 };
+
+export interface MerchantCategoryHistoryItem {
+  categoryId: string;
+  categoryName: string;
+  categoryIcon?: string;
+  categoryColor?: string;
+  count: number;
+}
+
+/**
+ * Returns categories previously assigned to transactions of the given merchant,
+ * sorted by frequency (most used first).
+ */
+export const getMerchantCategoryHistory = async (
+  merchantName: string,
+): Promise<MerchantCategoryHistoryItem[]> => {
+  const res = await requestWithAuth(
+    `${API_BASE_URL}/categories/merchant-history?merchant=${encodeURIComponent(merchantName)}`,
+  );
+  if (!res.ok) return [];
+  const text = await res.text();
+  if (!text) return [];
+  try {
+    return JSON.parse(text) as MerchantCategoryHistoryItem[];
+  } catch (e) {
+    console.warn("categoryApi.getMerchantCategoryHistory parse error", e);
+    return [];
+  }
+};

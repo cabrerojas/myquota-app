@@ -593,7 +593,6 @@ export default function TransactionsScreen() {
         merchant={categoryModalMerchant || ""}
         onClose={() => setCategoryModalVisible(false)}
         onCategorySelected={(category) => {
-          // Actualizar la transacción en backend y en estado local
           const creditCardId = categoryModalCreditCardId;
           const transactionId = categoryModalTransactionId;
           if (!creditCardId || !transactionId) {
@@ -602,20 +601,10 @@ export default function TransactionsScreen() {
           }
           (async () => {
             try {
-              console.log("[TransactionsScreen] Updating transaction", {
-                creditCardId,
-                transactionId,
-                categoryId: category.id,
-              });
               const res = await updateTransaction(creditCardId, transactionId, {
                 categoryId: category.id,
               });
-              console.log(
-                "[TransactionsScreen] updateTransaction response",
-                res,
-              );
 
-              // El backend devuelve { message, data } donde data es la transacción enriquecida
               const updated: Partial<Transaction> = res?.data ?? {};
 
               setTransactions((prev) =>
@@ -631,15 +620,6 @@ export default function TransactionsScreen() {
                     : t,
                 ),
               );
-              // Refrescar listado para capturar propagación a otras transacciones
-              try {
-                await loadTransactions();
-              } catch (e) {
-                console.warn(
-                  "Could not reload transactions after category assignment",
-                  e,
-                );
-              }
             } catch (e) {
               console.error("Error updating transaction category", e);
             } finally {

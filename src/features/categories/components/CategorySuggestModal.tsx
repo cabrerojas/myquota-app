@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Modal,
   View,
@@ -10,12 +10,15 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import {
-  matchCategoryByMerchant,
+  getAllCategories,
+  getMerchantCategoryHistory,
   createCategoryWithMerchant,
   Category,
-  getAllCategories,
+  MerchantCategoryHistoryItem,
 } from "@/features/categories/services/categoryApi";
 
 interface Props {
@@ -25,6 +28,8 @@ interface Props {
   onCategorySelected: (category: Category) => void;
 }
 
+type ModalStep = "pick" | "create";
+
 export default function CategorySuggestModal({
   visible,
   merchant,
@@ -32,139 +37,54 @@ export default function CategorySuggestModal({
   onCategorySelected,
 }: Props) {
   const [loading, setLoading] = useState(true);
-  const [suggestion, setSuggestion] = useState<{
-    categoryId: string;
-    categoryName: string;
-  } | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [history, setHistory] = useState<MerchantCategoryHistoryItem[]>([]);
+  const [step, setStep] = useState<ModalStep>("pick");
+  const [searchText, setSearchText] = useState("");
+
+  // Create form state
+  const [newName, setNewName] = useState("");
+  const [emoji, setEmoji] = useState("🏷️");
+  const [color, setColor] = useState("#F7CAC9");
   const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState(merchant);
-  const [matchedCategory, setMatchedCategory] = useState<Category | null>(null);
-  // Emoji y color para la nueva categoría
-  const getDefaultEmoji = (text: string) => {
-    // Sugerir emoji por palabras clave simples
-    if (!text) return "🏷️";
-    const lower = text.toLowerCase();
-    if (lower.includes("super")) return "🛒";
-    if (lower.includes("farmacia")) return "💊";
-    if (lower.includes("rest")) return "🍽️";
-    if (lower.includes("viaje") || lower.includes("travel")) return "✈️";
-    if (lower.includes("auto") || lower.includes("bencina")) return "🚗";
-    if (lower.includes("ropa")) return "👕";
-    if (lower.includes("hogar")) return "🏠";
-    if (lower.includes("tecnolog")) return "💻";
-    if (lower.includes("deporte")) return "🏃";
-    if (
-      lower.includes("luz") ||
-      lower.includes("agua") ||
-      lower.includes("gas")
-    )
-      return "💡";
-    // Por defecto, usar la primera letra como emoji
-    return text.trim() ? text.trim()[0].toUpperCase() : "🏷️";
-  };
-  const getDefaultColor = (text: string) => {
-    // Generar color pastel simple basado en el texto
-    let hash = 0;
-    for (let i = 0; i < text.length; i++)
-      hash = text.charCodeAt(i) + ((hash << 5) - hash);
-    const h = Math.abs(hash) % 360;
-    return `hsl(${h}, 70%, 80%)`;
-  };
-  const [emoji, setEmoji] = useState(getDefaultEmoji(merchant));
-  const [color, setColor] = useState(getDefaultColor(merchant));
 
-  useEffect(() => {
-    if (!visible) return;
-    setLoading(true);
-    setSuggestion(null);
-    setNewName(merchant);
-    setEmoji(getDefaultEmoji(merchant));
-    setColor(getDefaultColor(merchant));
-    matchCategoryByMerchant(merchant)
-      .then((s) => setSuggestion(s))
-      .finally(() => setLoading(false));
-  }, [visible, merchant]);
-
-  useEffect(() => {
-    if (!visible) return;
-    setLoading(true);
-    setSuggestion(null);
-    setNewName(merchant);
-    matchCategoryByMerchant(merchant)
-      .then((s) => setSuggestion(s))
-      .finally(() => setLoading(false));
-  }, [visible, merchant]);
-
-  // Autocomplete / buscar categorías existentes mientras el usuario escribe
-  useEffect(() => {
-    if (!visible) return;
-    let mounted = true;
-    const handler = setTimeout(async () => {
-      if (!newName || newName.trim().length === 0) {
-        if (mounted) setMatchedCategory(null);
-        return;
-      }
-      try {
-        const all = await getAllCategories();
-        const normalize = (s = "") =>
-          s
-            .trim()
-            .toLowerCase()
-            .normalize("NFD")
-            .replace(/\p{Diacritic}/gu, "");
-        const found = all.find((c) => normalize(c.name) === normalize(newName));
-        if (mounted) {
-          setMatchedCategory(found ?? null);
-          if (found) {
-            // Prefill emoji/color with existing category to avoid accidental duplicates
-            setEmoji(found.icon ?? getDefaultEmoji(found.name));
-            setColor(found.color ?? getDefaultColor(found.name));
-          }
-        }
-      } catch (e) {
-        console.warn("Error fetching categories for autocomplete", e);
-      }
-    }, 300);
-    return () => {
-      mounted = false;
-      clearTimeout(handler);
-    };
-  }, [newName, visible]);
-
-  const handleUseSuggestion = async () => {
-    if (!suggestion) return;
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Llamar al endpoint que asocia el comercio a la categoría y propaga la categoría
-      console.log(
-        "[CategorySuggestModal] using suggestion, calling createCategoryWithMerchant",
-        {
-          name: suggestion.categoryName,
-          merchantName: merchant,
-          pattern: merchant,
-          isGlobal: true,
-        },
-      );
-      const created = await createCategoryWithMerchant({
-        name: suggestion.categoryName,
-        merchantName: merchant,
-        pattern: merchant,
-        isGlobal: true,
-      });
-
-      // created puede ser la categoría existente reutilizada o la recién creada
-      onCategorySelected({
-        id: created.id ?? suggestion.categoryId,
-        name: created.name ?? suggestion.categoryName,
-        icon: created.icon,
-        color: created.color,
-      });
-      onClose();
-    } catch {
-      Alert.alert("Error", "No se pudo asignar la categoría sugerida");
+      const [cats, hist] = await Promise.all([
+        getAllCategories(),
+        getMerchantCategoryHistory(merchant),
+      ]);
+      setCategories(cats);
+      setHistory(hist);
+    } catch (e) {
+      console.warn("Error loading categories for modal", e);
     } finally {
       setLoading(false);
     }
+  }, [merchant]);
+
+  useEffect(() => {
+    if (!visible) return;
+    setStep("pick");
+    setSearchText("");
+    setNewName("");
+    setEmoji("🏷️");
+    setColor("#F7CAC9");
+    loadData();
+  }, [visible, loadData]);
+
+  const handlePickCategory = (cat: Category) => {
+    onCategorySelected(cat);
+  };
+
+  const handlePickFromHistory = (item: MerchantCategoryHistoryItem) => {
+    onCategorySelected({
+      id: item.categoryId,
+      name: item.categoryName,
+      icon: item.categoryIcon,
+      color: item.categoryColor,
+    });
   };
 
   const handleCreate = async () => {
@@ -172,77 +92,29 @@ export default function CategorySuggestModal({
       Alert.alert("Nombre requerido", "Ingresa un nombre para la categoría");
       return;
     }
-    if (!emoji.trim()) {
-      Alert.alert("Emoji requerido", "Elige un emoji para la categoría");
-      return;
-    }
-    if (!color.trim()) {
-      Alert.alert("Color requerido", "Elige un color para la categoría");
-      return;
-    }
     setCreating(true);
     try {
-      console.log("[CategorySuggestModal] Creating category with", {
-        name: newName.trim(),
-        icon: emoji.trim(),
-        color: color.trim(),
-        merchantName: merchant,
-        pattern: merchant,
-        isGlobal: true,
-      });
-      // Si encontramos una categoría existente con el mismo nombre normalizado, preguntar antes de crear
-      if (matchedCategory) {
-        const useExisting = await new Promise<boolean | null>((resolve) => {
-          Alert.alert(
-            "Categoría existente",
-            `La categoría "${matchedCategory.name}" ya existe. ¿Deseas usarla en lugar de crear una nueva?`,
-            [
-              { text: "Usar existente", onPress: () => resolve(true) },
-              {
-                text: "Crear igual",
-                onPress: () => resolve(false),
-                style: "destructive",
-              },
-              {
-                text: "Cancelar",
-                onPress: () => resolve(null),
-                style: "cancel",
-              },
-            ],
-            { cancelable: true },
-          );
-        });
-        if (useExisting === null) return;
-        if (useExisting) {
-          const created = await createCategoryWithMerchant({
-            name: matchedCategory.name,
-            merchantName: merchant,
-            pattern: merchant,
-            isGlobal: true,
-          });
-          onCategorySelected(created);
-          onClose();
-          return;
-        }
-        // else fallthrough to create a separate category
-      }
-
       const created = await createCategoryWithMerchant({
         name: newName.trim(),
-        icon: emoji.trim(),
-        color: color.trim(),
-        merchantName: merchant,
-        pattern: merchant,
+        icon: emoji.trim() || "🏷️",
+        color: color.trim() || "#F7CAC9",
         isGlobal: true,
       });
       onCategorySelected(created);
-      onClose();
     } catch {
       Alert.alert("Error", "No se pudo crear la categoría");
     } finally {
       setCreating(false);
     }
   };
+
+  const filteredCategories = categories.filter((c) => {
+    if (!searchText.trim()) return true;
+    return c.name.toLowerCase().includes(searchText.toLowerCase());
+  });
+
+  // Set of category IDs already in history, to visually mark them in the full list
+  const historyIds = new Set(history.map((h) => h.categoryId));
 
   return (
     <Modal
@@ -257,34 +129,139 @@ export default function CategorySuggestModal({
         keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Categoría para {merchant}</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title} numberOfLines={1}>
+              Categoría para {merchant}
+            </Text>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close" size={24} color="#495057" />
+            </TouchableOpacity>
+          </View>
+
           {loading ? (
-            <ActivityIndicator style={{ marginVertical: 24 }} />
-          ) : suggestion ? (
+            <ActivityIndicator
+              style={{ marginVertical: 40 }}
+              size="large"
+              color="#007BFF"
+            />
+          ) : step === "pick" ? (
             <>
-              <Text style={styles.suggestLabel}>Sugerencia</Text>
-              <Text style={styles.suggestName}>{suggestion.categoryName}</Text>
-              <TouchableOpacity
-                style={styles.suggestBtn}
-                onPress={handleUseSuggestion}
+              {/* History section */}
+              {history.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Usadas antes</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.historyRow}
+                  >
+                    {history.map((item) => (
+                      <TouchableOpacity
+                        key={item.categoryId}
+                        style={[
+                          styles.historyChip,
+                          {
+                            backgroundColor: item.categoryColor || "#F1F3F5",
+                          },
+                        ]}
+                        onPress={() => handlePickFromHistory(item)}
+                      >
+                        <Text style={styles.historyEmoji}>
+                          {item.categoryIcon || "🏷️"}
+                        </Text>
+                        <Text style={styles.historyName} numberOfLines={1}>
+                          {item.categoryName}
+                        </Text>
+                        <Text style={styles.historyCount}>({item.count})</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+              {/* Search */}
+              <View style={styles.searchContainer}>
+                <Ionicons name="search" size={16} color="#ADB5BD" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Buscar categoría..."
+                  placeholderTextColor="#ADB5BD"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                />
+                {searchText.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearchText("")}>
+                    <Ionicons name="close-circle" size={16} color="#ADB5BD" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* All categories list */}
+              <ScrollView
+                style={styles.categoryList}
+                showsVerticalScrollIndicator={false}
               >
-                <Text style={styles.suggestBtnText}>Usar esta categoría</Text>
+                {filteredCategories.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={styles.categoryRow}
+                    onPress={() => handlePickCategory(cat)}
+                  >
+                    <View
+                      style={[
+                        styles.categoryIconBg,
+                        { backgroundColor: cat.color || "#F1F3F5" },
+                      ]}
+                    >
+                      <Text style={styles.categoryEmoji}>
+                        {cat.icon || "🏷️"}
+                      </Text>
+                    </View>
+                    <Text style={styles.categoryName}>{cat.name}</Text>
+                    {historyIds.has(cat.id) && (
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color="#ADB5BD"
+                        style={{ marginLeft: "auto" }}
+                      />
+                    )}
+                  </TouchableOpacity>
+                ))}
+                {filteredCategories.length === 0 && (
+                  <Text style={styles.emptyText}>
+                    No se encontraron categorías
+                  </Text>
+                )}
+              </ScrollView>
+
+              {/* Create new button */}
+              <TouchableOpacity
+                style={styles.createNewBtn}
+                onPress={() => {
+                  setNewName(searchText || "");
+                  setStep("create");
+                }}
+              >
+                <Ionicons name="add-circle-outline" size={18} color="#007BFF" />
+                <Text style={styles.createNewBtnText}>
+                  Crear nueva categoría
+                </Text>
               </TouchableOpacity>
             </>
           ) : (
-            <>
-              <Text style={styles.noSuggest}>
-                No hay sugerencias para este comercio.
-              </Text>
+            /* Create category step */
+            <View style={styles.createForm}>
               <TextInput
                 style={styles.input}
-                placeholder="Nombre de la nueva categoría"
+                placeholder="Nombre de la categoría"
                 value={newName}
-                onChangeText={(t) => {
-                  setNewName(t);
-                  setEmoji(getDefaultEmoji(t));
-                  setColor(getDefaultColor(t));
-                }}
+                onChangeText={setNewName}
+                autoFocus
               />
               <View style={styles.rowInputs}>
                 <View style={{ flex: 1 }}>
@@ -304,7 +281,7 @@ export default function CategorySuggestModal({
                       styles.input,
                       { backgroundColor: color, color: "#212529" },
                     ]}
-                    placeholder="#AABBCC o hsl()"
+                    placeholder="#AABBCC"
                     value={color}
                     onChangeText={setColor}
                   />
@@ -334,22 +311,27 @@ export default function CategorySuggestModal({
                   </View>
                 </View>
               </View>
-              <TouchableOpacity
-                style={styles.createBtn}
-                onPress={handleCreate}
-                disabled={creating}
-              >
-                {creating ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.createBtnText}>Crear categoría</Text>
-                )}
-              </TouchableOpacity>
-            </>
+              <View style={styles.createActions}>
+                <TouchableOpacity
+                  style={styles.backBtn}
+                  onPress={() => setStep("pick")}
+                >
+                  <Text style={styles.backBtnText}>Volver</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.confirmCreateBtn}
+                  onPress={handleCreate}
+                  disabled={creating}
+                >
+                  {creating ? (
+                    <ActivityIndicator color="#fff" size="small" />
+                  ) : (
+                    <Text style={styles.confirmCreateBtnText}>Crear</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Text style={styles.closeBtnText}>Cancelar</Text>
-          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -357,21 +339,6 @@ export default function CategorySuggestModal({
 }
 
 const styles = StyleSheet.create({
-  rowInputs: { flexDirection: "row", gap: 8, marginBottom: 8 },
-  inputLabel: {
-    fontSize: 13,
-    color: "#868E96",
-    marginBottom: 2,
-    marginLeft: 2,
-  },
-  colorRow: { flexDirection: "row", gap: 4, marginTop: 4 },
-  colorSwatch: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginRight: 2,
-  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -381,33 +348,192 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 24,
-    minHeight: 260,
+    paddingBottom: 24,
+    maxHeight: "80%",
   },
-  title: { fontSize: 18, fontWeight: "700", marginBottom: 16 },
-  suggestLabel: { fontWeight: "700", color: "#007BFF", marginBottom: 4 },
-  suggestName: { fontSize: 16, marginBottom: 12 },
-  suggestBtn: {
-    backgroundColor: "#007BFF",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F3F5",
   },
-  suggestBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
-  noSuggest: { color: "#888", marginBottom: 12 },
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: "#212529",
+    flex: 1,
+    marginRight: 12,
+  },
+  section: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#868E96",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  historyRow: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  historyChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 4,
+  },
+  historyEmoji: {
+    fontSize: 14,
+  },
+  historyName: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#212529",
+    maxWidth: 100,
+  },
+  historyCount: {
+    fontSize: 11,
+    color: "#495057",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#212529",
+    padding: 0,
+  },
+  categoryList: {
+    maxHeight: 280,
+    marginTop: 8,
+  },
+  categoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 10,
+  },
+  categoryIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  categoryEmoji: {
+    fontSize: 16,
+  },
+  categoryName: {
+    fontSize: 15,
+    color: "#212529",
+    fontWeight: "500",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#868E96",
+    paddingVertical: 20,
+    fontSize: 14,
+  },
+  createNewBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    marginHorizontal: 20,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F3F5",
+    gap: 6,
+  },
+  createNewBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#007BFF",
+  },
+  createForm: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  rowInputs: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 8,
+  },
+  inputLabel: {
+    fontSize: 13,
+    color: "#868E96",
+    marginBottom: 2,
+    marginLeft: 2,
+  },
   input: {
-    backgroundColor: "#f6f6f6",
+    backgroundColor: "#F8F9FA",
     padding: 10,
     borderRadius: 8,
     marginBottom: 12,
+    fontSize: 15,
+    color: "#212529",
   },
-  createBtn: {
-    backgroundColor: "#28A745",
-    padding: 12,
+  colorRow: {
+    flexDirection: "row",
+    gap: 4,
+    marginTop: 4,
+  },
+  colorSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginRight: 2,
+  },
+  createActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+    gap: 12,
+  },
+  backBtn: {
+    flex: 1,
+    paddingVertical: 12,
     borderRadius: 8,
-    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#DEE2E6",
+    alignItems: "center",
   },
-  createBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
-  closeBtn: { alignSelf: "center", marginTop: 8 },
-  closeBtnText: { color: "#007BFF", fontWeight: "600" },
+  backBtnText: {
+    fontWeight: "600",
+    color: "#495057",
+    fontSize: 15,
+  },
+  confirmCreateBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#28A745",
+    alignItems: "center",
+  },
+  confirmCreateBtnText: {
+    fontWeight: "700",
+    color: "#fff",
+    fontSize: 15,
+  },
 });
