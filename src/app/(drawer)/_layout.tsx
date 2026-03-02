@@ -2,20 +2,29 @@ import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
 import { View, Text } from "react-native";
-import { useEffect, useState } from "react";
-import { getUncategorizedCount } from "@/features/creditCards/services/creditCardsApi";
+import { useEffect } from "react";
+import {
+  UncategorizedProvider,
+  useUncategorized,
+} from "@/shared/contexts/UncategorizedContext";
 
 // Small helper to avoid importing Ionicons in JSX options directly
 import { Ionicons } from "@expo/vector-icons";
 
 export default function DrawerLayout() {
-  const [uncategorizedCount, setUncategorizedCount] = useState(0);
+  return (
+    <UncategorizedProvider>
+      <DrawerContent />
+    </UncategorizedProvider>
+  );
+}
+
+function DrawerContent() {
+  const { count: uncategorizedCount, refreshCount } = useUncategorized();
 
   useEffect(() => {
-    getUncategorizedCount()
-      .then((count) => setUncategorizedCount(count))
-      .catch(() => setUncategorizedCount(0));
-  }, []);
+    refreshCount();
+  }, [refreshCount]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -181,6 +190,7 @@ export default function DrawerLayout() {
     </GestureHandlerRootView>
   );
 }
+
 function DrawerIcon({
   name,
   color,

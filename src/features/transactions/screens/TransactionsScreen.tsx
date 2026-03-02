@@ -21,6 +21,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
+import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 
 type CurrencyFilter = "all" | "CLP" | "Dolar";
 
@@ -49,6 +50,7 @@ interface GroupedTransactions {
 
 export default function TransactionsScreen() {
   const params = useLocalSearchParams<{ filter?: string }>();
+  const { decrementCount } = useUncategorized();
   const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -646,6 +648,11 @@ export default function TransactionsScreen() {
           }
           (async () => {
             try {
+              // Check if transaction was uncategorized before update
+              const wasMissingCategory = transactions.find(
+                (t) => t.id === transactionId && !t.categoryId,
+              );
+
               const res = await updateTransaction(creditCardId, transactionId, {
                 categoryId: category.id,
               });
@@ -665,6 +672,10 @@ export default function TransactionsScreen() {
                     : t,
                 ),
               );
+
+              if (wasMissingCategory) {
+                decrementCount();
+              }
             } catch (e) {
               console.error("Error updating transaction category", e);
             } finally {

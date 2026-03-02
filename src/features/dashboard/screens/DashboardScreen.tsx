@@ -12,10 +12,8 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  getCreditCards,
-  getUncategorizedCount,
-} from "@/features/creditCards/services/creditCardsApi";
+import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 import {
   importBankTransactions,
   ImportResult,
@@ -49,7 +47,7 @@ export default function DashboardScreen() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
-  const [uncategorizedCount, setUncategorizedCount] = useState(0);
+  const { count: uncategorizedCount, refreshCount } = useUncategorized();
 
   const handlePullRefresh = useCallback(async () => {
     setIsPullRefreshing(true);
@@ -58,14 +56,13 @@ export default function DashboardScreen() {
       setCreditCards(cards);
       setAlertsDismissed(false);
       setRefreshKey((prev: number) => prev + 1);
-      const count = await getUncategorizedCount();
-      setUncategorizedCount(count);
+      await refreshCount();
     } catch (error) {
       console.error("Error refreshing:", error);
     } finally {
       setIsPullRefreshing(false);
     }
-  }, []);
+  }, [refreshCount]);
 
   // Estado para el modal de crear período sugerido
   const [showOrphanModal, setShowOrphanModal] = useState(false);
@@ -108,10 +105,8 @@ export default function DashboardScreen() {
       const result = await importBankTransactions(selectedCardId);
       setRefreshKey((prev: number) => prev + 1);
 
-      // Update uncategorized count from import result
-      if (typeof result.uncategorizedCount === "number") {
-        setUncategorizedCount(result.uncategorizedCount);
-      }
+      // Refresh uncategorized count after import
+      await refreshCount();
 
       // Verificar si hay transacciones huérfanas
       if (result.orphanedCount > 0 && result.suggestedPeriod) {
@@ -143,7 +138,7 @@ export default function DashboardScreen() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedCardId]);
+  }, [selectedCardId, refreshCount]);
 
   const handleCreateSuggestedPeriod = async (data: {
     month: string;
@@ -187,10 +182,8 @@ export default function DashboardScreen() {
     });
 
     // Obtener cantidad de transacciones sin categoría
-    getUncategorizedCount()
-      .then((count) => setUncategorizedCount(count))
-      .catch(console.warn);
-  }, []);
+    refreshCount();
+  }, [refreshCount]);
 
   return (
     <ScrollView
