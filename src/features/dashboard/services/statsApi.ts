@@ -35,6 +35,8 @@ export interface DebtSummary {
   monthsRemaining: number;
   nextMonthCLP: number;
   nextMonthUSD: number;
+  /** Per-period totals sorted chronologically. Used for the 3-month preview. */
+  monthlyBreakdown: { month: string; CLP: number; USD: number }[];
 }
 
 export const getDebtSummary = async (): Promise<DebtSummary> => {

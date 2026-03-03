@@ -26,6 +26,7 @@ import MonthlyStats from "../components/MonthlyStats";
 import MonthSummaryCard from "../components/MonthSummaryCard";
 import CreditCardAlertBanner from "../components/CreditCardAlertBanner";
 import DebtIndicatorCard from "../components/DebtIndicatorCard";
+import { getDebtSummary, DebtSummary } from "../services/statsApi";
 import DashboardSkeleton from "../components/DashboardSkeleton";
 import {
   configureNotificationHandler,
@@ -49,13 +50,18 @@ export default function DashboardScreen() {
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [debtSummary, setDebtSummary] = useState<DebtSummary | null>(null);
   const { count: uncategorizedCount, refreshCount } = useUncategorized();
 
   const handlePullRefresh = useCallback(async () => {
     setIsPullRefreshing(true);
     try {
-      const cards = await getCreditCards();
+      const [cards, summary] = await Promise.all([
+        getCreditCards(),
+        getDebtSummary(),
+      ]);
       setCreditCards(cards);
+      setDebtSummary(summary);
       setAlertsDismissed(false);
       setRefreshKey((prev: number) => prev + 1);
       await refreshCount();
@@ -170,10 +176,11 @@ export default function DashboardScreen() {
       }
     });
 
-    // Obtener tarjetas de crédito
-    getCreditCards()
-      .then((cards) => {
+    // Obtener tarjetas de crédito y resumen de deuda en paralelo
+    Promise.all([getCreditCards(), getDebtSummary()])
+      .then(([cards, summary]) => {
         setCreditCards(cards);
+        setDebtSummary(summary);
         if (cards.length > 0) {
           setSelectedCardId(cards[0].id);
         }
@@ -333,11 +340,16 @@ export default function DashboardScreen() {
         <MonthSummaryCard
           creditCardId={selectedCardId}
           refreshKey={refreshKey}
+          nextPeriodCLP={debtSummary?.nextMonthCLP}
+          nextPeriodUSD={debtSummary?.nextMonthUSD}
         />
       )}
 
       {/* Indicador de deuda en cuotas */}
-      <DebtIndicatorCard refreshKey={refreshKey} />
+      <DebtIndicatorCard
+        refreshKey={refreshKey}
+        summary={debtSummary ?? undefined}
+      />
 
       {/* Estadísticas Mensuales */}
       {selectedCardId && (

@@ -109,7 +109,9 @@ export default function CategorySuggestModal({
   };
 
   const filteredCategories = categories
-    .filter((c) => {
+    .filter((c, index, arr) => {
+      // Deduplicate by id to avoid duplicate keys
+      if (arr.findIndex((x) => x.id === c.id) !== index) return false;
       if (!searchText.trim()) return true;
       return c.name.toLowerCase().includes(searchText.toLowerCase());
     })
@@ -207,9 +209,9 @@ export default function CategorySuggestModal({
                 style={styles.categoryList}
                 showsVerticalScrollIndicator={false}
               >
-                {filteredCategories.map((cat) => (
+                {filteredCategories.map((cat, index) => (
                   <TouchableOpacity
-                    key={cat.id}
+                    key={cat.id || `cat-${index}`}
                     style={styles.categoryRow}
                     onPress={() => handlePickCategory(cat)}
                   >
