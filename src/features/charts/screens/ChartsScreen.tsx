@@ -278,7 +278,7 @@ export default function ChartsScreen() {
           },
           {
             key: "categories" as ChartTab,
-            label: "Comercios",
+            label: "Categorías",
             icon: "pie-chart-outline" as const,
           },
         ].map((tab) => (
@@ -407,7 +407,7 @@ export default function ChartsScreen() {
 
           {activeTab === "categories" && (
             <>
-              <Text style={styles.chartTitle}>Distribución por comercio</Text>
+              <Text style={styles.chartTitle}>Distribución por categoría</Text>
               <Text style={styles.chartSubtitle}>
                 Todos los períodos (CLP equiv.)
               </Text>

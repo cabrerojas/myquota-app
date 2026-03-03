@@ -240,16 +240,30 @@ export default function MonthSummaryCard({
 
             {/* ── Top category insight chip ─────────────────── */}
             {topCategory !== null && topCategoryPct > 0 && (
-              <TouchableOpacity
-                style={styles.topCategoryRow}
-                onPress={() => router.push("/(drawer)/charts")}
-                activeOpacity={0.7}
-              >
-                <View style={styles.topCategoryLeft}>
+              <View style={styles.topCategoryWrapper}>
+                <View style={styles.topCategoryHeader}>
+                  <Text style={styles.topCategoryLabel}>
+                    Mayor categoría de gasto
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.topCategoryLinkRow}
+                    onPress={() => router.push("/(drawer)/charts")}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <Text style={styles.topCategoryLink}>Ver desglose</Text>
+                    <Ionicons
+                      name="chevron-forward"
+                      size={12}
+                      color="#007BFF"
+                    />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.topCategoryRow}>
                   <Ionicons
                     name="pie-chart-outline"
-                    size={13}
-                    color="#868E96"
+                    size={14}
+                    color="#007BFF"
                   />
                   <Text style={styles.topCategoryName} numberOfLines={1}>
                     {topCategory}
@@ -260,11 +274,7 @@ export default function MonthSummaryCard({
                     </Text>
                   </View>
                 </View>
-                <View style={styles.topCategoryRight}>
-                  <Text style={styles.topCategoryLink}>Ver desglose</Text>
-                  <Ionicons name="chevron-forward" size={12} color="#007BFF" />
-                </View>
-              </TouchableOpacity>
+              </View>
             )}
           </View>
         ) : null}
@@ -433,43 +443,51 @@ const styles = StyleSheet.create({
     color: "#868E96",
   },
   // ── Top category chip ────────────────────────────────────
-  topCategoryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  topCategoryWrapper: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: "#F1F3F5",
+    gap: 6,
   },
-  topCategoryLeft: {
+  topCategoryHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    flex: 1,
-    marginRight: 8,
+    justifyContent: "space-between",
   },
-  topCategoryName: {
-    fontSize: 12,
+  topCategoryLabel: {
+    fontSize: 10,
     fontWeight: "600",
-    color: "#495057",
-    flex: 1,
+    color: "#868E96",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  topCategoryPct: {
-    backgroundColor: "#F1F3F5",
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
-  topCategoryPctText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#495057",
-  },
-  topCategoryRight: {
+  topCategoryLinkRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 2,
+  },
+  topCategoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  topCategoryName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#212529",
+    flex: 1,
+  },
+  topCategoryPct: {
+    backgroundColor: "#E7F1FF",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  topCategoryPctText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#0056B3",
   },
   topCategoryLink: {
     fontSize: 12,
