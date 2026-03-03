@@ -16,9 +16,14 @@ import {
   getMonthlyStats,
   MonthlyStat,
 } from "@/features/dashboard/services/statsApi";
+import {
+  getBillingPeriodsByCreditCard,
+  BillingPeriod,
+} from "@/features/billingPeriods/services/billingPeriodsApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 
 type ChartTab = "monthly" | "categories" | "usd";
+const ALL_PERIODS = "__all__";
 
 const screenWidth = Dimensions.get("window").width - 32;
 
@@ -63,9 +68,32 @@ export default function ChartsScreen() {
   const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [stats, setStats] = useState<MonthlyStat[]>([]);
+  const [billingPeriods, setBillingPeriods] = useState<BillingPeriod[]>([]);
+  const [selectedPeriodMonth, setSelectedPeriodMonth] =
+    useState<string>(ALL_PERIODS);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<ChartTab>("monthly");
+
+  // Detect the current billing period (today falls between startDate and endDate)
+  const detectCurrentPeriod = useCallback(
+    (periods: BillingPeriod[]): string => {
+      const now = Date.now();
+      const current = periods.find((p) => {
+        const start = new Date(p.startDate).getTime();
+        const end = new Date(p.endDate).getTime();
+        return now >= start && now <= end;
+      });
+      // If found, use its month; otherwise fall back to the most recent period
+      if (current) return current.month;
+      const sorted = [...periods].sort(
+        (a, b) =>
+          new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
+      );
+      return sorted[0]?.month ?? ALL_PERIODS;
+    },
+    [],
+  );
 
   useEffect(() => {
     getCreditCards().then((cards) => {
@@ -75,76 +103,70 @@ export default function ChartsScreen() {
     });
   }, []);
 
-  const fetchStats = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (!selectedCardId) return;
     try {
-      const data = await getMonthlyStats(selectedCardId);
+      const [data, periods] = await Promise.all([
+        getMonthlyStats(selectedCardId),
+        getBillingPeriodsByCreditCard(selectedCardId),
+      ]);
       setStats(data);
+      // Sort periods chronologically (oldest → newest)
+      const sorted = [...periods].sort(
+        (a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+      );
+      setBillingPeriods(sorted);
+      setSelectedPeriodMonth(detectCurrentPeriod(sorted));
     } catch (error) {
-      console.error("Error fetching stats:", error);
+      console.error("Error fetching chart data:", error);
     }
-  }, [selectedCardId]);
+  }, [selectedCardId, detectCurrentPeriod]);
 
   useEffect(() => {
     if (selectedCardId) {
       setLoading(true);
-      fetchStats().finally(() => setLoading(false));
+      fetchData().finally(() => setLoading(false));
     }
-  }, [selectedCardId, fetchStats]);
+  }, [selectedCardId, fetchData]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchStats();
+    await fetchData();
     setRefreshing(false);
   };
 
-  // Prepare bar chart data (CLP)
+  // ── Derived data helpers ────────────────────────────────────────────────────
+
+  // The MonthlyStat entry for the selected billing period (or null if "Todos")
+  const selectedStat: MonthlyStat | null =
+    selectedPeriodMonth === ALL_PERIODS
+      ? null
+      : (stats.find((s) => s.month === selectedPeriodMonth) ?? null);
+
+  // Stats to use for bar charts (always all periods for trend context)
   const getBarChartData = () => {
-    const sorted = [...stats].sort((a, b) => {
-      // Try to maintain chronological order by month name
-      return stats.indexOf(a) - stats.indexOf(b);
-    });
-    const last6 = sorted.slice(-6);
-
+    const last6 = stats.slice(-6);
     return {
-      labels: last6.map((s) => {
-        // Shorten month name: "Enero 2026" -> "Ene"
-        const parts = s.month.split(" ");
-        return parts[0].substring(0, 3);
-      }),
-      datasets: [
-        {
-          data: last6.map((s) => s.totalCLP || 0),
-        },
-      ],
+      labels: last6.map((s) => s.month.split(" ")[0].substring(0, 3)),
+      datasets: [{ data: last6.map((s) => s.totalCLP || 0) }],
     };
   };
 
-  // Prepare bar chart data (USD)
   const getUsdBarChartData = () => {
-    const sorted = [...stats].sort((a, b) => {
-      return stats.indexOf(a) - stats.indexOf(b);
-    });
-    const last6 = sorted.slice(-6);
-
+    const last6 = stats.slice(-6);
     return {
-      labels: last6.map((s) => {
-        const parts = s.month.split(" ");
-        return parts[0].substring(0, 3);
-      }),
-      datasets: [
-        {
-          data: last6.map((s) => s.totalDolar || 0),
-        },
-      ],
+      labels: last6.map((s) => s.month.split(" ")[0].substring(0, 3)),
+      datasets: [{ data: last6.map((s) => s.totalDolar || 0) }],
     };
   };
 
-  // Prepare pie chart data (top merchants)
+  // Pie: use selected period's breakdown, or merge all periods when "Todos"
   const getPieChartData = () => {
     const merged: { [cat: string]: number } = {};
+    const source = selectedStat ? [selectedStat] : stats;
 
-    stats.forEach((s) => {
+    source.forEach((s) => {
       if (s.categoryBreakdown) {
         Object.entries(s.categoryBreakdown).forEach(([cat, amounts]) => {
           const total = (amounts.CLP || 0) + (amounts.Dolar || 0) * 900;
@@ -153,16 +175,14 @@ export default function ChartsScreen() {
       }
     });
 
-    // Top 8 merchants, rest as "Otros"
     const entries = Object.entries(merged).sort((a, b) => b[1] - a[1]);
     const top = entries.slice(0, 8);
     const othersTotal = entries.slice(8).reduce((sum, [, v]) => sum + v, 0);
-    if (othersTotal > 0) {
-      top.push(["Otros", othersTotal]);
-    }
+    if (othersTotal > 0) top.push(["Otros", othersTotal]);
 
     return top.map(([name, amount], idx) => ({
       name: name.length > 15 ? name.substring(0, 14) + "…" : name,
+      fullName: name,
       amount: Math.round(amount),
       color: CHART_COLORS[idx % CHART_COLORS.length],
       legendFontColor: "#495057",
@@ -170,21 +190,38 @@ export default function ChartsScreen() {
     }));
   };
 
-  // Summary stats
-  const getTotals = () => {
+  // Summary: selected period vs all-time
+  const getSummaryCards = () => {
+    if (selectedStat) {
+      return {
+        label1: "Gasto del período",
+        value1: selectedStat.totalCLP,
+        label2: "Gasto USD",
+        value2: null,
+        usdValue: selectedStat.totalDolar,
+      };
+    }
     const totalCLP = stats.reduce((sum, s) => sum + s.totalCLP, 0);
-    const totalUSD = stats.reduce((sum, s) => sum + s.totalDolar, 0);
     const avgCLP = stats.length > 0 ? Math.round(totalCLP / stats.length) : 0;
-    const maxMonth = stats.reduce(
-      (max, s) => (s.totalCLP > (max?.totalCLP ?? 0) ? s : max),
-      stats[0],
-    );
-    return { totalCLP, totalUSD, avgCLP, maxMonth };
+    return {
+      label1: "Total acumulado",
+      value1: totalCLP,
+      label2: "Promedio mensual",
+      value2: avgCLP,
+      usdValue: null,
+    };
   };
 
-  const formatCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
+  const maxMonth =
+    stats.length > 0
+      ? stats.reduce(
+          (max, s) => (s.totalCLP > (max?.totalCLP ?? 0) ? s : max),
+          stats[0],
+        )
+      : null;
 
-  const totals = getTotals();
+  const formatCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
+  const summary = getSummaryCards();
 
   if (loading && creditCards.length === 0) {
     return (
@@ -203,11 +240,11 @@ export default function ChartsScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Card Selector */}
+      {/* ── Card Selector ─────────────────────────────────────────── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 12 }}
       >
         {creditCards.map((card) => (
           <TouchableOpacity
@@ -235,35 +272,113 @@ export default function ChartsScreen() {
         ))}
       </ScrollView>
 
-      {/* Summary Cards */}
+      {/* ── Billing Period Selector ────────────────────────────────── */}
+      {!loading && billingPeriods.length > 0 && (
+        <View style={styles.periodSelectorWrapper}>
+          <Text style={styles.periodSelectorLabel}>Período de facturación</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ marginTop: 6 }}
+          >
+            {/* "Todos" chip */}
+            <TouchableOpacity
+              style={[
+                styles.periodChip,
+                selectedPeriodMonth === ALL_PERIODS && styles.periodChipActive,
+              ]}
+              onPress={() => setSelectedPeriodMonth(ALL_PERIODS)}
+            >
+              <Text
+                style={[
+                  styles.periodChipText,
+                  selectedPeriodMonth === ALL_PERIODS &&
+                    styles.periodChipTextActive,
+                ]}
+              >
+                Todos
+              </Text>
+            </TouchableOpacity>
+
+            {/* One chip per billing period (newest last = scroll right for latest) */}
+            {[...billingPeriods].reverse().map((p) => {
+              const isSelected = selectedPeriodMonth === p.month;
+              // Detect if this is the "current" period
+              const now = Date.now();
+              const isCurrent =
+                now >= new Date(p.startDate).getTime() &&
+                now <= new Date(p.endDate).getTime();
+              return (
+                <TouchableOpacity
+                  key={p.id}
+                  style={[
+                    styles.periodChip,
+                    isSelected && styles.periodChipActive,
+                    isCurrent &&
+                      !isSelected &&
+                      styles.periodChipCurrentUnselected,
+                  ]}
+                  onPress={() => setSelectedPeriodMonth(p.month)}
+                >
+                  {isCurrent && <View style={styles.periodChipDot} />}
+                  <Text
+                    style={[
+                      styles.periodChipText,
+                      isSelected && styles.periodChipTextActive,
+                      isCurrent && !isSelected && styles.periodChipTextCurrent,
+                    ]}
+                  >
+                    {p.month}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* ── Summary Cards ─────────────────────────────────────────── */}
       {!loading && stats.length > 0 && (
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total acumulado</Text>
-            <Text style={styles.summaryValue}>
-              {formatCLP(totals.totalCLP)}
-            </Text>
+            <Text style={styles.summaryLabel}>{summary.label1}</Text>
+            <Text style={styles.summaryValue}>{formatCLP(summary.value1)}</Text>
+            {summary.usdValue !== null && summary.usdValue > 0 && (
+              <Text style={styles.summaryUsd}>
+                US${summary.usdValue.toFixed(2)}
+              </Text>
+            )}
           </View>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Promedio mensual</Text>
-            <Text style={styles.summaryValue}>{formatCLP(totals.avgCLP)}</Text>
+            <Text style={styles.summaryLabel}>{summary.label2}</Text>
+            {summary.value2 !== null ? (
+              <Text style={styles.summaryValue}>
+                {formatCLP(summary.value2)}
+              </Text>
+            ) : (
+              // Period selected: show category count
+              <Text style={styles.summaryValue}>
+                {Object.keys(selectedStat?.categoryBreakdown ?? {}).length}{" "}
+                <Text style={styles.summarySmall}>categorías</Text>
+              </Text>
+            )}
           </View>
         </View>
       )}
 
-      {totals.maxMonth && !loading && (
+      {maxMonth && !loading && selectedPeriodMonth === ALL_PERIODS && (
         <View style={styles.highlightCard}>
           <Ionicons name="trending-up" size={18} color="#DC3545" />
           <Text style={styles.highlightText}>
             Mes más alto:{" "}
-            <Text style={styles.highlightBold}>{totals.maxMonth.month}</Text>
+            <Text style={styles.highlightBold}>{maxMonth.month}</Text>
             {" — "}
-            {formatCLP(totals.maxMonth.totalCLP)}
+            {formatCLP(maxMonth.totalCLP)}
           </Text>
         </View>
       )}
 
-      {/* Tab Selector */}
+      {/* ── Tab Selector ──────────────────────────────────────────── */}
       <View style={styles.tabRow}>
         {[
           {
@@ -304,7 +419,7 @@ export default function ChartsScreen() {
         ))}
       </View>
 
-      {/* Charts */}
+      {/* ── Charts ────────────────────────────────────────────────── */}
       {loading ? (
         <ActivityIndicator
           size="large"
@@ -321,10 +436,13 @@ export default function ChartsScreen() {
         </View>
       ) : (
         <View style={styles.chartCard}>
+          {/* ── Mensual CLP ── */}
           {activeTab === "monthly" && (
             <>
               <Text style={styles.chartTitle}>Gastos mensuales (CLP)</Text>
-              <Text style={styles.chartSubtitle}>Últimos 6 períodos</Text>
+              <Text style={styles.chartSubtitle}>
+                Últimos {Math.min(stats.length, 6)} períodos
+              </Text>
               {getBarChartData().datasets[0].data.some((v) => v > 0) ? (
                 <BarChart
                   data={getBarChartData()}
@@ -343,29 +461,59 @@ export default function ChartsScreen() {
                 </Text>
               )}
 
-              {/* Monthly breakdown */}
               <View style={styles.breakdownContainer}>
                 {[...stats]
                   .reverse()
                   .slice(0, 6)
-                  .map((s) => (
-                    <View key={s.month} style={styles.breakdownRow}>
-                      <Text style={styles.breakdownMonth}>{s.month}</Text>
-                      <View style={styles.breakdownValues}>
-                        <Text style={styles.breakdownCLP}>
+                  .map((s) => {
+                    const isSelected =
+                      selectedPeriodMonth !== ALL_PERIODS &&
+                      s.month === selectedPeriodMonth;
+                    return (
+                      <TouchableOpacity
+                        key={s.month}
+                        style={[
+                          styles.breakdownRow,
+                          isSelected && styles.breakdownRowSelected,
+                        ]}
+                        onPress={() => setSelectedPeriodMonth(s.month)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.breakdownMonthRow}>
+                          {isSelected && (
+                            <View style={styles.breakdownSelectedDot} />
+                          )}
+                          <Text
+                            style={[
+                              styles.breakdownMonth,
+                              isSelected && styles.breakdownMonthSelected,
+                            ]}
+                          >
+                            {s.month}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.breakdownCLP,
+                            isSelected && styles.breakdownCLPSelected,
+                          ]}
+                        >
                           {formatCLP(s.totalCLP)}
                         </Text>
-                      </View>
-                    </View>
-                  ))}
+                      </TouchableOpacity>
+                    );
+                  })}
               </View>
             </>
           )}
 
+          {/* ── Mensual USD ── */}
           {activeTab === "usd" && (
             <>
               <Text style={styles.chartTitle}>Gastos mensuales (USD)</Text>
-              <Text style={styles.chartSubtitle}>Últimos 6 períodos</Text>
+              <Text style={styles.chartSubtitle}>
+                Últimos {Math.min(stats.length, 6)} períodos
+              </Text>
               {getUsdBarChartData().datasets[0].data.some((v) => v > 0) ? (
                 <BarChart
                   data={getUsdBarChartData()}
@@ -384,32 +532,63 @@ export default function ChartsScreen() {
                 </Text>
               )}
 
-              {/* USD Monthly breakdown */}
               <View style={styles.breakdownContainer}>
                 {[...stats]
                   .reverse()
                   .slice(0, 6)
-                  .map((s) => (
-                    <View key={s.month} style={styles.breakdownRow}>
-                      <Text style={styles.breakdownMonth}>{s.month}</Text>
-                      <View style={styles.breakdownValues}>
+                  .map((s) => {
+                    const isSelected =
+                      selectedPeriodMonth !== ALL_PERIODS &&
+                      s.month === selectedPeriodMonth;
+                    return (
+                      <TouchableOpacity
+                        key={s.month}
+                        style={[
+                          styles.breakdownRow,
+                          isSelected && styles.breakdownRowSelected,
+                        ]}
+                        onPress={() => setSelectedPeriodMonth(s.month)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.breakdownMonthRow}>
+                          {isSelected && (
+                            <View style={styles.breakdownSelectedDot} />
+                          )}
+                          <Text
+                            style={[
+                              styles.breakdownMonth,
+                              isSelected && styles.breakdownMonthSelected,
+                            ]}
+                          >
+                            {s.month}
+                          </Text>
+                        </View>
                         <Text
-                          style={[styles.breakdownCLP, { color: "#28A745" }]}
+                          style={[
+                            styles.breakdownCLP,
+                            isSelected && {
+                              color: "#28A745",
+                              fontWeight: "700",
+                            },
+                          ]}
                         >
                           US${s.totalDolar.toFixed(2)}
                         </Text>
-                      </View>
-                    </View>
-                  ))}
+                      </TouchableOpacity>
+                    );
+                  })}
               </View>
             </>
           )}
 
+          {/* ── Categorías ── */}
           {activeTab === "categories" && (
             <>
               <Text style={styles.chartTitle}>Distribución por categoría</Text>
               <Text style={styles.chartSubtitle}>
-                Todos los períodos (CLP equiv.)
+                {selectedPeriodMonth === ALL_PERIODS
+                  ? "Todos los períodos (CLP equiv.)"
+                  : `${selectedPeriodMonth} (CLP equiv.)`}
               </Text>
               {getPieChartData().length > 0 ? (
                 <PieChart
@@ -424,26 +603,36 @@ export default function ChartsScreen() {
                 />
               ) : (
                 <Text style={styles.noDataText}>
-                  No hay datos de categorías
+                  Sin categorías en este período
                 </Text>
               )}
 
-              {/* Category list */}
               <View style={styles.categoryList}>
-                {getPieChartData().map((cat, idx) => (
-                  <View key={idx} style={styles.categoryRow}>
-                    <View
-                      style={[
-                        styles.categoryDot,
-                        { backgroundColor: cat.color },
-                      ]}
-                    />
-                    <Text style={styles.categoryName}>{cat.name}</Text>
-                    <Text style={styles.categoryAmount}>
-                      {formatCLP(cat.amount)}
-                    </Text>
-                  </View>
-                ))}
+                {getPieChartData().map((cat, idx) => {
+                  const grandTotal = getPieChartData().reduce(
+                    (s, c) => s + c.amount,
+                    0,
+                  );
+                  const pct =
+                    grandTotal > 0
+                      ? Math.round((cat.amount / grandTotal) * 100)
+                      : 0;
+                  return (
+                    <View key={idx} style={styles.categoryRow}>
+                      <View
+                        style={[
+                          styles.categoryDot,
+                          { backgroundColor: cat.color },
+                        ]}
+                      />
+                      <Text style={styles.categoryName}>{cat.fullName}</Text>
+                      <Text style={styles.categoryPct}>{pct}%</Text>
+                      <Text style={styles.categoryAmount}>
+                        {formatCLP(cat.amount)}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             </>
           )}
@@ -463,7 +652,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FA",
   },
 
-  // Card chips
+  // ── Card chips ──────────────────────────────────────────────────
   cardChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -480,7 +669,53 @@ const styles = StyleSheet.create({
   cardChipText: { fontSize: 13, fontWeight: "600", color: "#495057" },
   cardChipTextActive: { color: "#fff" },
 
-  // Summary
+  // ── Billing period selector ──────────────────────────────────────
+  periodSelectorWrapper: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#E9ECEF",
+  },
+  periodSelectorLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: "#868E96",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  periodChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 16,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: "#E9ECEF",
+  },
+  periodChipActive: {
+    backgroundColor: "#007BFF",
+    borderColor: "#007BFF",
+  },
+  periodChipCurrentUnselected: {
+    borderColor: "#007BFF",
+    borderWidth: 1.5,
+  },
+  periodChipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#007BFF",
+  },
+  periodChipText: { fontSize: 12, fontWeight: "600", color: "#495057" },
+  periodChipTextActive: { color: "#fff" },
+  periodChipTextCurrent: { color: "#007BFF" },
+
+  // ── Summary ─────────────────────────────────────────────────────
   summaryRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
   summaryCard: {
     flex: 1,
@@ -502,6 +737,13 @@ const styles = StyleSheet.create({
     color: "#212529",
     marginTop: 4,
   },
+  summaryUsd: {
+    fontSize: 12,
+    color: "#28A745",
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  summarySmall: { fontSize: 14, fontWeight: "400", color: "#868E96" },
 
   highlightCard: {
     flexDirection: "row",
@@ -517,7 +759,7 @@ const styles = StyleSheet.create({
   highlightText: { fontSize: 13, color: "#495057", flex: 1 },
   highlightBold: { fontWeight: "700" },
 
-  // Tabs
+  // ── Tabs ────────────────────────────────────────────────────────
   tabRow: { flexDirection: "row", gap: 6, marginBottom: 14 },
   tab: {
     flexDirection: "row",
@@ -534,7 +776,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 12, fontWeight: "600", color: "#495057" },
   tabTextActive: { color: "#fff" },
 
-  // Chart card
+  // ── Chart card ──────────────────────────────────────────────────
   chartCard: {
     backgroundColor: "#fff",
     borderRadius: 14,
@@ -557,26 +799,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Breakdown
+  // ── Period breakdown list ────────────────────────────────────────
   breakdownContainer: {
     marginTop: 16,
     borderTopWidth: 1,
     borderTopColor: "#F1F3F5",
-    paddingTop: 12,
+    paddingTop: 8,
   },
   breakdownRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F8F9FA",
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginVertical: 1,
+  },
+  breakdownRowSelected: {
+    backgroundColor: "#EBF4FF",
+  },
+  breakdownMonthRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  breakdownSelectedDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#007BFF",
   },
   breakdownMonth: { fontSize: 13, fontWeight: "500", color: "#495057" },
-  breakdownValues: { flexDirection: "row", gap: 12 },
+  breakdownMonthSelected: { fontWeight: "700", color: "#212529" },
   breakdownCLP: { fontSize: 13, fontWeight: "600", color: "#007BFF" },
+  breakdownCLPSelected: { fontWeight: "700" },
 
-  // Categories
+  // ── Category list ────────────────────────────────────────────────
   categoryList: {
     marginTop: 16,
     borderTopWidth: 1,
@@ -586,13 +844,21 @@ const styles = StyleSheet.create({
   categoryRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 6,
+    paddingVertical: 7,
   },
   categoryDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
   categoryName: { flex: 1, fontSize: 13, color: "#495057" },
-  categoryAmount: { fontSize: 13, fontWeight: "600", color: "#212529" },
+  categoryPct: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#868E96",
+    marginRight: 10,
+    minWidth: 32,
+    textAlign: "right",
+  },
+  categoryAmount: { fontSize: 13, fontWeight: "700", color: "#212529" },
 
-  // Empty
+  // ── Empty ────────────────────────────────────────────────────────
   emptyContainer: { alignItems: "center", paddingVertical: 50 },
   emptyTitle: {
     fontSize: 17,
