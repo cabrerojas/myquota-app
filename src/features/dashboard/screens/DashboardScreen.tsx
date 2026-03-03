@@ -26,6 +26,7 @@ import MonthlyStats from "../components/MonthlyStats";
 import MonthSummaryCard from "../components/MonthSummaryCard";
 import CreditCardAlertBanner from "../components/CreditCardAlertBanner";
 import DebtIndicatorCard from "../components/DebtIndicatorCard";
+import DashboardSkeleton from "../components/DashboardSkeleton";
 import {
   configureNotificationHandler,
   setupAndroidChannel,
@@ -47,6 +48,7 @@ export default function DashboardScreen() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const { count: uncategorizedCount, refreshCount } = useUncategorized();
 
   const handlePullRefresh = useCallback(async () => {
@@ -169,21 +171,34 @@ export default function DashboardScreen() {
     });
 
     // Obtener tarjetas de crédito
-    getCreditCards().then((cards) => {
-      setCreditCards(cards);
-      if (cards.length > 0) {
-        setSelectedCardId(cards[0].id);
-      }
-      // Programar notificaciones de cierre/vencimiento
-      configureNotificationHandler();
-      setupAndroidChannel().then(() => {
-        scheduleCardNotifications(cards).catch(console.warn);
+    getCreditCards()
+      .then((cards) => {
+        setCreditCards(cards);
+        if (cards.length > 0) {
+          setSelectedCardId(cards[0].id);
+        }
+        // Programar notificaciones de cierre/vencimiento
+        configureNotificationHandler();
+        setupAndroidChannel().then(() => {
+          scheduleCardNotifications(cards).catch(console.warn);
+        });
+        setIsInitialLoading(false);
+      })
+      .catch(() => {
+        setIsInitialLoading(false);
       });
-    });
 
     // Obtener cantidad de transacciones sin categoría
     refreshCount();
   }, [refreshCount]);
+
+  if (isInitialLoading) {
+    return (
+      <ScrollView style={styles.container}>
+        <DashboardSkeleton />
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView

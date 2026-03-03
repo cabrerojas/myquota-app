@@ -22,6 +22,7 @@ import CategorySuggestModal from "@/features/categories/components/CategorySugge
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
+import TransactionsSkeleton from "../components/TransactionsSkeleton";
 
 type CurrencyFilter = "all" | "CLP" | "Dolar";
 
@@ -222,11 +223,7 @@ export default function TransactionsScreen() {
     (onlyUncategorized ? 1 : 0);
 
   if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007BFF" />
-      </View>
-    );
+    return <TransactionsSkeleton />;
   }
 
   return (

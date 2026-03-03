@@ -24,6 +24,7 @@ import {
   QuotaWithTransaction,
 } from "@/features/quotas/services/quotasApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
+import QuotasSkeleton from "../components/QuotasSkeleton";
 import {
   formatCurrency,
   formatDate,
@@ -194,12 +195,7 @@ export default function QuotasScreen() {
   const summary = getSummary();
 
   if (loading && creditCards.length === 0) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007BFF" />
-        <Text style={styles.loadingText}>Cargando cuotas...</Text>
-      </View>
-    );
+    return <QuotasSkeleton />;
   }
 
   return (
