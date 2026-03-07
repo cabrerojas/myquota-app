@@ -100,11 +100,8 @@ function DrawerContent() {
         <Drawer.Screen
           name="quotas"
           options={{
+            drawerItemStyle: { display: "none" },
             title: "Cuotas Vigentes",
-            drawerLabel: "Cuotas",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="layers-outline" color={color} size={size} />
-            ),
           }}
         />
         <Drawer.Screen
@@ -184,6 +181,13 @@ function DrawerContent() {
           options={{
             drawerItemStyle: { display: "none" },
             title: "Deuda Manual",
+          }}
+        />
+        <Drawer.Screen
+          name="transactionDetail"
+          options={{
+            drawerItemStyle: { display: "none" },
+            title: "Detalle de Transacción",
           }}
         />
       </Drawer>
