@@ -1,8 +1,7 @@
 import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
-import { View, Text, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { View, Text } from "react-native";
 import { useEffect } from "react";
 import {
   UncategorizedProvider,
@@ -17,18 +16,6 @@ export default function DrawerLayout() {
     <UncategorizedProvider>
       <DrawerContent />
     </UncategorizedProvider>
-  );
-}
-
-function BackButton() {
-  const router = useRouter();
-  return (
-    <TouchableOpacity
-      onPress={() => router.back()}
-      style={{ marginLeft: 12, padding: 4 }}
-    >
-      <Ionicons name="arrow-back" size={24} color="#007BFF" />
-    </TouchableOpacity>
   );
 }
 
@@ -173,38 +160,6 @@ function DrawerContent() {
                 size={size}
               />
             ),
-          }}
-        />
-        <Drawer.Screen
-          name="billingPeriods"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Períodos de Facturación",
-            headerLeft: () => <BackButton />,
-          }}
-        />
-        <Drawer.Screen
-          name="billingPeriodDetail"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Detalle del Período",
-            headerLeft: () => <BackButton />,
-          }}
-        />
-        <Drawer.Screen
-          name="addDebt"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Deuda Manual",
-            headerLeft: () => <BackButton />,
-          }}
-        />
-        <Drawer.Screen
-          name="transactionDetail"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Detalle de Transacción",
-            headerLeft: () => <BackButton />,
           }}
         />
       </Drawer>

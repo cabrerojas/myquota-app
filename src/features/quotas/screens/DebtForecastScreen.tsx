@@ -486,7 +486,7 @@ export default function DebtForecastScreen() {
                               activeOpacity={0.7}
                               onPress={() =>
                                 router.push({
-                                  pathname: "/(drawer)/transactionDetail",
+                                  pathname: "/(screens)/transactionDetail",
                                   params: {
                                     creditCardId: d.creditCardId,
                                     transactionId: d.transactionId,
@@ -584,7 +584,7 @@ export default function DebtForecastScreen() {
       {/* FAB - Agregar Deuda */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push("/(drawer)/addDebt")}
+        onPress={() => router.push("/(screens)/addDebt")}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={28} color="#fff" />

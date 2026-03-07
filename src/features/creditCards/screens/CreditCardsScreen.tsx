@@ -247,7 +247,7 @@ export default function CreditCardsScreen() {
                 style={styles.actionButton}
                 onPress={() =>
                   router.push({
-                    pathname: "/(drawer)/billingPeriods",
+                    pathname: "/(screens)/billingPeriods",
                     params: {
                       creditCardId: card.id,
                       creditCardLabel: `${card.cardType} - ${card.cardLastDigits}`,
