@@ -20,7 +20,6 @@ import {
 import {
   getQuotasByTransaction,
   splitQuotas,
-  updateQuota,
   Quota,
 } from "@/features/quotas/services/quotasApi";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
@@ -89,18 +88,6 @@ export default function TransactionDetailScreen({
 
   const isOverdue = (dateStr: string) => {
     return new Date(dateStr) < new Date();
-  };
-
-  const handleMarkAsPaid = async (quota: Quota) => {
-    try {
-      await updateQuota(creditCardId, transactionId, quota.id, {
-        status: "paid",
-        payment_date: new Date().toISOString(),
-      });
-      await fetchData();
-    } catch {
-      Alert.alert("Error", "No se pudo marcar la cuota como pagada");
-    }
   };
 
   const handleSplitQuotas = async () => {
@@ -373,19 +360,6 @@ export default function TransactionDetailScreen({
                   >
                     {formatCurrency(quota.amount, quota.currency)}
                   </Text>
-                  {quota.status === "pending" && (
-                    <TouchableOpacity
-                      style={styles.markPaidButton}
-                      onPress={() => handleMarkAsPaid(quota)}
-                    >
-                      <Ionicons
-                        name="checkmark-outline"
-                        size={14}
-                        color="#28A745"
-                      />
-                      <Text style={styles.markPaidText}>Pagar</Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
               </View>
             );
@@ -694,18 +668,6 @@ const styles = StyleSheet.create({
   quotaRight: { alignItems: "flex-end" },
   quotaAmount: { fontSize: 15, fontWeight: "700", color: "#DC3545" },
   quotaAmountPaid: { color: "#28A745" },
-  markPaidButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginTop: 6,
-    backgroundColor: "#E8F5E9",
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  markPaidText: { fontSize: 12, fontWeight: "600", color: "#28A745" },
-
   // Status badges
   statusBadgePaid: {
     flexDirection: "row",
