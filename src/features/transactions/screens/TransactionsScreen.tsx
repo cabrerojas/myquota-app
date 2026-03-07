@@ -8,7 +8,7 @@ import {
   ScrollView,
   RefreshControl,
 } from "react-native";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
@@ -18,6 +18,7 @@ import {
 } from "../services/transactionsApi";
 import { exportTransactionsToCSV } from "../services/exportTransactions";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
@@ -70,7 +71,30 @@ export default function TransactionsScreen() {
   const [onlyUncategorized, setOnlyUncategorized] = useState(
     params.filter === "uncategorized",
   );
-  const _router = useRouter();
+
+  // Snapshot the filter param in a ref so useFocusEffect can read the
+  // latest value without being listed as a dependency (avoids loops).
+  const filterParamRef = useRef(params.filter);
+  filterParamRef.current = params.filter;
+
+  // Re-apply the filter EVERY TIME this screen comes into focus.
+  //
+  // Why useFocusEffect instead of useEffect([params.filter])?
+  // The drawer keeps this screen permanently mounted in memory.
+  // When the user navigates here with { filter: "uncategorized" } for the
+  // second time, params.filter doesn't *change* (it was already that value),
+  // so useEffect's dependency check sees no difference and skips the run.
+  // useFocusEffect fires on every focus event regardless of param diffs.
+  useFocusEffect(
+    useCallback(() => {
+      if (filterParamRef.current === "uncategorized") {
+        setOnlyUncategorized(true);
+        setShowFilters(true);
+      }
+    }, []),
+  );
+
+  const router = useRouter();
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categoryModalMerchant, setCategoryModalMerchant] = useState<
     string | null
@@ -578,7 +602,20 @@ export default function TransactionsScreen() {
                 </View>
               </View>
               {group.transactions.map((t) => (
-                <View key={t.id} style={styles.transaction}>
+                <TouchableOpacity
+                  key={t.id}
+                  style={styles.transaction}
+                  activeOpacity={0.7}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(drawer)/transactionDetail",
+                      params: {
+                        creditCardId: selectedCardId!,
+                        transactionId: t.id,
+                      },
+                    })
+                  }
+                >
                   <View style={styles.transactionLeft}>
                     <Text style={styles.merchant} numberOfLines={1}>
                       {t.merchant}
@@ -632,7 +669,7 @@ export default function TransactionsScreen() {
                       )}
                     </TouchableOpacity>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
           ))}
