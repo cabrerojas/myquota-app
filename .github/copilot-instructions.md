@@ -1,369 +1,159 @@
-# Instrucciones para agentes (Copilot) — MyQuota App
+# MyQuota App — AI Agent Guidelines
 
-Breve: guía **prescriptiva** para cualquier agente de IA que trabaje en `myquota-app`.  
-Objetivo: que el proyecto crezca de forma coherente sin importar qué modelo o agente genere código.
-
----
-
-## 1. Visión general del proyecto
-
-| Dato       | Valor                                                                  |
-| ---------- | ---------------------------------------------------------------------- |
-| Stack      | React Native 0.81 + Expo SDK 54 + TypeScript 5.9 (strict)              |
-| Routing    | `expo-router` v6 (file-based) — entry: `expo-router/entry`             |
-| Backend    | REST API en `myquota-backend` (Node + Express + Firestore)             |
-| Navegación | Stack raíz → Drawer principal (12 pantallas)                           |
-| Estilos    | `StyleSheet.create()` (sin librerías CSS-in-JS externas)               |
-| Tests      | Jest + `jest-expo` (preset ya configurado)                             |
-| Estado     | Local con `useState` (sin store global aún — ver sección Estado)       |
-| Auth       | Google Sign-In → JWT Bearer → refresh automático con `requestWithAuth` |
+Guía para agentes de IA que trabajan en `myquota-app`. Para patrones detallados, invoca el skill correspondiente.
 
 ---
 
-## 2. Arquitectura de carpetas (Feature-First)
+## How to Use This Guide
+
+- Start here for project-wide norms (arquitectura, convenciones, TypeScript).
+- For detailed patterns, invoke the skill listed in the tables below.
+- Each skill contains templates, examples, and checklists específicos.
+
+---
+
+## Available Skills
+
+### Expo/React Native Skills
+
+| Skill | Descripción | URL |
+|-------|-------------|-----|
+| `expo-module` | Crear features completos (screens, services, components) | [SKILL.md](skills/expo-module/SKILL.md) |
+| `expo-routes` | expo-router patterns, layouts, drawer config | [SKILL.md](skills/expo-routes/SKILL.md) |
+| `expo-services` | Servicios API con requestWithAuth | [SKILL.md](skills/expo-services/SKILL.md) |
+| `expo-auth` | useAuth hook, token management, Google Sign-In | [SKILL.md](skills/expo-auth/SKILL.md) |
+| `expo-screens` | Screens con data fetching, loading/error states | [SKILL.md](skills/expo-screens/SKILL.md) |
+| `expo-types` | TypeScript patterns, interfaces compartidas | [SKILL.md](skills/expo-types/SKILL.md) |
+| `expo-theme` | Theme tokens, StyleSheet patterns | [SKILL.md](skills/expo-theme/SKILL.md) |
+| `sync-types` | Sincronizar tipos backend→frontend | [SKILL.md](skills/sync-types/SKILL.md) |
+
+### Meta Skills
+
+| Skill | Descripción | URL |
+|-------|-------------|-----|
+| `skill-sync` | Sincroniza Auto-invoke tables en AGENTS.md | [SKILL.md](skills/skill-sync/SKILL.md) |
+
+### Auto-invoke Skills
+
+When performing these actions, ALWAYS invoke the corresponding skill FIRST:
+
+| Action | Skill |
+|--------|-------|
+| Creating a new feature | `expo-module` |
+| Adding a new screen | `expo-module` |
+| Setting up feature structure | `expo-module` |
+| Creating routes | `expo-routes` |
+| Configuring navigation | `expo-routes` |
+| Adding drawer screens | `expo-routes` |
+| Modifying layouts | `expo-routes` |
+| Creating API services | `expo-services` |
+| Making HTTP requests | `expo-services` |
+| Using requestWithAuth | `expo-services` |
+| Working with authentication | `expo-auth` |
+| Managing tokens | `expo-auth` |
+| Implementing Google Sign-In | `expo-auth` |
+| Creating screens with data | `expo-screens` |
+| Handling loading states | `expo-screens` |
+| Handling error states | `expo-screens` |
+| Defining interfaces | `expo-types` |
+| Working with shared types | `expo-types` |
+| Using TypeScript patterns | `expo-types` |
+| Styling components | `expo-theme` |
+| Using theme tokens | `expo-theme` |
+| Creating StyleSheets | `expo-theme` |
+| Modifying shared types | `sync-types` |
+| Syncing with backend models | `sync-types` |
+
+<!-- Skills extracted from metadata.auto_invoke in each SKILL.md -->
+---
+
+## Tech Stack (Quick Reference)
+
+| Dato | Valor |
+|------|-------|
+| Framework | React Native 0.81 + Expo SDK 54 |
+| Language | TypeScript 5.9 (strict) |
+| Routing | expo-router v6 (file-based) |
+| Backend | REST API en myquota-backend |
+| Estilos | StyleSheet.create() |
+| Auth | Google Sign-In → JWT Bearer |
+
+**Entry point**: `src/app/_layout.tsx` — Stack raíz con index, login, (drawer)
+
+---
+
+## Project Structure
 
 ```
 src/
 ├── app/                          # Rutas (expo-router file-based)
-│   ├── _layout.tsx               # Stack raíz: index | login | (drawer)
-│   ├── index.tsx                 # Splash / redirige según token
-│   ├── login.tsx                 # Pantalla login (usa LoginScreen)
+│   ├── _layout.tsx               # Stack raíz
+│   ├── index.tsx                 # Splash / redirect
+│   ├── login.tsx                 # Login screen
 │   └── (drawer)/
-│       ├── _layout.tsx           # Drawer config (12 pantallas)
-│       └── *.tsx                 # Archivos de ruta (thin wrappers)
+│       ├── _layout.tsx           # Drawer config
+│       └── *.tsx                 # Thin wrappers
 │
 ├── config/
-│   └── api.ts                    # API_BASE_URL (único punto de config de URL)
+│   └── api.ts                    # API_BASE_URL
 │
-├── features/                     # Un folder por feature de negocio
+├── features/                     # Feature-based modules
 │   └── <feature>/
-│       ├── components/           # Componentes UI reutilizables del feature
-│       ├── hooks/                # Custom hooks del feature
-│       ├── screens/              # Pantallas completas (importadas por src/app/)
-│       ├── services/             # Llamadas a API (funciones async)
-│       └── types/                # Interfaces y tipos del feature ← NUEVO
+│       ├── components/           # Feature UI components
+│       ├── hooks/                # Custom hooks
+│       ├── screens/              # Full screens
+│       ├── services/             # API calls
+│       └── types/                # Feature-specific types
 │
-└── shared/                       # Código compartido entre features
-    ├── components/               # Componentes genéricos reutilizables ← NUEVO
-    ├── hooks/                    # Hooks compartidos ← NUEVO
-    ├── types/                    # Interfaces globales (CreditCard, User, etc.) ← NUEVO
-    ├── theme/                    # Constantes de diseño (colores, spacing, typography) ← NUEVO
-    └── utils/                    # Helpers puros (formatCurrency, formatDate, etc.) ← NUEVO
+└── shared/                       # Shared code
+    ├── components/               # Reusable UI components
+    ├── hooks/                    # Shared hooks
+    ├── types/                    # Global interfaces
+    ├── theme/                    # Design tokens
+    └── utils/                    # Pure helpers
 ```
 
-### Reglas de arquitectura (OBLIGATORIAS)
+---
 
-1. **Archivos en `src/app/` son thin wrappers** — solo importan y renderizan un Screen de `src/features/*/screens/`. NO deben contener lógica de negocio, estados, ni llamadas a API.
+## Critical Rules (ALWAYS / NEVER)
 
-   ```tsx
-   // ✅ src/app/(drawer)/dashboard.tsx
-   import DashboardScreen from "@/features/dashboard/screens/DashboardScreen";
-   export default function Dashboard() {
-     return <DashboardScreen />;
-   }
-   ```
+### ALWAYS
 
-2. **Cada feature nuevo DEBE tener al menos**: `screens/` + `services/` (si consume API) + `types/` (si define interfaces).
+1. **Thin wrappers** en `src/app/` — solo importan Screen de features
+2. **requestWithAuth** para llamadas autenticadas
+3. **Imports con alias** `@/` (`@/*` → `src/*`)
+4. **StyleSheet.create()** para estilos
+5. **Colores desde tokens** `@/shared/theme/tokens`
+6. **Interfaces en shared/types** si se usan en múltiples features
+7. **try/catch** en screens con data fetching
+8. **Loading + Error states** en screens con datos
 
-3. **Componentes**: si un componente se usa en más de un feature → moverlo a `src/shared/components/`.
+### NEVER
 
-4. **Tipos**: las interfaces que se comparten entre features (como `CreditCard`, `User`, `Transaction`) DEBEN vivir en `src/shared/types/`. Las interfaces internas de un solo feature van en `src/features/<feature>/types/`.
-
-5. **Utilidades puras** (`formatCurrency`, `formatDate`, helpers de arrays, etc.) van en `src/shared/utils/`. NUNCA duplicar helpers en múltiples archivos.
-
-6. **Imports**: usar siempre el alias `@/` definido en `tsconfig.json` (`@/*` → `src/*`). Nunca usar rutas relativas con `../../`.
-
-   ```tsx
-   // ✅ Correcto
-   import { CreditCard } from "@/shared/types/creditCard";
-   import { formatCurrency } from "@/shared/utils/format";
-
-   // ❌ Incorrecto
-   import { CreditCard } from "../../shared/types/creditCard";
-   ```
+1. **`any`** — usar tipos concretos o `unknown`
+2. **fetch() directo** — usar `requestWithAuth`
+3. **Rutas relativas** (`../../`) — usar alias `@/`
+4. **Colores hardcodeados** — importar de tokens
+5. **Lógica en src/app/** — va en features/
+6. **Interfaces duplicadas** — consolidar en shared/types
 
 ---
 
-## 3. Capa de servicios (API)
+## Naming Conventions
 
-### HTTP Client
-
-Todas las llamadas autenticadas usan `requestWithAuth()` exportado desde `src/features/auth/hooks/useAuth.ts`. No usar `fetch()` directamente para endpoints que requieren auth.
-
-```typescript
-import { requestWithAuth } from "@/features/auth/hooks/useAuth";
-import { API_BASE_URL } from "@/config/api";
-```
-
-### Patrón obligatorio para funciones de servicio
-
-```typescript
-// src/features/<feature>/services/<feature>Api.ts
-
-export const getItems = async (): Promise<Item[]> => {
-  const response = await requestWithAuth(`${API_BASE_URL}/items`);
-  if (!response.ok) {
-    const data = await response.json().catch(() => null);
-    const msg = data?.message || data?.error || `Error HTTP ${response.status}`;
-    throw new Error(msg);
-  }
-  return response.json();
-};
-```
-
-**Reglas:**
-
-- Siempre tipar el retorno (`Promise<T>`). NUNCA devolver `Promise<any>`.
-- Siempre intentar parsear el cuerpo de error del backend para mensajes descriptivos.
-- Mantener un manejo de errores consistente (el patrón `.json().catch(() => null)` con fallback).
-- Un archivo de servicio por feature: `<feature>Api.ts`.
+| Tipo | Convención | Ejemplo |
+|------|------------|---------|
+| Componentes/Screens | PascalCase | `DashboardScreen.tsx` |
+| Servicios | camelCase | `creditCardsApi.ts` |
+| Hooks | camelCase + use | `useAuth.ts` |
+| Archivos de tipos | camelCase | `creditCard.ts` |
+| Interfaces | PascalCase | `CreditCard` |
+| Funciones de servicio | camelCase verbo+sustantivo | `getCreditCards()` |
+| Constantes | UPPER_SNAKE | `API_BASE_URL` |
 
 ---
 
-## 4. Autenticación
-
-### Flujo
-
-1. `src/app/index.tsx` — revisa tokens en `SecureStore` / `AsyncStorage` → redirige a dashboard o login.
-2. Google Sign-In → POST `/login/google` → recibe `{ accessToken, refreshToken }`.
-3. Tokens se almacenan en `expo-secure-store` (primario) y `AsyncStorage` (legacy/fallback).
-4. `requestWithAuth` adjunta `Authorization: Bearer <token>` y ante un 401 intenta refresh automático.
-5. Si el refresh falla → limpia tokens → redirige a login.
-
-### Importante para agentes
-
-- **NO crear nuevos mecanismos de almacenamiento de tokens.** Usar los existentes en `useAuth.ts`.
-- Si se modifica el flujo de auth, asegurarse de que tanto `SecureStore` como `AsyncStorage` se actualicen (hasta que se elimine la dependencia legacy de AsyncStorage).
-
----
-
-## 5. Estado y manejo de datos
-
-### Estado actual
-
-- **State local** con `useState` + `useEffect` para fetch en cada pantalla.
-- No existe Context, Redux, Zustand ni ningún store global.
-- Datos del usuario se leen de `AsyncStorage` independientemente en cada pantalla que lo necesita.
-
-### Patrón de pantalla con datos
-
-```tsx
-export default function SomeScreen() {
-  const [data, setData] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await getItems();
-      setData(result);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Error inesperado";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadData(); }, [loadData]);
-
-  if (loading) return <ActivityIndicator />;
-  if (error) return <ErrorView message={error} onRetry={loadData} />;
-  return ( /* UI */ );
-}
-```
-
-### Reglas de estado
-
-- Extraer lógica de fetch a custom hooks (`useFetchItems`) cuando una pantalla tenga más de un efecto o cuando varios componentes necesiten los mismos datos.
-- Si en el futuro se necesita estado global, preferir **React Context + useReducer** para datos simples (sesión/usuario) o **Zustand** si la complejidad crece. No introducir Redux.
-- No leer `AsyncStorage` directamente en pantallas. Encapsular en un hook (`useUser`, `useSession`).
-
----
-
-## 6. Tipado (TypeScript)
-
-### Reglas estrictas
-
-- `tsconfig.json` tiene `"strict": true`. No desactivar ninguna opción de strict.
-- **Prohibido `any`**. Si un tipo externo lo requiere, usar `unknown` + type guard o un tipo temporal con un `// TODO: tipar correctamente` + issue.
-- **Interfaces obligatorias** para: props de componentes, respuestas de API, params de funciones de servicio.
-- Preferir `interface` sobre `type` para objetos. Usar `type` para uniones, intersecciones y utilidades.
-
-### Interfaces compartidas (meta: consolidar)
-
-Las siguientes interfaces se usan en múltiples features y DEBEN definirse una sola vez en `src/shared/types/`:
-
-| Interface                             | Archivo sugerido                                         |
-| ------------------------------------- | -------------------------------------------------------- |
-| `CreditCard`                          | `src/shared/types/creditCard.ts`                         |
-| `Transaction`, `ManualTransaction`    | `src/shared/types/transaction.ts`                        |
-| `Quota`, `QuotaWithTransaction`       | `src/shared/types/quota.ts`                              |
-| `BillingPeriod`                       | `src/shared/types/billingPeriod.ts`                      |
-| `User`, `UserInfo`                    | `src/shared/types/user.ts`                               |
-| `Category`, `CategoryMatch`           | `src/shared/types/category.ts`                           |
-| DTOs (`CreateBillingPeriodDto`, etc.) | Junto a su interface principal o en `types/` del feature |
-
-> **Nota para agentes**: actualmente estas interfaces están duplicadas en múltiples archivos de servicio y pantallas. Cuando trabajes en un feature que use una interface duplicada, muévela a `src/shared/types/` y actualiza todos los imports. No crear nuevas duplicaciones.
-
----
-
-## 7. Estilos y tema visual
-
-### Sistema de diseño (tokens)
-
-Definir en `src/shared/theme/tokens.ts` (crear si no existe):
-
-```typescript
-export const colors = {
-  primary: "#007BFF",
-  danger: "#DC3545",
-  success: "#28A745",
-  warning: "#FFC107",
-  bgLight: "#F8F9FA",
-  textPrimary: "#212529",
-  textSecondary: "#495057",
-  textMuted: "#868E96",
-  white: "#FFFFFF",
-  border: "#DEE2E6",
-} as const;
-
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-} as const;
-
-export const fontSizes = {
-  xs: 11,
-  sm: 13,
-  md: 15,
-  lg: 18,
-  xl: 22,
-  xxl: 28,
-} as const;
-```
-
-### Reglas de estilo
-
-- **NUNCA hardcodear colores directamente.** Importar siempre desde `@/shared/theme/tokens`.
-- Usar `StyleSheet.create()` al final de cada archivo. No inline styles salvo excepciones justificadas.
-- Componentes reutilizables de UI (botones, cards, inputs) deben ir en `src/shared/components/`.
-
----
-
-## 8. Manejo de errores
-
-### Regla general por capa
-
-| Capa            | Cómo manejar                                                                                             |
-| --------------- | -------------------------------------------------------------------------------------------------------- |
-| **Services**    | Lanzar `throw new Error(mensaje)` con texto descriptivo en español. Parsear body de error del backend.   |
-| **Hooks**       | Capturar con try/catch, exponer estado `error: string \| null` + función `retry`.                        |
-| **Screens**     | Mostrar UI de error (banner, card, o `Alert.alert()`). No `console.error` sin un UI feedback al usuario. |
-| **Componentes** | Recibir `error` como prop si aplica. NO hacer fetch ni manejar errores directamente.                     |
-
-### Error Boundary (meta futura)
-
-Crear un `ErrorBoundary` en `src/shared/components/ErrorBoundary.tsx` que envuelva las pantallas principales y capture errores de render inesperados. Hasta entonces, manejar con try/catch en cada pantalla.
-
----
-
-## 9. Navegación (expo-router)
-
-### Estructura
-
-- **Root**: `src/app/_layout.tsx` — `Stack` con 3 rutas: `index`, `login`, `(drawer)`.
-- **Drawer**: `src/app/(drawer)/_layout.tsx` — 12 pantallas, algunas ocultas (accedidas vía `router.push()`).
-- **CustomDrawerContent**: `src/features/navigation/components/CustomDrawerContent.tsx` — header con avatar/nombre, items del drawer, botón de cerrar sesión.
-
-### Reglas de navegación
-
-- Para agregar una pantalla: crear archivo en `src/app/(drawer)/nombre.tsx` (thin wrapper) + screen en `src/features/<feature>/screens/NombreScreen.tsx` + registrar en el Drawer layout si debe ser visible en el menú.
-- Pantallas ocultas del drawer (accedidas solo mediante `router.push`): agregar `drawerItemStyle: { display: "none" }` en options.
-- Navegación programática: usar `useRouter()` de `expo-router`. No usar `navigation.navigate()` de React Navigation directamente.
-
----
-
-## 10. ESLint y calidad de código
-
-### Config actual: `eslint.config.js` en la raíz (flat config)
-
-```javascript
-const { defineConfig } = require("eslint/config");
-const expoConfig = require("eslint-config-expo/flat");
-const prettierConfig = require("eslint-config-prettier");
-const prettierPlugin = require("eslint-plugin-prettier");
-
-module.exports = defineConfig([
-  ...expoConfig,
-  prettierConfig,
-  { plugins: { prettier: prettierPlugin }, rules: { "prettier/prettier": "error" } },
-  {
-    rules: {
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-    },
-  },
-]);
-```
-
-### Reglas que el agente DEBE respetar
-
-- **No `any`** — usar tipos concretos o `unknown`.
-- **Return types explícitos** en funciones públicas de servicios y hooks exportados.
-- **No variables sin usar** — eliminarlas o prefixear con `_` si son intencionales.
-- **Dependencias de hooks correctas** — `useEffect`, `useCallback`, `useMemo` deben tener deps completas.
-- Ejecutar `npm run lint` antes de commit. Corregir con `npx eslint "src/**/*.{ts,tsx}" --fix`.
-
----
-
-## 11. Testing
-
-### Situación actual
-
-No existen tests aún. El framework está configurado (`jest` + `jest-expo` en devDependencies).
-
-### Convención para nuevos tests
-
-- Archivo de test junto al archivo fuente: `SomeService.test.ts`, `SomeScreen.test.tsx`.
-- Alternativamente, carpeta `__tests__/` dentro de cada feature.
-- Nombrar con `.test.ts(x)`.
-- Prioridad de tests:
-  1. **Servicios** (funciones puras de API → mockear `requestWithAuth`).
-  2. **Hooks** (con `@testing-library/react-native`).
-  3. **Pantallas** (snapshot + interacciones clave).
-- Ejecutar con `npm run test`.
-
----
-
-## 12. Convenciones de código
-
-### Naming
-
-| Tipo                          | Convención                 | Ejemplo                                        |
-| ----------------------------- | -------------------------- | ---------------------------------------------- |
-| Archivos de componente/screen | PascalCase                 | `DashboardScreen.tsx`, `DebtIndicatorCard.tsx` |
-| Archivos de servicio          | camelCase                  | `creditCardsApi.ts`, `statsApi.ts`             |
-| Archivos de hook              | camelCase con `use` prefix | `useAuth.ts`, `useCreditCards.ts`              |
-| Archivos de tipo              | camelCase                  | `creditCard.ts`, `transaction.ts`              |
-| Interfaces                    | PascalCase                 | `CreditCard`, `BillingPeriod`                  |
-| Funciones de servicio         | camelCase verbo+sustantivo | `getCreditCards()`, `createTransaction()`      |
-| Componentes React             | PascalCase                 | `function MonthSummaryCard()`                  |
-| Constantes                    | UPPER_SNAKE_CASE           | `API_BASE_URL`                                 |
-
-### Componentes React
-
-- Siempre **componentes funcionales** (nunca clases).
-- Exportar como `export default function ComponentName()`.
-- Definir `interface ComponentNameProps` para las props.
-- Un componente por archivo.
-
-### Imports (orden)
+## Import Order
 
 ```typescript
 // 1. React / React Native
@@ -373,7 +163,7 @@ import { View, Text, StyleSheet } from "react-native";
 // 2. Librerías externas
 import { useRouter } from "expo-router";
 
-// 3. Imports internos (@/ alias)
+// 3. Imports internos (@/)
 import { CreditCard } from "@/shared/types/creditCard";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { colors, spacing } from "@/shared/theme/tokens";
@@ -381,106 +171,51 @@ import { colors, spacing } from "@/shared/theme/tokens";
 
 ---
 
-## 13. Dependencias y módulos nativos
+## Commands
 
-- Usar **paquetes compatibles con Expo SDK 54**. Verificar compatibilidad antes de agregar.
-- Preferir paquetes del ecosistema Expo (`expo-*`) sobre alternativas de comunidad.
-- Para módulos nativos: `expo prebuild` + ajustar `android/` / `ios/`.
-- Paquetes actuales relevantes: `expo-secure-store`, `expo-file-system`, `expo-notifications`, `expo-sharing`, `react-native-chart-kit`, `react-native-modal`.
-
----
-
-## 14. Scripts
-
-| Comando           | Descripción                  |
-| ----------------- | ---------------------------- |
-| `npm run start`   | Inicia Metro/Expo            |
-| `npm run android` | Compila y ejecuta en Android |
-| `npm run ios`     | Compila y ejecuta en iOS     |
-| `npm run web`     | Versión web                  |
-| `npm run test`    | Jest en watch mode           |
-| `npm run lint`    | ESLint (expo lint)           |
+```bash
+npm run start    # Inicia Metro/Expo
+npm run android  # Android
+npm run ios      # iOS
+npm run web      # Web
+npm run lint     # ESLint
+npm run test     # Jest
+```
 
 ---
 
-## 15. Integración con backend
+## QA Checklist
 
-- URL de API: [src/config/api.ts](src/config/api.ts) — para desarrollo local: `http://localhost:3000/api`.
-- Las interfaces del frontend deben **reflejar los modelos del backend** (ver `myquota-backend/src/modules/*/model.ts`).
-- El backend usa `IBaseEntity` con `id`, `createdAt`, `updatedAt`, `deletedAt` (ISO strings). Las interfaces del frontend deben incluir al menos `id` y las fechas relevantes.
+Before delivering code:
 
-### Sincronización de tipos frontend ↔ backend (OBLIGATORIA)
-
-| Modelo backend (`myquota-backend/src/modules/*/model.ts`) | Tipo frontend (`src/shared/types/`) |
-| --------------------------------------------------------- | ----------------------------------- |
-| `CreditCard` | `creditCard.ts` → `CreditCard` |
-| `Transaction` | `transaction.ts` → `Transaction` |
-| `Quota` | `quota.ts` → `Quota` |
-| `BillingPeriod` | `billingPeriod.ts` → `BillingPeriod` |
-| `User` | `user.ts` → `UserInfo` |
-| `Category` | `category.ts` → `Category` |
-
-**Regla**: cuando se agrega o renombra un campo en una entidad del backend, TAMBIÉN se debe actualizar la interface correspondiente en `src/shared/types/`. Documentar en el PR/commit qué tipos se sincronizaron.
+- [ ] Files follow feature-first architecture
+- [ ] `src/app/` files are thin wrappers only
+- [ ] Services use `requestWithAuth` with explicit return types
+- [ ] Interfaces in `shared/types/` if used across features
+- [ ] Colors from `@/shared/theme/tokens`
+- [ ] Imports use `@/` alias
+- [ ] No `any` introduced
+- [ ] Screens handle loading + error states
+- [ ] `npm run lint` passes
+- [ ] Types synced with backend models if modified
 
 ---
 
-## 16. Depuración
+## Technical Debt (DO NOT ADD MORE)
 
-- Cache Metro corrupta: `expo start -c`.
-- Problemas nativos Android: inspeccionar `android/` + `./gradlew assembleDebug`.
-- Errores de red en dev: verificar que `api.ts` apunte a `localhost:3000` y que el emulador tenga acceso (en Android emulator usar `10.0.2.2` en lugar de `localhost`).
-
----
-
-## 17. Deuda técnica conocida (no introducir más)
-
-Estos problemas existen y deben resolverse progresivamente. **No agregar más instancias:**
-
-1. ~~**Interfaces duplicadas**~~ — ✅ Resuelto. `CreditCard`, `UserInfo`, `MonthlyStat` consolidadas en `src/shared/types/`.
-2. ~~**Helpers duplicados**~~ — ✅ Resuelto. `formatCurrency`, `formatDate`, `formatShortDate`, `getDayKey`, `getMonthIndex` en `src/shared/utils/format.ts`.
-3. **Colores hardcodeados** — Tokens creados en `src/shared/theme/tokens.ts` pero 349+ usos de colores hex directos aún no migrados. Migrar progresivamente al importar desde `@/shared/theme/tokens`.
-4. ~~**Código legacy de auth**~~ — ✅ Resuelto. `LoginForm.tsx` y `authApi.ts` eliminados.
-5. **AsyncStorage legacy** — El flujo de auth guarda tokens tanto en `SecureStore` como en `AsyncStorage`. Plan: migrar todo a `SecureStore` y eliminar la dependencia de `AsyncStorage` para auth.
-6. ~~**`any` en servicios**~~ — ✅ Resuelto. Servicios tipados correctamente (`creditCardsApi`, `transactionsApi`, `categoryApi`, `statsApi`).
-7. ~~**`src/shared/utils/` vacío**~~ — ✅ Resuelto. Poblado con `format.ts`.
+1. **Colores hardcodeados** — 349+ usos de hex directos, migrar a tokens
+2. **AsyncStorage legacy** — Auth usa SecureStore + AsyncStorage, migrar solo a SecureStore
 
 ---
 
-## 18. Qué revisar antes de cambios de diseño
+## Key Files
 
-- **Cambios en `useAuth.ts`** (tokens, requestWithAuth) afectan TODA llamada autenticada a la API.
-- **Cambios en `src/shared/types/`** deben reflejar los modelos del backend. Si el backend cambia un campo, actualizar aquí.
-- **Cambios en `src/shared/theme/tokens.ts`** afectan los colores/espaciado de toda la app.
-- **Cambios en `src/shared/utils/format.ts`** afectan cómo se muestran monedas y fechas en toda la app.
-- **Nuevas pantallas**: crear thin wrapper en `src/app/(drawer)/`, screen en `src/features/*/screens/`, y registrar en el Drawer layout.
-- **Cambios en layout** (`_layout.tsx`): afectan navegación y estructura de toda la app.
-
----
-
-## 19. Checklist para agentes antes de entregar código
-
-- [ ] ¿Los archivos nuevos siguen la arquitectura de carpetas descrita? (feature-first, thin wrappers en `src/app/`)
-- [ ] ¿Las interfaces están en `src/shared/types/` o `src/features/<feature>/types/` sin duplicar?
-- [ ] ¿Los servicios usan `requestWithAuth` y tienen tipos de retorno explícitos?
-- [ ] ¿Los colores vienen de `@/shared/theme/tokens` (o el equivalente existente)?
-- [ ] ¿Se usan imports con `@/` y no rutas relativas con `../../`?
-- [ ] ¿No se introdujo `any`?
-- [ ] ¿Los errores se manejan correctamente (try/catch en hooks/screens, throw en services)?
-- [ ] ¿`npm run lint` pasa sin errores nuevos?
-- [ ] ¿Si se tocó deuda técnica, se mejoró en lugar de empeorar?
-- [ ] ¿Si se modificó un tipo compartido, se sincronizó con el modelo del backend?
-
----
-
-## 20. Archivos clave (dónde mirar primero)
-
-| Archivo                                                                                                                  | Propósito                                           |
-| ------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------- |
-| [src/app/\_layout.tsx](src/app/_layout.tsx)                                                                              | Layout raíz y navegación principal                  |
-| [src/app/(drawer)/\_layout.tsx](<src/app/(drawer)/_layout.tsx>)                                                          | Configuración del Drawer                            |
-| [src/config/api.ts](src/config/api.ts)                                                                                   | URL base de la API                                  |
-| [src/features/auth/hooks/useAuth.ts](src/features/auth/hooks/useAuth.ts)                                                 | `requestWithAuth`, Google Sign-In, manejo de tokens |
-| [src/features/navigation/components/CustomDrawerContent.tsx](src/features/navigation/components/CustomDrawerContent.tsx) | Menú lateral personalizado                          |
-| `src/features/*/services/*Api.ts`                                                                                        | Llamadas a todos los endpoints del backend          |
-| [package.json](package.json)                                                                                             | Scripts y dependencias                              |
-| [tsconfig.json](tsconfig.json)                                                                                           | Config de TypeScript (strict + path aliases)        |
+| File | Purpose |
+|------|---------|
+| `src/app/_layout.tsx` | Root layout, navigation structure |
+| `src/app/(drawer)/_layout.tsx` | Drawer configuration |
+| `src/config/api.ts` | API_BASE_URL |
+| `src/features/auth/hooks/useAuth.ts` | requestWithAuth, Google Sign-In, tokens |
+| `src/shared/theme/tokens.ts` | Design tokens (colors, spacing) |
+| `src/shared/types/` | Shared interfaces |
+| `src/shared/utils/format.ts` | formatCurrency, formatDate |
