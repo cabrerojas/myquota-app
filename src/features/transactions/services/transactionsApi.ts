@@ -49,6 +49,19 @@ export const getTransactionsByCreditCard = async (
   return response.json();
 };
 
+export const getTransactionById = async (
+  creditCardId: string,
+  transactionId: string,
+): Promise<Transaction> => {
+  const response = await requestWithAuth(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}`,
+  );
+  if (!response.ok) {
+    throw new Error("Error al obtener transacción");
+  }
+  return response.json();
+};
+
 export const importBankTransactions = async (
   creditCardId: string,
 ): Promise<ImportResult> => {

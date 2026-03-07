@@ -36,6 +36,8 @@ interface MonthBucket {
     currency: string;
     quotaNumber: number;
     totalQuotas: number;
+    transactionId: string;
+    creditCardId: string;
   }[];
   // For pay action: creditCardId -> billingPeriodId mapping
   periodsByCard: { creditCardId: string; billingPeriodId: string }[];
@@ -43,6 +45,7 @@ interface MonthBucket {
 
 interface QuotaEnriched extends Quota {
   merchant: string;
+  creditCardId: string;
   creditCardLabel: string;
   quotaNumber: number;
   totalQuotas: number;
@@ -91,6 +94,7 @@ export default function DebtForecastScreen() {
             return sorted.map((q, idx) => ({
               ...q,
               merchant: tx.merchant,
+              creditCardId: card.id,
               creditCardLabel: `${card.cardType} •${card.cardLastDigits}`,
               quotaNumber: idx + 1,
               totalQuotas: sorted.length,
@@ -167,6 +171,8 @@ export default function DebtForecastScreen() {
           currency: q.currency,
           quotaNumber: q.quotaNumber,
           totalQuotas: q.totalQuotas,
+          transactionId: q.transactionId,
+          creditCardId: q.creditCardId,
         });
       }
 
@@ -474,7 +480,20 @@ export default function DebtForecastScreen() {
                         {month.details
                           .sort((a, b) => b.amount - a.amount)
                           .map((d, i) => (
-                            <View key={i} style={styles.detailRow}>
+                            <TouchableOpacity
+                              key={i}
+                              style={styles.detailRow}
+                              activeOpacity={0.7}
+                              onPress={() =>
+                                router.push({
+                                  pathname: "/(screens)/transactionDetail",
+                                  params: {
+                                    creditCardId: d.creditCardId,
+                                    transactionId: d.transactionId,
+                                  },
+                                })
+                              }
+                            >
                               <View style={styles.detailLeft}>
                                 <Text
                                   style={styles.detailMerchant}
@@ -486,10 +505,17 @@ export default function DebtForecastScreen() {
                                   Cuota {d.quotaNumber}/{d.totalQuotas}
                                 </Text>
                               </View>
-                              <Text style={styles.detailAmount}>
-                                {formatCurrency(d.amount, d.currency)}
-                              </Text>
-                            </View>
+                              <View style={styles.detailRight}>
+                                <Text style={styles.detailAmount}>
+                                  {formatCurrency(d.amount, d.currency)}
+                                </Text>
+                                <Ionicons
+                                  name="chevron-forward"
+                                  size={14}
+                                  color="#ADB5BD"
+                                />
+                              </View>
+                            </TouchableOpacity>
                           ))}
                       </View>
                     )}
@@ -558,7 +584,7 @@ export default function DebtForecastScreen() {
       {/* FAB - Agregar Deuda */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push("/(drawer)/addDebt")}
+        onPress={() => router.push("/(screens)/addDebt")}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={28} color="#fff" />
@@ -773,6 +799,11 @@ const styles = StyleSheet.create({
   detailMerchant: { fontSize: 13, fontWeight: "600", color: "#212529" },
   detailQuota: { fontSize: 11, color: "#868E96", marginTop: 1 },
   detailAmount: { fontSize: 14, fontWeight: "700", color: "#DC3545" },
+  detailRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
 
   // Empty
   emptyContainer: { alignItems: "center", paddingVertical: 60 },

@@ -100,11 +100,8 @@ function DrawerContent() {
         <Drawer.Screen
           name="quotas"
           options={{
+            drawerItemStyle: { display: "none" },
             title: "Cuotas Vigentes",
-            drawerLabel: "Cuotas",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="layers-outline" color={color} size={size} />
-            ),
           }}
         />
         <Drawer.Screen
@@ -163,27 +160,6 @@ function DrawerContent() {
                 size={size}
               />
             ),
-          }}
-        />
-        <Drawer.Screen
-          name="billingPeriods"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Períodos de Facturación",
-          }}
-        />
-        <Drawer.Screen
-          name="billingPeriodDetail"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Detalle del Período",
-          }}
-        />
-        <Drawer.Screen
-          name="addDebt"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Deuda Manual",
           }}
         />
       </Drawer>

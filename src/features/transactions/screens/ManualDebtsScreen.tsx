@@ -99,7 +99,7 @@ export default function ManualDebtsScreen() {
 
   const handleEdit = (debt: ManualDebtItem) => {
     router.push({
-      pathname: "/(drawer)/addDebt",
+      pathname: "/(screens)/addDebt",
       params: {
         editMode: "true",
         transactionId: debt.id,
@@ -217,7 +217,7 @@ export default function ManualDebtsScreen() {
       {/* FAB */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => router.push("/(drawer)/addDebt")}
+        onPress={() => router.push("/(screens)/addDebt")}
         activeOpacity={0.8}
       >
         <Ionicons name="add" size={28} color="#fff" />

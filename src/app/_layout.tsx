@@ -9,6 +9,7 @@ export default function RootLayout() {
         options={{ headerShown: true, title: "Iniciar Sesión" }}
       />
       <Stack.Screen name="(drawer)" />
+      <Stack.Screen name="(screens)" />
     </Stack>
   );
 }
