@@ -16,67 +16,66 @@ Guía para agentes de IA que trabajan en `myquota-app`. Para patrones detallados
 
 ### Expo/React Native Skills
 
-| Skill | Descripción | URL |
-|-------|-------------|-----|
-| `expo-module` | Crear features completos (screens, services, components) | [SKILL.md](skills/expo-module/SKILL.md) |
-| `expo-routes` | expo-router patterns, layouts, drawer config | [SKILL.md](skills/expo-routes/SKILL.md) |
-| `expo-services` | Servicios API con requestWithAuth | [SKILL.md](skills/expo-services/SKILL.md) |
-| `expo-auth` | useAuth hook, token management, Google Sign-In | [SKILL.md](skills/expo-auth/SKILL.md) |
-| `expo-screens` | Screens con data fetching, loading/error states | [SKILL.md](skills/expo-screens/SKILL.md) |
-| `expo-types` | TypeScript patterns, interfaces compartidas | [SKILL.md](skills/expo-types/SKILL.md) |
-| `expo-theme` | Theme tokens, StyleSheet patterns | [SKILL.md](skills/expo-theme/SKILL.md) |
-| `sync-types` | Sincronizar tipos backend→frontend | [SKILL.md](skills/sync-types/SKILL.md) |
+| Skill           | Descripción                                              | URL                                       |
+| --------------- | -------------------------------------------------------- | ----------------------------------------- |
+| `expo-module`   | Crear features completos (screens, services, components) | [SKILL.md](skills/expo-module/SKILL.md)   |
+| `expo-routes`   | expo-router patterns, layouts, drawer config             | [SKILL.md](skills/expo-routes/SKILL.md)   |
+| `expo-services` | Servicios API con requestWithAuth                        | [SKILL.md](skills/expo-services/SKILL.md) |
+| `expo-auth`     | useAuth hook, token management, Google Sign-In           | [SKILL.md](skills/expo-auth/SKILL.md)     |
+| `expo-screens`  | Screens con data fetching, loading/error states          | [SKILL.md](skills/expo-screens/SKILL.md)  |
+| `expo-types`    | TypeScript patterns, interfaces compartidas              | [SKILL.md](skills/expo-types/SKILL.md)    |
+| `expo-theme`    | Theme tokens, StyleSheet patterns                        | [SKILL.md](skills/expo-theme/SKILL.md)    |
+| `sync-types`    | Sincronizar tipos backend→frontend                       | [SKILL.md](skills/sync-types/SKILL.md)    |
 
 ### Meta Skills
 
-| Skill | Descripción | URL |
-|-------|-------------|-----|
+| Skill        | Descripción                                | URL                                    |
+| ------------ | ------------------------------------------ | -------------------------------------- |
 | `skill-sync` | Sincroniza Auto-invoke tables en AGENTS.md | [SKILL.md](skills/skill-sync/SKILL.md) |
 
 ### Auto-invoke Skills
 
 When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 
-| Action | Skill |
-|--------|-------|
-| Creating a new feature | `expo-module` |
-| Adding a new screen | `expo-module` |
-| Setting up feature structure | `expo-module` |
-| Creating routes | `expo-routes` |
-| Configuring navigation | `expo-routes` |
-| Adding drawer screens | `expo-routes` |
-| Modifying layouts | `expo-routes` |
-| Creating API services | `expo-services` |
-| Making HTTP requests | `expo-services` |
-| Using requestWithAuth | `expo-services` |
-| Working with authentication | `expo-auth` |
-| Managing tokens | `expo-auth` |
-| Implementing Google Sign-In | `expo-auth` |
-| Creating screens with data | `expo-screens` |
-| Handling loading states | `expo-screens` |
-| Handling error states | `expo-screens` |
-| Defining interfaces | `expo-types` |
-| Working with shared types | `expo-types` |
-| Using TypeScript patterns | `expo-types` |
-| Styling components | `expo-theme` |
-| Using theme tokens | `expo-theme` |
-| Creating StyleSheets | `expo-theme` |
-| Modifying shared types | `sync-types` |
-| Syncing with backend models | `sync-types` |
+| Action                       | Skill           |
+| ---------------------------- | --------------- |
+| Creating a new feature       | `expo-module`   |
+| Adding a new screen          | `expo-module`   |
+| Setting up feature structure | `expo-module`   |
+| Creating routes              | `expo-routes`   |
+| Configuring navigation       | `expo-routes`   |
+| Adding drawer screens        | `expo-routes`   |
+| Modifying layouts            | `expo-routes`   |
+| Creating API services        | `expo-services` |
+| Making HTTP requests         | `expo-services` |
+| Using requestWithAuth        | `expo-services` |
+| Working with authentication  | `expo-auth`     |
+| Managing tokens              | `expo-auth`     |
+| Implementing Google Sign-In  | `expo-auth`     |
+| Creating screens with data   | `expo-screens`  |
+| Handling loading states      | `expo-screens`  |
+| Handling error states        | `expo-screens`  |
+| Defining interfaces          | `expo-types`    |
+| Working with shared types    | `expo-types`    |
+| Using TypeScript patterns    | `expo-types`    |
+| Styling components           | `expo-theme`    |
+| Using theme tokens           | `expo-theme`    |
+| Creating StyleSheets         | `expo-theme`    |
+| Modifying shared types       | `sync-types`    |
+| Syncing with backend models  | `sync-types`    |
 
-<!-- Skills extracted from metadata.auto_invoke in each SKILL.md -->
----
+## <!-- Skills extracted from metadata.auto_invoke in each SKILL.md -->
 
 ## Tech Stack (Quick Reference)
 
-| Dato | Valor |
-|------|-------|
+| Dato      | Valor                           |
+| --------- | ------------------------------- |
 | Framework | React Native 0.81 + Expo SDK 54 |
-| Language | TypeScript 5.9 (strict) |
-| Routing | expo-router v6 (file-based) |
-| Backend | REST API en myquota-backend |
-| Estilos | StyleSheet.create() |
-| Auth | Google Sign-In → JWT Bearer |
+| Language  | TypeScript 5.9 (strict)         |
+| Routing   | expo-router v6 (file-based)     |
+| Backend   | REST API en myquota-backend     |
+| Estilos   | StyleSheet.create()             |
+| Auth      | Google Sign-In → JWT Bearer     |
 
 **Entry point**: `src/app/_layout.tsx` — Stack raíz con index, login, (drawer)
 
@@ -141,15 +140,15 @@ src/
 
 ## Naming Conventions
 
-| Tipo | Convención | Ejemplo |
-|------|------------|---------|
-| Componentes/Screens | PascalCase | `DashboardScreen.tsx` |
-| Servicios | camelCase | `creditCardsApi.ts` |
-| Hooks | camelCase + use | `useAuth.ts` |
-| Archivos de tipos | camelCase | `creditCard.ts` |
-| Interfaces | PascalCase | `CreditCard` |
-| Funciones de servicio | camelCase verbo+sustantivo | `getCreditCards()` |
-| Constantes | UPPER_SNAKE | `API_BASE_URL` |
+| Tipo                  | Convención                 | Ejemplo               |
+| --------------------- | -------------------------- | --------------------- |
+| Componentes/Screens   | PascalCase                 | `DashboardScreen.tsx` |
+| Servicios             | camelCase                  | `creditCardsApi.ts`   |
+| Hooks                 | camelCase + use            | `useAuth.ts`          |
+| Archivos de tipos     | camelCase                  | `creditCard.ts`       |
+| Interfaces            | PascalCase                 | `CreditCard`          |
+| Funciones de servicio | camelCase verbo+sustantivo | `getCreditCards()`    |
+| Constantes            | UPPER_SNAKE                | `API_BASE_URL`        |
 
 ---
 
@@ -210,12 +209,48 @@ Before delivering code:
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `src/app/_layout.tsx` | Root layout, navigation structure |
-| `src/app/(drawer)/_layout.tsx` | Drawer configuration |
-| `src/config/api.ts` | API_BASE_URL |
+| File                                 | Purpose                                 |
+| ------------------------------------ | --------------------------------------- |
+| `src/app/_layout.tsx`                | Root layout, navigation structure       |
+| `src/app/(drawer)/_layout.tsx`       | Drawer configuration                    |
+| `src/config/api.ts`                  | API_BASE_URL                            |
 | `src/features/auth/hooks/useAuth.ts` | requestWithAuth, Google Sign-In, tokens |
-| `src/shared/theme/tokens.ts` | Design tokens (colors, spacing) |
-| `src/shared/types/` | Shared interfaces |
-| `src/shared/utils/format.ts` | formatCurrency, formatDate |
+| `src/shared/theme/tokens.ts`         | Design tokens (colors, spacing)         |
+| `src/shared/types/`                  | Shared interfaces                       |
+| `src/shared/utils/format.ts`         | formatCurrency, formatDate              |
+
+---
+
+## Git Workflow
+
+### ALWAYS
+
+1. **Crear rama** para cada desarrollo — NUNCA commitear directo a `master`
+2. **Branch naming**: `feat/<nombre>`, `fix/<nombre>`, `refactor/<nombre>`, `chore/<nombre>`
+3. **Crear PR** con `gh pr create` al terminar el desarrollo
+4. **Commits descriptivos** con prefijo: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
+5. **Volver a `master`** después de crear el PR
+6. **Verificar rama actual** antes de empezar cualquier desarrollo
+
+### NEVER
+
+1. **Push directo a `master`** — siempre via PR
+2. **`git push --force`** sin confirmación explícita del usuario
+3. **Mezclar scopes** en un PR — un PR = un tema
+
+### Flujo
+
+```bash
+# Antes de empezar: verificar rama
+git branch --show-current
+# Si no estoy en master → evaluar si la rama es del mismo tema
+# Si es otro tema → git checkout master
+
+git checkout -b feat/mi-feature       # 1. Crear rama desde master
+# ... hacer cambios ...
+git add <archivos>                    # 2. Stage cambios relevantes
+git commit -m "feat: descripción"     # 3. Commit descriptivo
+git push -u origin feat/mi-feature    # 4. Push rama
+gh pr create --base master            # 5. Crear PR
+git checkout master                   # 6. Volver a master
+```
