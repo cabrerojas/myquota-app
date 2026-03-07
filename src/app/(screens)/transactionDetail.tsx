@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import TransactionDetailScreen from "@/features/transactions/screens/TransactionDetailScreen";
 
 export default function TransactionDetail() {
@@ -12,9 +12,12 @@ export default function TransactionDetail() {
   }
 
   return (
-    <TransactionDetailScreen
-      creditCardId={creditCardId}
-      transactionId={transactionId}
-    />
+    <>
+      <Stack.Screen options={{ title: "Detalle de Transacción" }} />
+      <TransactionDetailScreen
+        creditCardId={creditCardId}
+        transactionId={transactionId}
+      />
+    </>
   );
 }

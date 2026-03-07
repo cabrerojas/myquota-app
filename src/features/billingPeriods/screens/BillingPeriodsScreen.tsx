@@ -189,7 +189,7 @@ export default function BillingPeriodsScreen({
       style={styles.periodCard}
       onPress={() =>
         router.push({
-          pathname: "/(drawer)/billingPeriodDetail",
+          pathname: "/(screens)/billingPeriodDetail",
           params: {
             creditCardId,
             periodMonth: item.month,

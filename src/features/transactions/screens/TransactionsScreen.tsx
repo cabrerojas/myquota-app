@@ -608,7 +608,7 @@ export default function TransactionsScreen() {
                   activeOpacity={0.7}
                   onPress={() =>
                     router.push({
-                      pathname: "/(drawer)/transactionDetail",
+                      pathname: "/(screens)/transactionDetail",
                       params: {
                         creditCardId: selectedCardId!,
                         transactionId: t.id,
