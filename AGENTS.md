@@ -229,6 +229,8 @@ Before delivering code:
 2. **Branch naming**: `feat/<nombre>`, `fix/<nombre>`, `refactor/<nombre>`, `chore/<nombre>`
 3. **Crear PR** con `gh pr create` al terminar el desarrollo
 4. **Commits descriptivos** con prefijo: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
+5. **Volver a `master`** después de crear el PR
+6. **Verificar rama actual** antes de empezar cualquier desarrollo
 
 ### NEVER
 
@@ -239,10 +241,16 @@ Before delivering code:
 ### Flujo
 
 ```bash
-git checkout -b feat/mi-feature       # 1. Crear rama
+# Antes de empezar: verificar rama
+git branch --show-current
+# Si no estoy en master → evaluar si la rama es del mismo tema
+# Si es otro tema → git checkout master
+
+git checkout -b feat/mi-feature       # 1. Crear rama desde master
 # ... hacer cambios ...
 git add <archivos>                    # 2. Stage cambios relevantes
 git commit -m "feat: descripción"     # 3. Commit descriptivo
 git push -u origin feat/mi-feature    # 4. Push rama
 gh pr create --base master            # 5. Crear PR
+git checkout master                   # 6. Volver a master
 ```
