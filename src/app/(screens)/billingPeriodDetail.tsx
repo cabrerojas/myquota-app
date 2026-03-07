@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import BillingPeriodDetailScreen from "@/features/billingPeriods/screens/BillingPeriodDetailScreen";
 
 export default function BillingPeriodDetail() {
@@ -15,11 +15,14 @@ export default function BillingPeriodDetail() {
   }
 
   return (
-    <BillingPeriodDetailScreen
-      creditCardId={creditCardId}
-      periodMonth={periodMonth || ""}
-      periodStartDate={periodStartDate}
-      periodEndDate={periodEndDate}
-    />
+    <>
+      <Stack.Screen options={{ title: "Detalle del Período" }} />
+      <BillingPeriodDetailScreen
+        creditCardId={creditCardId}
+        periodMonth={periodMonth || ""}
+        periodStartDate={periodStartDate}
+        periodEndDate={periodEndDate}
+      />
+    </>
   );
 }

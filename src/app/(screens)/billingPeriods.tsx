@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams } from "expo-router";
 import BillingPeriodsScreen from "@/features/billingPeriods/screens/BillingPeriodsScreen";
 
 export default function BillingPeriods() {
@@ -12,9 +12,12 @@ export default function BillingPeriods() {
   }
 
   return (
-    <BillingPeriodsScreen
-      creditCardId={creditCardId}
-      creditCardLabel={creditCardLabel || ""}
-    />
+    <>
+      <Stack.Screen options={{ title: "Períodos de Facturación" }} />
+      <BillingPeriodsScreen
+        creditCardId={creditCardId}
+        creditCardLabel={creditCardLabel || ""}
+      />
+    </>
   );
 }
