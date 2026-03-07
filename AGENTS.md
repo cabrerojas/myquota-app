@@ -218,3 +218,31 @@ Before delivering code:
 | `src/shared/theme/tokens.ts`         | Design tokens (colors, spacing)         |
 | `src/shared/types/`                  | Shared interfaces                       |
 | `src/shared/utils/format.ts`         | formatCurrency, formatDate              |
+
+---
+
+## Git Workflow
+
+### ALWAYS
+
+1. **Crear rama** para cada desarrollo — NUNCA commitear directo a `master`
+2. **Branch naming**: `feat/<nombre>`, `fix/<nombre>`, `refactor/<nombre>`, `chore/<nombre>`
+3. **Crear PR** con `gh pr create` al terminar el desarrollo
+4. **Commits descriptivos** con prefijo: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`
+
+### NEVER
+
+1. **Push directo a `master`** — siempre via PR
+2. **`git push --force`** sin confirmación explícita del usuario
+3. **Mezclar scopes** en un PR — un PR = un tema
+
+### Flujo
+
+```bash
+git checkout -b feat/mi-feature       # 1. Crear rama
+# ... hacer cambios ...
+git add <archivos>                    # 2. Stage cambios relevantes
+git commit -m "feat: descripción"     # 3. Commit descriptivo
+git push -u origin feat/mi-feature    # 4. Push rama
+gh pr create --base master            # 5. Crear PR
+```
