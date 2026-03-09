@@ -4,9 +4,9 @@ import { API_BASE_URL } from "@/config/api";
 export interface MonthlyStat {
   month: string;
   totalCLP: number;
-  totalDolar: number;
+  totalUSD: number;
   categoryBreakdown: {
-    [category: string]: { CLP: number; Dolar: number };
+    [category: string]: { CLP: number; USD: number };
   };
 }
 

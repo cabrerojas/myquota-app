@@ -158,7 +158,7 @@ export default function ChartsScreen() {
     const last6 = stats.slice(-6);
     return {
       labels: last6.map((s) => s.month.split(" ")[0].substring(0, 3)),
-      datasets: [{ data: last6.map((s) => s.totalDolar || 0) }],
+      datasets: [{ data: last6.map((s) => s.totalUSD || 0) }],
     };
   };
 
@@ -170,7 +170,7 @@ export default function ChartsScreen() {
     source.forEach((s) => {
       if (s.categoryBreakdown) {
         Object.entries(s.categoryBreakdown).forEach(([cat, amounts]) => {
-          const total = (amounts.CLP || 0) + (amounts.Dolar || 0) * 900;
+          const total = (amounts.CLP || 0) + (amounts.USD || 0) * 900;
           merged[cat] = (merged[cat] || 0) + total;
         });
       }
@@ -194,7 +194,7 @@ export default function ChartsScreen() {
   // Summary: selected period vs all-time
   const getSummaryCards = () => {
     const totalCLP = stats.reduce((sum, s) => sum + s.totalCLP, 0);
-    const totalUSD = stats.reduce((sum, s) => sum + s.totalDolar, 0);
+    const totalUSD = stats.reduce((sum, s) => sum + s.totalUSD, 0);
     const avgCLP = stats.length > 0 ? Math.round(totalCLP / stats.length) : 0;
     const avgUSD =
       stats.length > 0 ? Math.round((totalUSD / stats.length) * 100) / 100 : 0;
@@ -202,7 +202,7 @@ export default function ChartsScreen() {
       return {
         label1: "Gasto del período",
         value1: selectedStat.totalCLP,
-        usd1: selectedStat.totalDolar,
+        usd1: selectedStat.totalUSD,
         label2: "Promedio mensual",
         value2: avgCLP,
         usd2: avgUSD,
@@ -581,7 +581,7 @@ export default function ChartsScreen() {
                             },
                           ]}
                         >
-                          US${s.totalDolar.toFixed(2)}
+                          US${s.totalUSD.toFixed(2)}
                         </Text>
                       </TouchableOpacity>
                     );

@@ -14,13 +14,13 @@ const LOCALE = "es-CL";
  * Format a number as currency with the correct prefix.
  *
  * @param amount  Numeric value to format.
- * @param currency  "Dolar" → US$, anything else → $ (CLP).
+ * @param currency  "USD" → US$, anything else → $ (CLP).
  */
 export const formatCurrency = (
   amount: number,
   currency: string = "CLP",
 ): string => {
-  const prefix = currency === "Dolar" ? "US$" : "$";
+  const prefix = currency === "USD" ? "US$" : "$";
   return `${prefix}${amount.toLocaleString(LOCALE)}`;
 };
 

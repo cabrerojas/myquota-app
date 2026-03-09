@@ -98,8 +98,8 @@ export default function AddDebtScreen() {
   const [lastPaidYear, setLastPaidYear] = useState<number>(
     new Date().getFullYear(),
   );
-  const [currency, setCurrency] = useState<"CLP" | "Dolar">(
-    (params.currency as "CLP" | "Dolar") || "CLP",
+  const [currency, setCurrency] = useState<"CLP" | "USD">(
+    (params.currency as "CLP" | "USD") || "CLP",
   );
 
   useEffect(() => {
@@ -368,14 +368,14 @@ export default function AddDebtScreen() {
             <TouchableOpacity
               style={[
                 styles.currencyBtn,
-                currency === "Dolar" && styles.currencyBtnActive,
+                currency === "USD" && styles.currencyBtnActive,
               ]}
-              onPress={() => setCurrency("Dolar")}
+              onPress={() => setCurrency("USD")}
             >
               <Text
                 style={[
                   styles.currencyText,
-                  currency === "Dolar" && styles.currencyTextActive,
+                  currency === "USD" && styles.currencyTextActive,
                 ]}
               >
                 USD
