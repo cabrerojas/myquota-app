@@ -107,7 +107,7 @@ export default function BillingPeriodDetailScreen({
   let totalCLP = 0;
   let totalUSD = 0;
   transactions.forEach((t) => {
-    if (t.currency === "Dolar") totalUSD += t.amount;
+    if (t.currency === "USD") totalUSD += t.amount;
     else totalCLP += t.amount;
   });
 
@@ -126,7 +126,7 @@ export default function BillingPeriodDetailScreen({
         };
       }
       groups[day].transactions.push(t);
-      if (t.currency === "Dolar") groups[day].totalUSD += t.amount;
+      if (t.currency === "USD") groups[day].totalUSD += t.amount;
       else groups[day].totalCLP += t.amount;
     });
     return Object.values(groups).sort((a, b) => b.sortKey - a.sortKey);
@@ -228,7 +228,7 @@ export default function BillingPeriodDetailScreen({
                   </Text>
                 </View>
                 <Text style={styles.amount}>
-                  {t.currency === "Dolar" ? "US$" : "$"}
+                  {t.currency === "USD" ? "US$" : "$"}
                   {t.amount.toLocaleString("es-CL")}
                 </Text>
               </View>

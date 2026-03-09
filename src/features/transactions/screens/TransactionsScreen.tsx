@@ -26,7 +26,7 @@ import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
 
-type CurrencyFilter = "all" | "CLP" | "Dolar";
+type CurrencyFilter = "all" | "CLP" | "USD";
 
 const MONTH_FILTERS = [
   "Todos",
@@ -218,7 +218,7 @@ export default function TransactionsScreen() {
         groups[day] = { day, transactions: [], totalCLP: 0, totalUSD: 0 };
       }
       groups[day].transactions.push(t);
-      if (t.currency === "Dolar") {
+      if (t.currency === "USD") {
         groups[day].totalUSD += t.amount;
       } else {
         groups[day].totalCLP += t.amount;
@@ -232,7 +232,7 @@ export default function TransactionsScreen() {
     let clp = 0;
     let usd = 0;
     filteredTransactions.forEach((t) => {
-      if (t.currency === "Dolar") usd += t.amount;
+      if (t.currency === "USD") usd += t.amount;
       else clp += t.amount;
     });
     return { clp, usd, count: filteredTransactions.length };
@@ -359,7 +359,7 @@ export default function TransactionsScreen() {
           {/* Currency filter */}
           <Text style={styles.filterLabel}>Moneda</Text>
           <View style={styles.filterRow}>
-            {(["all", "CLP", "Dolar"] as CurrencyFilter[]).map((c) => (
+            {(["all", "CLP", "USD"] as CurrencyFilter[]).map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[
@@ -374,7 +374,7 @@ export default function TransactionsScreen() {
                     currencyFilter === c && styles.filterChipTextActive,
                   ]}
                 >
-                  {c === "all" ? "Todas" : c === "Dolar" ? "USD" : "CLP"}
+                  {c === "all" ? "Todas" : c === "USD" ? "USD" : "CLP"}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -627,7 +627,7 @@ export default function TransactionsScreen() {
                   </View>
                   <View style={{ alignItems: "flex-end" }}>
                     <Text style={styles.amount}>
-                      {t.currency === "Dolar"
+                      {t.currency === "USD"
                         ? `US$${t.amount.toFixed(2)}`
                         : `$${t.amount.toLocaleString("es-CL")}`}
                     </Text>

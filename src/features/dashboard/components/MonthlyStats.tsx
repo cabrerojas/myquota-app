@@ -5,7 +5,7 @@ import { getMonthlyStats } from "../services/statsApi";
 interface MonthlyStat {
   month: string;
   totalCLP: number;
-  totalDolar: number;
+  totalUSD: number;
 }
 
 interface MonthlyStatsProps {
@@ -29,7 +29,7 @@ export default function MonthlyStats({ creditCardId }: MonthlyStatsProps) {
             CLP: ${item.totalCLP.toLocaleString("es-CL")}
           </Text>
           <Text style={styles.amountUSD}>
-            USD: ${item.totalDolar.toFixed(2)}
+            USD: ${item.totalUSD.toFixed(2)}
           </Text>
         </View>
       ))}

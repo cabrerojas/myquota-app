@@ -146,7 +146,7 @@ export default function ManualDebtsScreen() {
         renderItem={({ item }) => {
           const remaining = item.totalInstallments - item.paidInstallments;
           const totalDebt = remaining * item.amount;
-          const prefix = item.currency === "Dolar" ? "US$" : "$";
+          const prefix = item.currency === "USD" ? "US$" : "$";
 
           return (
             <View style={styles.card}>
