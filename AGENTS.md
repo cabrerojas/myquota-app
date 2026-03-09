@@ -198,6 +198,12 @@ Before delivering code:
 - [ ] `npm run lint` passes
 - [ ] Types synced with backend models if modified
 
+# Skills & Docs QA
+
+- [ ] Ejecutar `skill-audit` antes de entregar cambios en skills o AGENTS.md
+- [ ] Usar `skill-creator` al crear skills nuevos
+- [ ] Ejecutar `./skills/skill-sync/assets/sync.sh` antes de PR si cambiaste skills o AGENTS.md
+
 ---
 
 ## Technical Debt (DO NOT ADD MORE)
