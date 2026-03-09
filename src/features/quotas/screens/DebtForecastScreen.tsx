@@ -23,6 +23,7 @@ import {
   payBillingPeriod,
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { formatCurrency } from "@/shared/utils/format";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 interface MonthBucket {
   key: string; // billing period month or "2025-07"
@@ -220,7 +221,8 @@ export default function DebtForecastScreen() {
           .reduce((s, q) => s + q.amount, 0),
       );
     } catch (error) {
-      console.error("Error fetching debt forecast:", error);
+      if (!isSessionExpired())
+        console.error("Error fetching debt forecast:", error);
     }
   }, []);
 

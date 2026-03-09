@@ -18,6 +18,7 @@ import {
   ManualTransaction,
 } from "@/features/transactions/services/transactionsApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 interface ManualDebtItem extends ManualTransaction {
   cardLabel: string;
@@ -50,7 +51,7 @@ export default function ManualDebtsScreen() {
       allDebts.sort((a, b) => a.merchant.localeCompare(b.merchant));
       setDebts(allDebts);
     } catch (error) {
-      console.error("Error fetching manual debts:", error);
+      if (!isSessionExpired()) console.error("Error fetching manual debts:", error);
     }
   }, []);
 

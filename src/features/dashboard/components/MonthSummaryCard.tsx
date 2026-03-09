@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getMonthlyStats } from "../services/statsApi";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 interface MonthlyStat {
   month: string;
@@ -90,7 +91,9 @@ export default function MonthSummaryCard({
         setCurrentMonth(current);
         setPreviousMonth(previous);
       })
-      .catch(console.error)
+      .catch((e: unknown) => {
+        if (!isSessionExpired()) console.error(e);
+      })
       .finally(() => setLoading(false));
   }, [creditCardId, refreshKey]);
 
