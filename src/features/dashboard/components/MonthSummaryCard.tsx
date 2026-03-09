@@ -8,8 +8,8 @@ import { isSessionExpired } from "@/shared/utils/authEvents";
 interface MonthlyStat {
   month: string;
   totalCLP: number;
-  totalDolar: number;
-  categoryBreakdown: { [merchant: string]: { CLP: number; Dolar: number } };
+  totalUSD: number;
+  categoryBreakdown: { [merchant: string]: { CLP: number; USD: number } };
 }
 
 interface MonthSummaryCardProps {
@@ -102,7 +102,7 @@ export default function MonthSummaryCard({
   }
 
   const totalCLP = currentMonth?.totalCLP ?? 0;
-  const totalUSD = currentMonth?.totalDolar ?? 0;
+  const totalUSD = currentMonth?.totalUSD ?? 0;
   const prevCLP = previousMonth?.totalCLP ?? 0;
 
   // Calculate variation vs previous month

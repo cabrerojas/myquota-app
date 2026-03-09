@@ -160,7 +160,7 @@ export default function DebtForecastScreen() {
           });
         }
         const bucket = bucketMap.get(key)!;
-        if (q.currency === "Dolar") {
+        if (q.currency === "USD") {
           bucket.totalUSD += q.amount;
         } else {
           bucket.totalCLP += q.amount;
@@ -212,12 +212,12 @@ export default function DebtForecastScreen() {
       // Totals
       setTotalDebtCLP(
         pending
-          .filter((q) => q.currency !== "Dolar")
+          .filter((q) => q.currency !== "USD")
           .reduce((s, q) => s + q.amount, 0),
       );
       setTotalDebtUSD(
         pending
-          .filter((q) => q.currency === "Dolar")
+          .filter((q) => q.currency === "USD")
           .reduce((s, q) => s + q.amount, 0),
       );
     } catch (error) {

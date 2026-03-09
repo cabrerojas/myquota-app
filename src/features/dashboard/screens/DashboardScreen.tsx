@@ -390,7 +390,7 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.transactionRight}>
                   <Text style={styles.negative}>
-                    {item.currency === "Dolar" ? "US$" : "$"}
+                    {item.currency === "USD" ? "US$" : "$"}
                     {item.amount.toLocaleString("es-CL")}
                   </Text>
                 </View>
