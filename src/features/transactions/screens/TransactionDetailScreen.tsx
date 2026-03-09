@@ -198,7 +198,7 @@ export default function TransactionDetailScreen({
           <View style={styles.amountRow}>
             <Text style={styles.amountLabel}>Moneda</Text>
             <Text style={styles.amountCurrency}>
-              {transaction.currency === "Dolar" ? "USD" : "CLP"}
+              {transaction.currency === "USD" ? "USD" : "CLP"}
             </Text>
           </View>
         </View>
