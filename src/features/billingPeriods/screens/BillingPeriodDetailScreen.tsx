@@ -12,6 +12,7 @@ import {
   getTransactionsByCreditCard,
   Transaction,
 } from "@/features/transactions/services/transactionsApi";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 interface BillingPeriodDetailScreenProps {
   creditCardId: string;
@@ -86,7 +87,7 @@ export default function BillingPeriodDetailScreen({
 
       setTransactions(filtered);
     } catch (error) {
-      console.error("Error loading period transactions:", error);
+      if (!isSessionExpired()) console.error("Error loading period transactions:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);
