@@ -74,7 +74,7 @@ export default function QuotasScreen() {
 
           const sorted = [...txQuotas].sort(
             (a, b) =>
-              new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+              new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
           );
           const paidCount = sorted.filter((q) => q.status === "paid").length;
 
@@ -97,7 +97,7 @@ export default function QuotasScreen() {
       // Sort by due date
       allQuotas.sort(
         (a, b) =>
-          new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
       );
       setQuotas(allQuotas);
     } catch (error) {
@@ -129,7 +129,7 @@ export default function QuotasScreen() {
     try {
       await updateQuota(selectedCardId, quota.transactionId, quota.id, {
         status: "paid",
-        payment_date: new Date().toISOString(),
+        paymentDate: new Date().toISOString(),
       });
       await fetchQuotas();
     } catch {
@@ -270,7 +270,7 @@ export default function QuotasScreen() {
             <View style={styles.nextDueRow}>
               <Ionicons name="calendar-outline" size={14} color="#868E96" />
               <Text style={styles.nextDueText}>
-                Próximo vencimiento: {formatDate(summary.nextDue.due_date)}
+                Próximo vencimiento: {formatDate(summary.nextDue.dueDate)}
                 {" — "}
                 <Text style={{ fontWeight: "600" }}>
                   {formatCurrency(
@@ -361,9 +361,9 @@ export default function QuotasScreen() {
       ) : (
         filteredQuotas.map((quota) => {
           const overdue =
-            quota.status === "pending" && isOverdue(quota.due_date);
+            quota.status === "pending" && isOverdue(quota.dueDate);
           const dueSoon =
-            quota.status === "pending" && !overdue && isDueSoon(quota.due_date);
+            quota.status === "pending" && !overdue && isDueSoon(quota.dueDate);
 
           return (
             <View
@@ -431,7 +431,7 @@ export default function QuotasScreen() {
                 <View style={styles.quotaDetailItem}>
                   <Ionicons name="calendar-outline" size={13} color="#868E96" />
                   <Text style={styles.quotaDetailText}>
-                    Vence: {formatShortDate(quota.due_date)}
+                    Vence: {formatShortDate(quota.dueDate)}
                   </Text>
                 </View>
                 <View style={styles.quotaDetailItem}>
