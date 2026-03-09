@@ -1,6 +1,11 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 import { useState, useCallback } from "react";
+import {
+  emitSessionExpired,
+  isSessionExpired,
+  resetSessionExpired,
+} from "@/shared/utils/authEvents";
 
 import {
   GoogleSignin,
@@ -63,6 +68,7 @@ export const useGoogleSignIn = (router: Router) => {
         // backend ahora devuelve { accessToken, refreshToken }
         if (data.accessToken) {
           console.log("Access token recibido");
+          resetSessionExpired();
           try {
             await SecureStore.setItemAsync("accessToken", data.accessToken);
             if (data.refreshToken)
@@ -180,6 +186,14 @@ async function attemptRefresh() {
 }
 
 export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
+  // Si la sesión ya expiró, no hacer la request
+  if (isSessionExpired()) {
+    return new Response(JSON.stringify({ message: "Sesión expirada" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const headers = {
     ...((init?.headers as Record<string, string>) || {}),
     ...(await getAuthHeaders()),
@@ -195,12 +209,15 @@ export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
         ...(await getAuthHeaders()),
       };
       res = await fetch(input, { ...init, headers: headers2 });
-    } catch (e) {
-      // si falla refresh, limpiar sesión
+    } catch (_e) {
+      // si falla refresh, limpiar sesión y redirigir a login
       await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
       await SecureStore.deleteItemAsync("accessToken");
       await SecureStore.deleteItemAsync("refreshToken");
-      throw e;
+      emitSessionExpired();
+      // No throw — el usuario ya fue redirigido a login.
+      // Retornar la respuesta 401 original para que el caller
+      // no muestre errores técnicos al usuario.
     }
   }
 

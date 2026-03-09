@@ -23,6 +23,7 @@ import CategorySuggestModal from "@/features/categories/components/CategorySugge
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
 
 type CurrencyFilter = "all" | "CLP" | "Dolar";
@@ -142,7 +143,7 @@ export default function TransactionsScreen() {
         ),
       );
     } catch (error) {
-      console.error("Error loading transactions:", error);
+      if (!isSessionExpired()) console.error("Error loading transactions:", error);
     } finally {
       setLoadingTransactions(false);
     }

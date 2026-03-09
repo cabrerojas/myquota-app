@@ -25,6 +25,7 @@ import {
 } from "@/features/quotas/services/quotasApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import QuotasSkeleton from "../components/QuotasSkeleton";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 import {
   formatCurrency,
   formatDate,
@@ -100,7 +101,7 @@ export default function QuotasScreen() {
       );
       setQuotas(allQuotas);
     } catch (error) {
-      console.error("Error fetching quotas:", error);
+      if (!isSessionExpired()) console.error("Error fetching quotas:", error);
     }
   }, [selectedCardId]);
 
