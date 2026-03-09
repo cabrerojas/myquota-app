@@ -90,7 +90,7 @@ export default function DebtForecastScreen() {
             const quotas = await getQuotasByTransaction(card.id, tx.id);
             const sorted = [...quotas].sort(
               (a, b) =>
-                new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+                new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
             );
             return sorted.map((q, idx) => ({
               ...q,
@@ -114,7 +114,7 @@ export default function DebtForecastScreen() {
           new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
       );
 
-      // Find which billing period a quota's due_date falls into
+      // Find which billing period a quota's dueDate falls into
       const findPeriodForQuota = (dueDate: string): BillingPeriod | null => {
         const d = new Date(dueDate).getTime();
         for (const p of sortedPeriods) {
@@ -128,7 +128,7 @@ export default function DebtForecastScreen() {
       // Group by billing period; fall back to calendar month for unmatched
       const bucketMap = new Map<string, MonthBucket>();
       for (const q of pending) {
-        const period = findPeriodForQuota(q.due_date);
+        const period = findPeriodForQuota(q.dueDate);
         let key: string;
         let label: string;
 
@@ -138,7 +138,7 @@ export default function DebtForecastScreen() {
           label = period.month;
         } else {
           // Fallback: calendar month for quotas outside any billing period
-          const date = new Date(q.due_date);
+          const date = new Date(q.dueDate);
           key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
           const monthLabel = date.toLocaleDateString("es-CL", {
             month: "long",
