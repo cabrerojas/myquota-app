@@ -5,10 +5,10 @@ export interface Quota {
   id: string;
   transactionId: string;
   amount: number;
-  due_date: string;
+  dueDate: string;
   status: "pending" | "paid";
   currency: string;
-  payment_date?: string;
+  paymentDate?: string;
 }
 
 export interface QuotaWithTransaction extends Quota {
