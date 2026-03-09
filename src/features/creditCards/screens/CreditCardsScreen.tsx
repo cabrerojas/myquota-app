@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "../services/creditCardsApi";
 import { CreditCard } from "@/shared/types/creditCard";
 import { formatCLP } from "@/shared/utils/format";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 export default function CreditCardsScreen() {
   const router = useRouter();
@@ -25,7 +26,9 @@ export default function CreditCardsScreen() {
       const data = await getCreditCards();
       setCreditCards(data);
     } catch (error) {
-      console.error("Error fetching credit cards:", error);
+      if (!isSessionExpired()) {
+        console.error("Error fetching credit cards:", error);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);

@@ -22,11 +22,13 @@ import {
 } from "@/features/transactions/services/transactionsApi";
 import { createBillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
 import BillingPeriodFormModal from "@/features/billingPeriods/components/BillingPeriodFormModal";
+import CardsSection from "@/features/creditCards/components/CardsSection";
 import MonthlyStats from "../components/MonthlyStats";
 import MonthSummaryCard from "../components/MonthSummaryCard";
 import CreditCardAlertBanner from "../components/CreditCardAlertBanner";
 import DebtIndicatorCard from "../components/DebtIndicatorCard";
 import { getDebtSummary, DebtSummary } from "../services/statsApi";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 import DashboardSkeleton from "../components/DashboardSkeleton";
 import {
   configureNotificationHandler,
@@ -66,7 +68,7 @@ export default function DashboardScreen() {
       setRefreshKey((prev: number) => prev + 1);
       await refreshCount();
     } catch (error) {
-      console.error("Error refreshing:", error);
+      if (!isSessionExpired()) console.error("Error refreshing:", error);
     } finally {
       setIsPullRefreshing(false);
     }
@@ -93,7 +95,7 @@ export default function DashboardScreen() {
         .slice(0, 10);
       setTransactions(sorted);
     } catch (error) {
-      console.error("Error loading transactions:", error);
+      if (!isSessionExpired()) console.error("Error loading transactions:", error);
     } finally {
       setIsLoadingTransactions(false);
     }
@@ -137,12 +139,14 @@ export default function DashboardScreen() {
         );
       }
     } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof Error
-          ? error.message
-          : "Error al importar transacciones",
-      );
+      if (!isSessionExpired()) {
+        Alert.alert(
+          "Error",
+          error instanceof Error
+            ? error.message
+            : "Error al importar transacciones",
+        );
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -221,68 +225,12 @@ export default function DashboardScreen() {
     >
       <Text style={styles.welcome}>Hola, {userName} 👋</Text>
 
-      {/* Selección de Tarjeta de Crédito */}
-      <Text style={styles.sectionTitle}>Mis Tarjetas</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {creditCards.map((item) => {
-          const natPercent =
-            item.nationalTotalLimit > 0
-              ? (item.nationalAmountUsed / item.nationalTotalLimit) * 100
-              : 0;
-          const intPercent =
-            item.internationalTotalLimit > 0
-              ? (item.internationalAmountUsed / item.internationalTotalLimit) *
-                100
-              : 0;
-          const maxPercent = Math.max(natPercent, intPercent);
-          const hasAlert = maxPercent >= 80;
-
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={[
-                styles.cardButton,
-                selectedCardId === item.id && styles.selectedCard,
-                hasAlert &&
-                  selectedCardId !== item.id &&
-                  styles.cardButtonAlert,
-              ]}
-              onPress={() => setSelectedCardId(item.id)}
-            >
-              {hasAlert && (
-                <View style={styles.alertBadge}>
-                  <Ionicons
-                    name={maxPercent >= 95 ? "alert-circle" : "warning"}
-                    size={14}
-                    color={maxPercent >= 95 ? "#DC3545" : "#F57C00"}
-                  />
-                </View>
-              )}
-              <Ionicons
-                name="card-outline"
-                size={22}
-                color={selectedCardId === item.id ? "#fff" : "#495057"}
-              />
-              <Text
-                style={[
-                  styles.cardType,
-                  selectedCardId === item.id && styles.cardTypeSelected,
-                ]}
-              >
-                {item.cardType}
-              </Text>
-              <Text
-                style={[
-                  styles.cardDigits,
-                  selectedCardId === item.id && styles.cardDigitsSelected,
-                ]}
-              >
-                **** {item.cardLastDigits}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      {/* ── Mis Tarjetas ─────────────────────────────────────────────── */}
+      <CardsSection
+        creditCards={creditCards}
+        selectedCardId={selectedCardId}
+        onSelectCard={setSelectedCardId}
+      />
 
       {/* Alerta de cupo */}
       {!alertsDismissed && creditCards.length > 0 && (
@@ -292,7 +240,7 @@ export default function DashboardScreen() {
         />
       )}
 
-      {/* Botón Importar Transacciones */}
+      {/* Botón sincronizar movimientos */}
       {selectedCardId && (
         <TouchableOpacity
           style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
@@ -300,38 +248,55 @@ export default function DashboardScreen() {
           disabled={isRefreshing}
         >
           {isRefreshing ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#0891B2" />
           ) : (
-            <Ionicons name="cloud-download-outline" size={20} color="#fff" />
+            <Ionicons name="sync-outline" size={16} color="#0891B2" />
           )}
           <Text style={styles.importButtonText}>
-            {isRefreshing ? "Importando..." : "Importar Transacciones"}
+            {isRefreshing ? "Sincronizando..." : "Sincronizar movimientos"}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* Banner: transacciones pendientes por categorizar */}
+      {/* ── Banner: categorizar transacciones ───────────────────────── */}
       {uncategorizedCount > 0 && (
         <TouchableOpacity
-          style={styles.uncategorizedBanner}
+          style={styles.categorizeBanner}
           onPress={() =>
             router.push({
               pathname: "/(drawer)/transactions",
               params: { filter: "uncategorized" },
             })
           }
-          activeOpacity={0.7}
+          activeOpacity={0.82}
         >
-          <View style={styles.uncategorizedBannerLeft}>
-            <Ionicons name="pricetag-outline" size={20} color="#F57C00" />
-            <Text style={styles.uncategorizedBannerText}>
-              {uncategorizedCount}{" "}
-              {uncategorizedCount === 1
-                ? "transacción sin categoría"
-                : "transacciones sin categoría"}
+          {/* Left accent strip */}
+          <View style={styles.categorizeStrip} />
+
+          {/* Icon */}
+          <View style={styles.categorizeIconWrap}>
+            <Ionicons name="pricetag" size={18} color="#F57C00" />
+          </View>
+
+          {/* Text block */}
+          <View style={styles.categorizeTextBlock}>
+            <View style={styles.categorizeTopRow}>
+              <Text style={styles.categorizeCount}>{uncategorizedCount}</Text>
+              <Text style={styles.categorizeLabel}>
+                {uncategorizedCount === 1
+                  ? " transacción pendiente"
+                  : " transacciones pendientes"}
+              </Text>
+            </View>
+            <Text style={styles.categorizeSubtitle}>
+              Toca para categorizar ahora
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#F57C00" />
+
+          {/* Arrow */}
+          <View style={styles.categorizeArrow}>
+            <Ionicons name="chevron-forward" size={18} color="#F57C00" />
+          </View>
         </TouchableOpacity>
       )}
 
@@ -557,91 +522,81 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#17A2B8",
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginTop: 16,
-    gap: 8,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    alignSelf: "flex-start",
+    backgroundColor: "#F0FDFF",
+    borderWidth: 1,
+    borderColor: "#BAE6FD",
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginTop: 14,
+    gap: 6,
   },
   importButtonText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-  cardButton: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    marginRight: 12,
-    minWidth: 140,
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: "#E9ECEF",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    position: "relative" as const,
-  },
-  cardButtonAlert: {
-    borderColor: "#FFE082",
-    backgroundColor: "#FFFDF5",
-  },
-  alertBadge: {
-    position: "absolute" as const,
-    top: 6,
-    right: 6,
-  },
-  selectedCard: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
-  },
-  cardType: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#495057",
-    marginTop: 6,
-  },
-  cardTypeSelected: {
-    color: "#fff",
-  },
-  cardDigits: {
+    color: "#0891B2",
     fontSize: 13,
-    color: "#868E96",
-    marginTop: 2,
+    fontWeight: "600",
   },
-  cardDigitsSelected: {
-    color: "rgba(255,255,255,0.8)",
-  },
-  uncategorizedBanner: {
+  // ── Categorize action banner ────────────────────────────────────────────
+  categorizeBanner: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#FFF3E0",
+    backgroundColor: "#FFFBF5",
     borderWidth: 1,
     borderColor: "#FFE0B2",
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginTop: 12,
+    borderRadius: 16,
+    marginTop: 14,
+    overflow: "hidden",
+    paddingRight: 14,
+    shadowColor: "#F57C00",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  uncategorizedBannerLeft: {
-    flexDirection: "row",
+  categorizeStrip: {
+    width: 4,
+    alignSelf: "stretch",
+    backgroundColor: "#F57C00",
+  },
+  categorizeIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FFF3E0",
     alignItems: "center",
-    gap: 8,
-    flex: 1,
+    justifyContent: "center",
+    marginLeft: 14,
+    marginRight: 12,
+    flexShrink: 0,
   },
-  uncategorizedBannerText: {
-    fontSize: 14,
-    fontWeight: "600",
+  categorizeTextBlock: {
+    flex: 1,
+    paddingVertical: 14,
+  },
+  categorizeTopRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+  },
+  categorizeCount: {
+    fontSize: 20,
+    fontWeight: "800",
     color: "#E65100",
+    lineHeight: 24,
+  },
+  categorizeLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#BF360C",
+  },
+  categorizeSubtitle: {
+    fontSize: 11,
+    color: "#F57C00",
+    fontWeight: "500",
+    marginTop: 2,
+    letterSpacing: 0.2,
+  },
+  categorizeArrow: {
+    marginLeft: 8,
   },
 });

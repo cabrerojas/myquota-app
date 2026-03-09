@@ -6,6 +6,7 @@ import {
   getDebtSummary,
   DebtSummary,
 } from "@/features/dashboard/services/statsApi";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 interface DebtIndicatorCardProps {
   refreshKey?: number;
@@ -56,7 +57,8 @@ export default function DebtIndicatorCard({
       const data = await getDebtSummary();
       setSummary(data);
     } catch (error) {
-      console.error("Error fetching debt summary:", error);
+      if (!isSessionExpired())
+        console.error("Error fetching debt summary:", error);
     } finally {
       setLoading(false);
     }

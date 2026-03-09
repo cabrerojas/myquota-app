@@ -21,6 +21,7 @@ import {
   BillingPeriod,
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 type ChartTab = "monthly" | "categories" | "usd";
 const ALL_PERIODS = "__all__";
@@ -119,7 +120,7 @@ export default function ChartsScreen() {
       setBillingPeriods(sorted);
       setSelectedPeriodMonth(detectCurrentPeriod(sorted));
     } catch (error) {
-      console.error("Error fetching chart data:", error);
+      if (!isSessionExpired()) console.error("Error fetching chart data:", error);
     }
   }, [selectedCardId, detectCurrentPeriod]);
 
@@ -192,23 +193,28 @@ export default function ChartsScreen() {
 
   // Summary: selected period vs all-time
   const getSummaryCards = () => {
+    const totalCLP = stats.reduce((sum, s) => sum + s.totalCLP, 0);
+    const totalUSD = stats.reduce((sum, s) => sum + s.totalDolar, 0);
+    const avgCLP = stats.length > 0 ? Math.round(totalCLP / stats.length) : 0;
+    const avgUSD =
+      stats.length > 0 ? Math.round((totalUSD / stats.length) * 100) / 100 : 0;
     if (selectedStat) {
       return {
         label1: "Gasto del período",
         value1: selectedStat.totalCLP,
-        label2: "Gasto USD",
-        value2: null,
-        usdValue: selectedStat.totalDolar,
+        usd1: selectedStat.totalDolar,
+        label2: "Promedio mensual",
+        value2: avgCLP,
+        usd2: avgUSD,
       };
     }
-    const totalCLP = stats.reduce((sum, s) => sum + s.totalCLP, 0);
-    const avgCLP = stats.length > 0 ? Math.round(totalCLP / stats.length) : 0;
     return {
       label1: "Total acumulado",
       value1: totalCLP,
+      usd1: totalUSD,
       label2: "Promedio mensual",
       value2: avgCLP,
-      usdValue: null,
+      usd2: avgUSD,
     };
   };
 
@@ -343,23 +349,26 @@ export default function ChartsScreen() {
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>{summary.label1}</Text>
             <Text style={styles.summaryValue}>{formatCLP(summary.value1)}</Text>
-            {summary.usdValue !== null && summary.usdValue > 0 && (
+            {summary.usd1 > 0 && (
               <Text style={styles.summaryUsd}>
-                US${summary.usdValue.toFixed(2)}
+                US$
+                {summary.usd1.toLocaleString("es-CL", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </Text>
             )}
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>{summary.label2}</Text>
-            {summary.value2 !== null ? (
-              <Text style={styles.summaryValue}>
-                {formatCLP(summary.value2)}
-              </Text>
-            ) : (
-              // Period selected: show category count
-              <Text style={styles.summaryValue}>
-                {Object.keys(selectedStat?.categoryBreakdown ?? {}).length}{" "}
-                <Text style={styles.summarySmall}>categorías</Text>
+            <Text style={styles.summaryValue}>{formatCLP(summary.value2)}</Text>
+            {summary.usd2 > 0 && (
+              <Text style={styles.summaryUsd}>
+                US$
+                {summary.usd2.toLocaleString("es-CL", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </Text>
             )}
           </View>
