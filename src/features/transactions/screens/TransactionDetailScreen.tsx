@@ -58,7 +58,7 @@ export default function TransactionDetailScreen({
       setTransaction(tx);
       const sorted = [...txQuotas].sort(
         (a, b) =>
-          new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
       );
       setQuotas(sorted);
     } catch (e) {
@@ -290,11 +290,11 @@ export default function TransactionDetailScreen({
           {/* Quota list */}
           {quotas.map((quota, index) => {
             const overdue =
-              quota.status === "pending" && isOverdue(quota.due_date);
+              quota.status === "pending" && isOverdue(quota.dueDate);
             const dueSoon =
               quota.status === "pending" &&
               !overdue &&
-              isDueSoon(quota.due_date);
+              isDueSoon(quota.dueDate);
 
             return (
               <View
@@ -343,11 +343,11 @@ export default function TransactionDetailScreen({
                     )}
                   </View>
                   <Text style={styles.quotaDueDate}>
-                    Vence: {formatDate(quota.due_date)}
+                    Vence: {formatDate(quota.dueDate)}
                   </Text>
-                  {quota.payment_date && (
+                  {quota.paymentDate && (
                     <Text style={styles.quotaPaymentDate}>
-                      Pagada: {formatDate(quota.payment_date)}
+                      Pagada: {formatDate(quota.paymentDate)}
                     </Text>
                   )}
                 </View>
