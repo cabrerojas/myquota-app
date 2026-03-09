@@ -106,8 +106,22 @@ export const useGoogleSignIn = (router: Router) => {
 
 export const signOut = async (router: Router) => {
   try {
-    await GoogleSignin.signOut(); // Cerrar sesión en Google
-    await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]); // Eliminar datos de sesión
+    // Revocar refresh token en el backend antes de limpiar localmente
+    try {
+      const refreshToken = await SecureStore.getItemAsync("refreshToken");
+      if (refreshToken) {
+        await fetch(`${API_BASE_URL}/logout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+      }
+    } catch {
+      // Si falla la revocación, continuar con el logout local
+    }
+
+    await GoogleSignin.signOut();
+    await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
     try {
       await SecureStore.deleteItemAsync("accessToken");
       await SecureStore.deleteItemAsync("refreshToken");
@@ -115,13 +129,9 @@ export const signOut = async (router: Router) => {
       console.warn("SecureStore error deleting tokens:", err);
     }
 
-    console.log("Sesión cerrada.");
-
-    // 🔹 Redirigir al login
     router.replace("/login");
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
-    // Aunque falle Google signOut, limpiamos sesión local y redirigimos
     await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
     router.replace("/login");
   }
