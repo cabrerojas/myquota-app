@@ -51,7 +51,8 @@ export default function ManualDebtsScreen() {
       allDebts.sort((a, b) => a.merchant.localeCompare(b.merchant));
       setDebts(allDebts);
     } catch (error) {
-      if (!isSessionExpired()) console.error("Error fetching manual debts:", error);
+      if (!isSessionExpired())
+        console.error("Error fetching manual debts:", error);
     }
   }, []);
 

@@ -7,7 +7,7 @@ export interface MonthBucket {
   totalCLP: number;
   totalUSD: number;
   count: number;
-  details: Array<{
+  details: {
     merchant: string;
     amount: number;
     currency: string;
@@ -15,7 +15,7 @@ export interface MonthBucket {
     totalQuotas: number;
     transactionId: string;
     creditCardId: string;
-  }>;
+  }[];
   periodsByCard: { creditCardId: string; billingPeriodId: string }[];
 }
 

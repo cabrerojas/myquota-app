@@ -87,7 +87,8 @@ export default function BillingPeriodDetailScreen({
 
       setTransactions(filtered);
     } catch (error) {
-      if (!isSessionExpired()) console.error("Error loading period transactions:", error);
+      if (!isSessionExpired())
+        console.error("Error loading period transactions:", error);
     } finally {
       setLoading(false);
       setRefreshing(false);

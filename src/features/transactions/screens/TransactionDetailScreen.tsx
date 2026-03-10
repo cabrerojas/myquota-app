@@ -57,8 +57,7 @@ export default function TransactionDetailScreen({
       ]);
       setTransaction(tx);
       const sorted = [...txQuotas].sort(
-        (a, b) =>
-          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
       );
       setQuotas(sorted);
     } catch (e) {
