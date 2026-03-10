@@ -28,9 +28,7 @@ export default function MonthlyStats({ creditCardId }: MonthlyStatsProps) {
           <Text style={styles.amountCLP}>
             CLP: ${item.totalCLP.toLocaleString("es-CL")}
           </Text>
-          <Text style={styles.amountUSD}>
-            USD: ${item.totalUSD.toFixed(2)}
-          </Text>
+          <Text style={styles.amountUSD}>USD: ${item.totalUSD.toFixed(2)}</Text>
         </View>
       ))}
     </View>

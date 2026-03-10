@@ -143,7 +143,8 @@ export default function TransactionsScreen() {
         ),
       );
     } catch (error) {
-      if (!isSessionExpired()) console.error("Error loading transactions:", error);
+      if (!isSessionExpired())
+        console.error("Error loading transactions:", error);
     } finally {
       setLoadingTransactions(false);
     }

@@ -96,8 +96,7 @@ export default function QuotasScreen() {
       const allQuotas = results.flat();
       // Sort by due date
       allQuotas.sort(
-        (a, b) =>
-          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
       );
       setQuotas(allQuotas);
     } catch (error) {

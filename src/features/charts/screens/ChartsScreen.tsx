@@ -120,7 +120,8 @@ export default function ChartsScreen() {
       setBillingPeriods(sorted);
       setSelectedPeriodMonth(detectCurrentPeriod(sorted));
     } catch (error) {
-      if (!isSessionExpired()) console.error("Error fetching chart data:", error);
+      if (!isSessionExpired())
+        console.error("Error fetching chart data:", error);
     }
   }, [selectedCardId, detectCurrentPeriod]);
 
