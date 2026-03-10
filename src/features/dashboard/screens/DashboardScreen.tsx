@@ -20,6 +20,7 @@ import {
   getTransactionsByCreditCard,
   Transaction,
 } from "@/features/transactions/services/transactionsApi";
+import { getMyProfile } from "@/features/profile/services/userApi";
 import { createBillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
 import BillingPeriodFormModal from "@/features/billingPeriods/components/BillingPeriodFormModal";
 import CardsSection from "@/features/creditCards/components/CardsSection";
@@ -27,6 +28,7 @@ import MonthlyStats from "../components/MonthlyStats";
 import MonthSummaryCard from "../components/MonthSummaryCard";
 import CreditCardAlertBanner from "../components/CreditCardAlertBanner";
 import DebtIndicatorCard from "../components/DebtIndicatorCard";
+import FinancialHealthIndicator from "../components/FinancialHealthIndicator";
 import { getDebtSummary, DebtSummary } from "../services/statsApi";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import DashboardSkeleton from "../components/DashboardSkeleton";
@@ -53,6 +55,10 @@ export default function DashboardScreen() {
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [debtSummary, setDebtSummary] = useState<DebtSummary | null>(null);
+  const [userBudget, setUserBudget] = useState<{
+    monthlyBudgetCLP?: number;
+    monthlyBudgetUSD?: number;
+  }>({});
   const { count: uncategorizedCount, refreshCount } = useUncategorized();
 
   const handlePullRefresh = useCallback(async () => {
@@ -95,7 +101,8 @@ export default function DashboardScreen() {
         .slice(0, 10);
       setTransactions(sorted);
     } catch (error) {
-      if (!isSessionExpired()) console.error("Error loading transactions:", error);
+      if (!isSessionExpired())
+        console.error("Error loading transactions:", error);
     } finally {
       setIsLoadingTransactions(false);
     }
@@ -199,6 +206,18 @@ export default function DashboardScreen() {
         setIsInitialLoading(false);
       });
 
+    // Obtener presupuesto del usuario
+    getMyProfile()
+      .then((user) => {
+        setUserBudget({
+          monthlyBudgetCLP: user.monthlyBudgetCLP,
+          monthlyBudgetUSD: user.monthlyBudgetUSD,
+        });
+      })
+      .catch((e) => {
+        if (!isSessionExpired()) console.error("Error loading user budget:", e);
+      });
+
     // Obtener cantidad de transacciones sin categoría
     refreshCount();
   }, [refreshCount]);
@@ -224,6 +243,14 @@ export default function DashboardScreen() {
       }
     >
       <Text style={styles.welcome}>Hola, {userName} 👋</Text>
+
+      {/* Indicador de salud financiera */}
+      <FinancialHealthIndicator
+        monthlyBudgetCLP={userBudget.monthlyBudgetCLP}
+        monthlyBudgetUSD={userBudget.monthlyBudgetUSD}
+        spentCLP={debtSummary?.nextMonthCLP}
+        spentUSD={debtSummary?.nextMonthUSD}
+      />
 
       {/* ── Mis Tarjetas ─────────────────────────────────────────────── */}
       <CardsSection

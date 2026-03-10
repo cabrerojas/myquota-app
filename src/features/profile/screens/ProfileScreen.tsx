@@ -7,6 +7,8 @@ import {
   ScrollView,
   Alert,
   Linking,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -14,9 +16,14 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signOut } from "@/features/auth/hooks/useAuth";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import {
+  getMyProfile,
+  updateMyProfile,
+} from "@/features/profile/services/userApi";
 import Constants from "expo-constants";
-import { UserInfo } from "@/shared/types/user";
+import { UserInfo, User } from "@/shared/types/user";
 import { CreditCardSummary } from "@/shared/types/creditCard";
+import { isSessionExpired } from "@/shared/utils/authEvents";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -25,6 +32,10 @@ export default function ProfileScreen() {
     total: 0,
     active: 0,
   });
+  const [budgetCLP, setBudgetCLP] = useState("");
+  const [budgetUSD, setBudgetUSD] = useState("");
+  const [isLoadingBudget, setIsLoadingBudget] = useState(false);
+  const [isSavingBudget, setIsSavingBudget] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem("user").then((data) => {
@@ -40,7 +51,52 @@ export default function ProfileScreen() {
         });
       })
       .catch(() => {});
+
+    // Load user budgets
+    setIsLoadingBudget(true);
+    getMyProfile()
+      .then((profile: User) => {
+        if (profile.monthlyBudgetCLP) {
+          setBudgetCLP(profile.monthlyBudgetCLP.toString());
+        }
+        if (profile.monthlyBudgetUSD) {
+          setBudgetUSD(profile.monthlyBudgetUSD.toString());
+        }
+      })
+      .catch((e) => {
+        if (!isSessionExpired()) console.error("Error loading budgets:", e);
+      })
+      .finally(() => setIsLoadingBudget(false));
   }, []);
+
+  const handleSaveBudget = async () => {
+    setIsSavingBudget(true);
+    try {
+      const clp = budgetCLP
+        ? parseInt(budgetCLP.replace(/[^0-9]/g, ""), 10)
+        : undefined;
+      const usd = budgetUSD
+        ? parseFloat(budgetUSD.replace(/[^0-9.]/g, ""))
+        : undefined;
+
+      await updateMyProfile({
+        monthlyBudgetCLP: clp,
+        monthlyBudgetUSD: usd,
+      });
+      Alert.alert("Guardado", "Presupuestos actualizados correctamente");
+    } catch (e) {
+      if (!isSessionExpired()) {
+        Alert.alert(
+          "Error",
+          e instanceof Error
+            ? e.message
+            : "No se pudieron guardar los presupuestos",
+        );
+      }
+    } finally {
+      setIsSavingBudget(false);
+    }
+  };
 
   const appVersion = Constants.expoConfig?.version ?? "1.0.0";
 
@@ -122,6 +178,60 @@ export default function ProfileScreen() {
           <Text style={styles.statValue}>{cardsSummary.active}</Text>
           <Text style={styles.statLabel}>Activas</Text>
         </View>
+      </View>
+
+      {/* Budget Section */}
+      <Text style={styles.sectionTitle}>Presupuestos Mensuales</Text>
+      <View style={styles.budgetCard}>
+        {isLoadingBudget ? (
+          <ActivityIndicator size="small" color="#007BFF" />
+        ) : (
+          <>
+            <View style={styles.budgetRow}>
+              <View style={styles.budgetLabel}>
+                <Text style={styles.budgetFlag}>🇨🇱</Text>
+                <Text style={styles.budgetLabelText}>Presupuesto CLP</Text>
+              </View>
+              <TextInput
+                style={styles.budgetInput}
+                placeholder="Ej: 2500000"
+                placeholderTextColor="#ADB5BD"
+                keyboardType="numeric"
+                value={budgetCLP}
+                onChangeText={setBudgetCLP}
+              />
+            </View>
+            <View style={styles.budgetDivider} />
+            <View style={styles.budgetRow}>
+              <View style={styles.budgetLabel}>
+                <Text style={styles.budgetFlag}>🇺🇸</Text>
+                <Text style={styles.budgetLabelText}>Presupuesto USD</Text>
+              </View>
+              <TextInput
+                style={styles.budgetInput}
+                placeholder="Ej: 1000"
+                placeholderTextColor="#ADB5BD"
+                keyboardType="numeric"
+                value={budgetUSD}
+                onChangeText={setBudgetUSD}
+              />
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                isSavingBudget && styles.saveButtonDisabled,
+              ]}
+              onPress={handleSaveBudget}
+              disabled={isSavingBudget}
+            >
+              {isSavingBudget ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>Guardar presupuestos</Text>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
       </View>
 
       {/* Settings Section */}
@@ -331,6 +441,66 @@ const styles = StyleSheet.create({
     marginTop: 2,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+
+  // Budget
+  budgetCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E9ECEF",
+    padding: 16,
+  },
+  budgetRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+  },
+  budgetLabel: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  budgetFlag: {
+    fontSize: 18,
+  },
+  budgetLabelText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#212529",
+  },
+  budgetInput: {
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#212529",
+    minWidth: 120,
+    textAlign: "right",
+  },
+  budgetDivider: {
+    height: 1,
+    backgroundColor: "#F1F3F5",
+    marginVertical: 8,
+  },
+  saveButton: {
+    backgroundColor: "#007BFF",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
   },
 
   // Section
