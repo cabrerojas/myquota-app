@@ -191,11 +191,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     borderWidth: 1,
     borderColor: colors.glassBorder,
-    elevation: 3,
+    elevation: 4,
     shadowColor: colors.glassShadow,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 1,
-    shadowRadius: 12,
+    shadowRadius: 16,
   },
   // ── Header ──────────────────────────────────────────────
   header: {

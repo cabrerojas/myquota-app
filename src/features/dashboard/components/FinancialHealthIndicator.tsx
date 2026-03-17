@@ -173,15 +173,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: borderRadius.xl,
     marginBottom: 16,
-    // Glass morphism effect
+    // Enhanced glass with blue accent
     backgroundColor: colors.glassBg,
     borderWidth: 1,
     borderColor: colors.glassBorder,
     shadowColor: colors.glassShadow,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 1,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowRadius: 16,
+    elevation: 4,
   },
   header: {
     flexDirection: "row",
