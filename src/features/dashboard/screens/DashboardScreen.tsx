@@ -39,6 +39,7 @@ import {
 } from "@/features/notifications/services/notificationService";
 import { CreditCardWithLimits } from "@/shared/types/creditCard";
 import { formatShortDate } from "@/shared/utils/format";
+import { colors, spacing, fontSizes, borderRadius } from "@/shared/theme/tokens";
 
 const formatTransactionDate = formatShortDate;
 
@@ -442,19 +443,19 @@ export default function DashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
+  container: { flex: 1, backgroundColor: colors.gradientStart },
   contentContainer: { padding: 20, paddingBottom: 40 },
   welcome: {
-    fontSize: 22,
+    fontSize: fontSizes.xl,
     fontWeight: "bold",
     marginBottom: 4,
-    color: "#212529",
+    color: colors.textPrimary,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: fontSizes.md,
     fontWeight: "700",
     marginBottom: 0,
-    color: "#495057",
+    color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -471,8 +472,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   seeAllText: {
-    fontSize: 13,
-    color: "#007BFF",
+    fontSize: fontSizes.sm,
+    color: colors.primary,
     fontWeight: "600",
   },
   transaction: {
@@ -482,19 +483,21 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F3F5",
+    borderBottomColor: colors.borderLight,
   },
   transactionsContainer: {
     maxHeight: 240,
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: colors.glassBg,
+    borderRadius: borderRadius.lg,
     paddingHorizontal: 12,
     paddingVertical: 4,
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    elevation: 2,
+    shadowColor: colors.glassShadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 1,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
   },
   transactionLeft: {
     flex: 1,
@@ -503,14 +506,14 @@ const styles = StyleSheet.create({
   transactionRight: {
     alignItems: "flex-end",
   },
-  merchant: { fontSize: 15, fontWeight: "500", color: "#212529" },
+  merchant: { fontSize: fontSizes.md, fontWeight: "500", color: colors.textPrimary },
   txMeta: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginTop: 2,
   },
-  transactionDate: { fontSize: 12, color: "#868E96" },
+  transactionDate: { fontSize: fontSizes.sm - 1, color: colors.textMuted },
   txCategoryPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -520,7 +523,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   txCategoryEmoji: { fontSize: 10 },
-  txCategoryName: { fontSize: 10, fontWeight: "600", color: "#212529" },
+  txCategoryName: { fontSize: 10, fontWeight: "600", color: colors.textPrimary },
   txUncategorized: {
     flexDirection: "row",
     alignItems: "center",
@@ -530,18 +533,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "#F57C00",
+    borderColor: colors.warning,
     backgroundColor: "#FFF8E1",
   },
-  txUncategorizedText: { fontSize: 10, fontWeight: "600", color: "#F57C00" },
-  negative: { color: "#DC3545", fontSize: 15, fontWeight: "bold" },
+  txUncategorizedText: { fontSize: 10, fontWeight: "600", color: colors.warning },
+  negative: { color: colors.danger, fontSize: fontSizes.md, fontWeight: "bold" },
   emptyTransactions: {
     alignItems: "center",
     paddingVertical: 30,
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: colors.bgWhite,
+    borderRadius: borderRadius.lg,
   },
-  emptyText: { color: "#868E96", marginTop: 8, fontSize: 14 },
+  emptyText: { color: colors.textMuted, marginTop: 8, fontSize: fontSizes.sm },
   buttonDisabled: {
     opacity: 0.6,
   },
@@ -560,8 +563,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   importButtonText: {
-    color: "#0891B2",
-    fontSize: 13,
+    color: colors.info,
+    fontSize: fontSizes.sm,
     fontWeight: "600",
   },
   // ── Categorize action banner ────────────────────────────────────────────
@@ -571,11 +574,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFBF5",
     borderWidth: 1,
     borderColor: "#FFE0B2",
-    borderRadius: 16,
+    borderRadius: borderRadius.xl,
     marginTop: 14,
     overflow: "hidden",
     paddingRight: 14,
-    shadowColor: "#F57C00",
+    shadowColor: colors.warning,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
