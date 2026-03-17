@@ -37,34 +37,39 @@ Guía para agentes de IA que trabajan en `myquota-app`. Para patrones detallados
 
 When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 
-| Action                       | Skill           |
-| ---------------------------- | --------------- |
-| Creating a new feature       | `expo-module`   |
-| Adding a new screen          | `expo-module`   |
-| Setting up feature structure | `expo-module`   |
-| Creating routes              | `expo-routes`   |
-| Configuring navigation       | `expo-routes`   |
-| Adding drawer screens        | `expo-routes`   |
-| Modifying layouts            | `expo-routes`   |
-| Creating API services        | `expo-services` |
-| Making HTTP requests         | `expo-services` |
-| Using requestWithAuth        | `expo-services` |
-| Working with authentication  | `expo-auth`     |
-| Managing tokens              | `expo-auth`     |
-| Implementing Google Sign-In  | `expo-auth`     |
-| Creating screens with data   | `expo-screens`  |
-| Handling loading states      | `expo-screens`  |
-| Handling error states        | `expo-screens`  |
-| Defining interfaces          | `expo-types`    |
-| Working with shared types    | `expo-types`    |
-| Using TypeScript patterns    | `expo-types`    |
-| Styling components           | `expo-theme`    |
-| Using theme tokens           | `expo-theme`    |
-| Creating StyleSheets         | `expo-theme`    |
-| Modifying shared types       | `sync-types`    |
-| Syncing with backend models  | `sync-types`    |
+| Action | Skill |
+|--------|-------|
+| Working with authentication | `expo-auth` |
+| Managing tokens | `expo-auth` |
+| Implementing Google Sign-In | `expo-auth` |
+| Creating a new feature | `expo-module` |
+| Adding a new screen | `expo-module` |
+| Setting up feature structure | `expo-module` |
+| Creating routes | `expo-routes` |
+| Configuring navigation | `expo-routes` |
+| Adding drawer screens | `expo-routes` |
+| Modifying layouts | `expo-routes` |
+| Creating screens with data | `expo-screens` |
+| Handling loading states | `expo-screens` |
+| Handling error states | `expo-screens` |
+| Creating API services | `expo-services` |
+| Making HTTP requests | `expo-services` |
+| Using requestWithAuth | `expo-services` |
+| Styling components | `expo-theme` |
+| Using theme tokens | `expo-theme` |
+| Creating StyleSheets | `expo-theme` |
+| Defining interfaces | `expo-types` |
+| Working with shared types | `expo-types` |
+| Using TypeScript patterns | `expo-types` |
+| QA Checklist | `skill-audit` |
+| Antes de crear PR | `skill-audit` |
+| Al modificar patrones globales | `skill-audit` |
+| Crear skill nuevo | `skill-creator` |
+| Agregar feature cross-cutting | `skill-creator` |
+| Modifying shared types | `sync-types` |
+| Syncing with backend models | `sync-types` |
 
-## <!-- Skills extracted from metadata.auto_invoke in each SKILL.md -->
+<!-- Skills extracted from metadata.auto_invoke in each SKILL.md -->
 
 ## Tech Stack (Quick Reference)
 
