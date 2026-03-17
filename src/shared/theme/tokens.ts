@@ -14,14 +14,28 @@ export const colors = {
   warning: "#FFC107",
   info: "#17A2B8",
 
+  // Backgrounds
   bgLight: "#F8F9FA",
   bgWhite: "#FFFFFF",
 
+  // Glass morphism backgrounds
+  glassBg: "rgba(255, 255, 255, 0.85)",
+  glassBorder: "rgba(255, 255, 255, 0.5)",
+  glassShadow: "rgba(0, 0, 0, 0.08)",
+  
+  // Gradient backgrounds
+  gradientStart: "#F8F9FA",
+  gradientEnd: "#E8ECF0",
+  gradientBlueStart: "#E8F4FD",
+  gradientBlueEnd: "#D4EBF8",
+
+  // Text
   textPrimary: "#212529",
   textSecondary: "#495057",
   textMuted: "#868E96",
   textLight: "#6C757D",
 
+  // Borders
   border: "#DEE2E6",
   borderLight: "#E9ECEF",
 

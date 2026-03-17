@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { colors, borderRadius } from "@/shared/theme/tokens";
 
 interface FinancialHealthIndicatorProps {
   /** User's monthly budget in CLP */
@@ -169,38 +170,47 @@ export default function FinancialHealthIndicator({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 14,
-    borderRadius: 14,
+    padding: 16,
+    borderRadius: borderRadius.xl,
     marginBottom: 16,
+    // Glass morphism effect
+    backgroundColor: colors.glassBg,
+    borderWidth: 1,
+    borderColor: colors.glassBorder,
+    shadowColor: colors.glassShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 3,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 12,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 10,
   },
   iconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   headerLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
   headerSubtitle: {
     fontSize: 11,
-    color: "#868E96",
+    color: colors.textMuted,
   },
   indicators: {
-    gap: 6,
+    gap: 8,
   },
   indicatorRow: {
     flexDirection: "row",
@@ -208,20 +218,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   indicatorDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   indicatorFlag: {
-    fontSize: 14,
+    fontSize: 16,
   },
   indicatorText: {
-    fontSize: 13,
-    color: "#495057",
+    fontSize: 14,
+    color: colors.textSecondary,
     flex: 1,
   },
   indicatorPercent: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
 });

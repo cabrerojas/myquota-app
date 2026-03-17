@@ -7,6 +7,7 @@ import {
   DebtSummary,
 } from "@/features/dashboard/services/statsApi";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { colors, borderRadius, fontSizes } from "@/shared/theme/tokens";
 
 interface DebtIndicatorCardProps {
   refreshKey?: number;
@@ -184,39 +185,39 @@ export default function DebtIndicatorCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    backgroundColor: colors.glassBg,
+    borderRadius: borderRadius.xl,
     padding: 16,
     marginTop: 16,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
+    borderColor: colors.glassBorder,
+    elevation: 3,
+    shadowColor: colors.glassShadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
   },
   // ── Header ──────────────────────────────────────────────
   header: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     marginBottom: 14,
   },
   iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: "#EBF5FF",
     alignItems: "center",
     justifyContent: "center",
   },
   headerText: { flex: 1 },
-  title: { fontSize: 14, fontWeight: "700", color: "#212529" },
-  subtitle: { fontSize: 12, color: "#868E96", marginTop: 1 },
+  title: { fontSize: fontSizes.md, fontWeight: "700", color: colors.textPrimary },
+  subtitle: { fontSize: fontSizes.sm - 1, color: colors.textMuted, marginTop: 1 },
   // ── Month list ──────────────────────────────────────────
   monthList: {
-    gap: 10,
+    gap: 12,
   },
   monthRow: {
     flexDirection: "row",
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
   },
   monthLeft: {
     flex: 1,
-    gap: 5,
+    gap: 6,
   },
   monthLabelRow: {
     flexDirection: "row",
@@ -233,29 +234,29 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   nowChip: {
-    backgroundColor: "#007BFF",
+    backgroundColor: colors.primary,
     borderRadius: 4,
     paddingHorizontal: 5,
-    paddingVertical: 1,
+    paddingVertical: 2,
   },
   nowChipText: {
     fontSize: 9,
     fontWeight: "800",
-    color: "#fff",
+    color: colors.bgWhite,
     letterSpacing: 0.5,
   },
   monthName: {
-    fontSize: 13,
+    fontSize: fontSizes.sm,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
   },
   monthNameCurrent: {
-    color: "#007BFF",
+    color: colors.primary,
     fontWeight: "700",
   },
   barTrack: {
-    height: 5,
-    backgroundColor: "#F1F3F5",
+    height: 6,
+    backgroundColor: colors.borderLight,
     borderRadius: 3,
     overflow: "hidden",
   },
@@ -264,10 +265,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   barCurrent: {
-    backgroundColor: "#007BFF",
+    backgroundColor: colors.primary,
   },
   barFuture: {
-    backgroundColor: "#ADB5BD",
+    backgroundColor: colors.textMuted,
   },
   // ── Month amounts ───────────────────────────────────────
   monthRight: {
@@ -275,27 +276,27 @@ const styles = StyleSheet.create({
     minWidth: 110,
   },
   monthCLP: {
-    fontSize: 15,
+    fontSize: fontSizes.md,
     fontWeight: "700",
   },
   monthCLPCurrent: {
-    color: "#007BFF",
+    color: colors.primary,
   },
   monthCLPFuture: {
-    color: "#495057",
+    color: colors.textSecondary,
   },
   monthUSD: {
-    fontSize: 11,
-    color: "#0056B3",
+    fontSize: fontSizes.sm - 2,
+    color: colors.primaryDark,
     fontWeight: "600",
-    marginTop: 1,
+    marginTop: 2,
   },
   moreMonths: {
-    fontSize: 12,
-    color: "#ADB5BD",
+    fontSize: fontSizes.sm - 1,
+    color: colors.textMuted,
     fontWeight: "600",
     textAlign: "right",
-    marginTop: 2,
+    marginTop: 4,
   },
   // ── Footer ──────────────────────────────────────────────
   footer: {
@@ -305,11 +306,11 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
   footerLabel: {
-    fontSize: 11,
-    color: "#ADB5BD",
+    fontSize: fontSizes.sm - 1,
+    color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.4,
     fontWeight: "600",
@@ -319,13 +320,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   footerCLP: {
-    fontSize: 13,
+    fontSize: fontSizes.sm,
     fontWeight: "700",
-    color: "#ADB5BD",
+    color: colors.textMuted,
   },
   footerUSD: {
-    fontSize: 11,
+    fontSize: fontSizes.sm - 2,
     fontWeight: "600",
-    color: "#ADB5BD",
+    color: colors.textMuted,
   },
 });
