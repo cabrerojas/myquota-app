@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getMonthlyStats } from "../services/statsApi";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { colors, borderRadius } from "@/shared/theme/tokens";
 
 interface MonthlyStat {
   month: string;
@@ -298,16 +299,22 @@ export default function MonthSummaryCard({
 const styles = StyleSheet.create({
   card: {
     marginTop: 16,
-    borderRadius: 14,
-    backgroundColor: "#fff",
+    borderRadius: borderRadius.xl,
+    backgroundColor: colors.glassBg,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.glassBorder,
+    shadowColor: colors.glassShadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    elevation: 4,
+    overflow: "hidden",
   },
   header: {
-    backgroundColor: "#007BFF",
-    borderTopLeftRadius: 13,
-    borderTopRightRadius: 13,
-    paddingVertical: 12,
+    backgroundColor: colors.accentBlue,
+    borderTopLeftRadius: borderRadius.xl - 1,
+    borderTopRightRadius: borderRadius.xl - 1,
+    paddingVertical: 14,
     paddingHorizontal: 16,
   },
   headerContent: {
@@ -323,11 +330,12 @@ const styles = StyleSheet.create({
   },
   body: {
     padding: 16,
+    backgroundColor: colors.bgWhite,
   },
   // ── Factura estimada (hero) ──────────────────────────────
   billSection: {
-    backgroundColor: "#EBF5FF",
-    borderRadius: 10,
+    backgroundColor: colors.gradientBlueStart,
+    borderRadius: 12,
     padding: 14,
     marginBottom: 4,
   },
@@ -340,7 +348,7 @@ const styles = StyleSheet.create({
   billLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#0056B3",
+    color: colors.primaryDark,
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
@@ -355,7 +363,7 @@ const styles = StyleSheet.create({
   },
   billInfoText: {
     fontSize: 10,
-    color: "#0056B3",
+    color: colors.primaryDark,
     fontWeight: "600",
   },
   billAmount: {

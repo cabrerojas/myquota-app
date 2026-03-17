@@ -14,20 +14,27 @@ export const colors = {
   warning: "#FFC107",
   info: "#17A2B8",
 
-  // Backgrounds
-  bgLight: "#F8F9FA",
+  // Backgrounds - Financial blue theme
+  bgLight: "#F0F7FF",  // Azul muy sutil
   bgWhite: "#FFFFFF",
+  bgCard: "#FFFFFF",
 
   // Glass morphism backgrounds
-  glassBg: "rgba(255, 255, 255, 0.85)",
-  glassBorder: "rgba(255, 255, 255, 0.5)",
-  glassShadow: "rgba(0, 0, 0, 0.08)",
+  glassBg: "rgba(255, 255, 255, 0.92)",
+  glassBorder: "rgba(0, 122, 255, 0.15)",
+  glassShadow: "rgba(0, 82, 178, 0.12)",
   
   // Gradient backgrounds
-  gradientStart: "#F8F9FA",
-  gradientEnd: "#E8ECF0",
-  gradientBlueStart: "#E8F4FD",
-  gradientBlueEnd: "#D4EBF8",
+  gradientStart: "#F0F7FF",
+  gradientEnd: "#E1EBF8",
+  gradientBlueStart: "#E3F2FD",
+  gradientBlueEnd: "#BBDEFB",
+
+  // Accent colors for cards
+  accentBlue: "#007BFF",
+  accentGreen: "#10B981",
+  accentOrange: "#F59E0B",
+  accentRed: "#EF4444",
 
   // Text
   textPrimary: "#212529",
