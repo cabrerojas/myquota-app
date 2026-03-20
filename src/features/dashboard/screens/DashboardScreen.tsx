@@ -253,219 +253,244 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={isPullRefreshing}
-          onRefresh={handlePullRefresh}
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isPullRefreshing}
+            onRefresh={handlePullRefresh}
+          />
+        }
+      >
+        <Text style={styles.welcome}>Hola, {userName} 👋</Text>
+
+        {/* Indicador de salud financiera */}
+        <FinancialHealthIndicator
+          monthlyBudgetCLP={userBudget.monthlyBudgetCLP}
+          monthlyBudgetUSD={userBudget.monthlyBudgetUSD}
+          spentCLP={debtSummary?.nextMonthCLP}
+          spentUSD={debtSummary?.nextMonthUSD}
         />
-      }
-    >
-      <Text style={styles.welcome}>Hola, {userName} 👋</Text>
 
-      {/* Indicador de salud financiera */}
-      <FinancialHealthIndicator
-        monthlyBudgetCLP={userBudget.monthlyBudgetCLP}
-        monthlyBudgetUSD={userBudget.monthlyBudgetUSD}
-        spentCLP={debtSummary?.nextMonthCLP}
-        spentUSD={debtSummary?.nextMonthUSD}
-      />
-
-      {/* ── Mis Tarjetas ─────────────────────────────────────────────── */}
-      <CardsSection
-        creditCards={creditCards}
-        selectedCardId={selectedCardId}
-        onSelectCard={setSelectedCardId}
-      />
-
-      {/* Alerta de cupo */}
-      {!alertsDismissed && creditCards.length > 0 && (
-        <CreditCardAlertBanner
+        {/* ── Mis Tarjetas ─────────────────────────────────────────────── */}
+        <CardsSection
           creditCards={creditCards}
-          onDismiss={() => setAlertsDismissed(true)}
+          selectedCardId={selectedCardId}
+          onSelectCard={setSelectedCardId}
         />
-      )}
 
-      {/* Botón sincronizar movimientos */}
-      {selectedCardId && (
-        <TouchableOpacity
-          style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
-          onPress={handleImportTransactions}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color="#0891B2" />
-          ) : (
-            <Ionicons name="sync-outline" size={16} color="#0891B2" />
-          )}
-          <Text style={styles.importButtonText}>
-            {isRefreshing ? "Sincronizando..." : "Sincronizar movimientos"}
-          </Text>
-        </TouchableOpacity>
-      )}
+        {/* Alerta de cupo */}
+        {!alertsDismissed && creditCards.length > 0 && (
+          <CreditCardAlertBanner
+            creditCards={creditCards}
+            onDismiss={() => setAlertsDismissed(true)}
+          />
+        )}
 
-      {/* ── Banner: categorizar transacciones ───────────────────────── */}
-      {uncategorizedCount > 0 && (
-        <TouchableOpacity
-          style={styles.categorizeBanner}
-          onPress={() =>
-            router.push({
-              pathname: "/(drawer)/transactions",
-              params: { filter: "uncategorized" },
-            })
-          }
-          activeOpacity={0.82}
-        >
-          {/* Left accent strip */}
-          <View style={styles.categorizeStrip} />
+        {/* Botón sincronizar movimientos */}
+        {selectedCardId && (
+          <TouchableOpacity
+            style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
+            onPress={handleImportTransactions}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <ActivityIndicator size="small" color="#0891B2" />
+            ) : (
+              <Ionicons name="sync-outline" size={16} color="#0891B2" />
+            )}
+            <Text style={styles.importButtonText}>
+              {isRefreshing ? "Sincronizando..." : "Sincronizar movimientos"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
-          {/* Icon */}
-          <View style={styles.categorizeIconWrap}>
-            <Ionicons name="pricetag" size={18} color="#F57C00" />
-          </View>
+        {/* ── Banner: categorizar transacciones ───────────────────────── */}
+        {uncategorizedCount > 0 && (
+          <TouchableOpacity
+            style={styles.categorizeBanner}
+            onPress={() =>
+              router.push({
+                pathname: "/(drawer)/transactions",
+                params: { filter: "uncategorized" },
+              })
+            }
+            activeOpacity={0.82}
+          >
+            {/* Left accent strip */}
+            <View style={styles.categorizeStrip} />
 
-          {/* Text block */}
-          <View style={styles.categorizeTextBlock}>
-            <View style={styles.categorizeTopRow}>
-              <Text style={styles.categorizeCount}>{uncategorizedCount}</Text>
-              <Text style={styles.categorizeLabel}>
-                {uncategorizedCount === 1
-                  ? " transacción pendiente"
-                  : " transacciones pendientes"}
+            {/* Icon */}
+            <View style={styles.categorizeIconWrap}>
+              <Ionicons name="pricetag" size={18} color="#F57C00" />
+            </View>
+
+            {/* Text block */}
+            <View style={styles.categorizeTextBlock}>
+              <View style={styles.categorizeTopRow}>
+                <Text style={styles.categorizeCount}>{uncategorizedCount}</Text>
+                <Text style={styles.categorizeLabel}>
+                  {uncategorizedCount === 1
+                    ? " transacción pendiente"
+                    : " transacciones pendientes"}
+                </Text>
+              </View>
+              <Text style={styles.categorizeSubtitle}>
+                Toca para categorizar ahora
               </Text>
             </View>
-            <Text style={styles.categorizeSubtitle}>
-              Toca para categorizar ahora
-            </Text>
-          </View>
 
-          {/* Arrow */}
-          <View style={styles.categorizeArrow}>
-            <Ionicons name="chevron-forward" size={18} color="#F57C00" />
+            {/* Arrow */}
+            <View style={styles.categorizeArrow}>
+              <Ionicons name="chevron-forward" size={18} color="#F57C00" />
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Resumen del mes actual */}
+        {selectedCardId && (
+          <MonthSummaryCard
+            creditCardId={selectedCardId}
+            refreshKey={refreshKey}
+            nextPeriodCLP={debtSummary?.nextMonthCLP}
+            nextPeriodUSD={debtSummary?.nextMonthUSD}
+          />
+        )}
+
+        {/* Indicador de deuda en cuotas */}
+        <DebtIndicatorCard
+          refreshKey={refreshKey}
+          summary={debtSummary ?? undefined}
+        />
+
+        {/* Estadísticas Mensuales */}
+        {selectedCardId && (
+          <MonthlyStats
+            creditCardId={selectedCardId}
+            key={`${selectedCardId}-${refreshKey}`}
+          />
+        )}
+
+        <TouchableOpacity
+          style={styles.sectionHeader}
+          onPress={() => router.push("/(drawer)/transactions")}
+        >
+          <Text style={styles.sectionTitle}>Últimas Transacciones</Text>
+          <View style={styles.seeAllButton}>
+            <Text style={styles.seeAllText}>Ver todas</Text>
+            <Ionicons name="chevron-forward" size={14} color="#007BFF" />
           </View>
         </TouchableOpacity>
-      )}
-
-      {/* Resumen del mes actual */}
-      {selectedCardId && (
-        <MonthSummaryCard
-          creditCardId={selectedCardId}
-          refreshKey={refreshKey}
-          nextPeriodCLP={debtSummary?.nextMonthCLP}
-          nextPeriodUSD={debtSummary?.nextMonthUSD}
-        />
-      )}
-
-      {/* Indicador de deuda en cuotas */}
-      <DebtIndicatorCard
-        refreshKey={refreshKey}
-        summary={debtSummary ?? undefined}
-      />
-
-      {/* Estadísticas Mensuales */}
-      {selectedCardId && (
-        <MonthlyStats
-          creditCardId={selectedCardId}
-          key={`${selectedCardId}-${refreshKey}`}
-        />
-      )}
-
-      <TouchableOpacity
-        style={styles.sectionHeader}
-        onPress={() => router.push("/(drawer)/transactions")}
-      >
-        <Text style={styles.sectionTitle}>Últimas Transacciones</Text>
-        <View style={styles.seeAllButton}>
-          <Text style={styles.seeAllText}>Ver todas</Text>
-          <Ionicons name="chevron-forward" size={14} color="#007BFF" />
-        </View>
-      </TouchableOpacity>
-      {isLoadingTransactions ? (
-        <ActivityIndicator
-          size="small"
-          color="#007BFF"
-          style={{ marginVertical: 10 }}
-        />
-      ) : transactions.length === 0 ? (
-        <View style={styles.emptyTransactions}>
-          <Ionicons name="receipt-outline" size={40} color="#CED4DA" />
-          <Text style={styles.emptyText}>No hay transacciones aún</Text>
-        </View>
-      ) : (
-        <View style={styles.transactionsContainer}>
-          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
-            {transactions.map((item) => (
-              <View key={item.id} style={styles.transaction}>
-                <View style={styles.transactionLeft}>
-                  <Text style={styles.merchant} numberOfLines={1}>
-                    {item.merchant}
-                  </Text>
-                  <View style={styles.txMeta}>
-                    <Text style={styles.transactionDate}>
-                      {formatTransactionDate(item.transactionDate)}
+        {isLoadingTransactions ? (
+          <ActivityIndicator
+            size="small"
+            color="#007BFF"
+            style={{ marginVertical: 10 }}
+          />
+        ) : transactions.length === 0 ? (
+          <View style={styles.emptyTransactions}>
+            <Ionicons name="receipt-outline" size={40} color="#CED4DA" />
+            <Text style={styles.emptyText}>No hay transacciones aún</Text>
+          </View>
+        ) : (
+          <View style={styles.transactionsContainer}>
+            <ScrollView
+              nestedScrollEnabled
+              showsVerticalScrollIndicator={false}
+            >
+              {transactions.map((item) => (
+                <View key={item.id} style={styles.transaction}>
+                  <View style={styles.transactionLeft}>
+                    <Text style={styles.merchant} numberOfLines={1}>
+                      {item.merchant}
                     </Text>
-                    {item.categoryId ? (
-                      <View
-                        style={[
-                          styles.txCategoryPill,
-                          {
-                            backgroundColor: item.categoryColor || "#E9ECEF",
-                          },
-                        ]}
-                      >
-                        <Text style={styles.txCategoryEmoji}>
-                          {item.categoryIcon || "🏷️"}
-                        </Text>
-                        <Text style={styles.txCategoryName} numberOfLines={1}>
-                          {item.categoryName}
-                        </Text>
-                      </View>
-                    ) : (
-                      <View style={styles.txUncategorized}>
-                        <Ionicons
-                          name="pricetag-outline"
-                          size={10}
-                          color="#F57C00"
-                        />
-                        <Text style={styles.txUncategorizedText}>
-                          Sin categoría
-                        </Text>
-                      </View>
-                    )}
+                    <View style={styles.txMeta}>
+                      <Text style={styles.transactionDate}>
+                        {formatTransactionDate(item.transactionDate)}
+                      </Text>
+                      {item.categoryId ? (
+                        <View
+                          style={[
+                            styles.txCategoryPill,
+                            {
+                              backgroundColor: item.categoryColor || "#E9ECEF",
+                            },
+                          ]}
+                        >
+                          <Text style={styles.txCategoryEmoji}>
+                            {item.categoryIcon || "🏷️"}
+                          </Text>
+                          <Text style={styles.txCategoryName} numberOfLines={1}>
+                            {item.categoryName}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.txUncategorized}>
+                          <Ionicons
+                            name="pricetag-outline"
+                            size={10}
+                            color="#F57C00"
+                          />
+                          <Text style={styles.txUncategorizedText}>
+                            Sin categoría
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.transactionRight}>
+                    <Text style={styles.negative}>
+                      {item.currency === "USD" ? "US$" : "$"}
+                      {item.amount.toLocaleString("es-CL")}
+                    </Text>
                   </View>
                 </View>
-                <View style={styles.transactionRight}>
-                  <Text style={styles.negative}>
-                    {item.currency === "USD" ? "US$" : "$"}
-                    {item.amount.toLocaleString("es-CL")}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-      {/* Modal para crear período cuando hay transacciones huérfanas */}
-      <BillingPeriodFormModal
-        visible={showOrphanModal}
-        onClose={() => setShowOrphanModal(false)}
-        onSubmit={handleCreateSuggestedPeriod}
-        initialData={orphanSuggestion ?? undefined}
-        title="Crear Período de Facturación"
-        isOrphanSuggestion
-        orphanedCount={orphanedCount}
-      />
-    </ScrollView>
+        {/* Modal para crear período cuando hay transacciones huérfanas */}
+        <BillingPeriodFormModal
+          visible={showOrphanModal}
+          onClose={() => setShowOrphanModal(false)}
+          onSubmit={handleCreateSuggestedPeriod}
+          initialData={orphanSuggestion ?? undefined}
+          title="Crear Período de Facturación"
+          isOrphanSuggestion
+          orphanedCount={orphanedCount}
+        />
+      </ScrollView>
+      {/* FAB: What-If Projection */}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/(screens)/what-if")}
+        accessibilityLabel="Abrir simulador de compras"
+      >
+        <Ionicons name="help-circle" size={28} color="#fff" />
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.gradientStart },
-  contentContainer: { padding: 20, paddingBottom: 40 },
+  contentContainer: { padding: 20, paddingBottom: 100 },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#007BFF",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+  },
   welcome: {
     fontSize: fontSizes.xl,
     fontWeight: "bold",
