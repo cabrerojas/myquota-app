@@ -591,6 +591,16 @@ export default function DebtForecastScreen() {
       >
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
+
+      {/* Secondary action: Simular Compra */}
+      <TouchableOpacity
+        style={[styles.fab, { right: 86, backgroundColor: "#17A2B8" }]}
+        onPress={() => router.push("/(screens)/what-if")}
+        accessibilityLabel="Simular Compra"
+        activeOpacity={0.8}
+      >
+        <Ionicons name="help-circle" size={24} color="#fff" />
+      </TouchableOpacity>
     </View>
   );
 }
