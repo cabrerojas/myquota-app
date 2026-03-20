@@ -39,7 +39,7 @@ import {
 } from "@/features/notifications/services/notificationService";
 import { CreditCardWithLimits } from "@/shared/types/creditCard";
 import { formatShortDate } from "@/shared/utils/format";
-import { colors, spacing, fontSizes, borderRadius } from "@/shared/theme/tokens";
+import { colors, fontSizes, borderRadius } from "@/shared/theme/tokens";
 
 const formatTransactionDate = formatShortDate;
 
@@ -225,9 +225,30 @@ export default function DashboardScreen() {
 
   if (isInitialLoading) {
     return (
-      <ScrollView style={styles.container}>
-        <DashboardSkeleton />
-      </ScrollView>
+      <>
+        <ScrollView style={styles.container}>
+          <DashboardSkeleton />
+        </ScrollView>
+        {/* FAB: What-If Projection */}
+        <TouchableOpacity
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: 24,
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: "#007BFF",
+            alignItems: "center",
+            justifyContent: "center",
+            elevation: 4,
+          }}
+          onPress={() => router.push("/(screens)/what-if")}
+          accessibilityLabel="Abrir simulador de compras"
+        >
+          <Ionicons name="help-circle" size={28} color="#fff" />
+        </TouchableOpacity>
+      </>
     );
   }
 
@@ -506,7 +527,11 @@ const styles = StyleSheet.create({
   transactionRight: {
     alignItems: "flex-end",
   },
-  merchant: { fontSize: fontSizes.md, fontWeight: "500", color: colors.textPrimary },
+  merchant: {
+    fontSize: fontSizes.md,
+    fontWeight: "500",
+    color: colors.textPrimary,
+  },
   txMeta: {
     flexDirection: "row",
     alignItems: "center",
@@ -523,7 +548,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   txCategoryEmoji: { fontSize: 10 },
-  txCategoryName: { fontSize: 10, fontWeight: "600", color: colors.textPrimary },
+  txCategoryName: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
   txUncategorized: {
     flexDirection: "row",
     alignItems: "center",
@@ -536,8 +565,16 @@ const styles = StyleSheet.create({
     borderColor: colors.warning,
     backgroundColor: "#FFF8E1",
   },
-  txUncategorizedText: { fontSize: 10, fontWeight: "600", color: colors.warning },
-  negative: { color: colors.danger, fontSize: fontSizes.md, fontWeight: "bold" },
+  txUncategorizedText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: colors.warning,
+  },
+  negative: {
+    color: colors.danger,
+    fontSize: fontSizes.md,
+    fontWeight: "bold",
+  },
   emptyTransactions: {
     alignItems: "center",
     paddingVertical: 30,

@@ -213,8 +213,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   headerText: { flex: 1 },
-  title: { fontSize: fontSizes.md, fontWeight: "700", color: colors.textPrimary },
-  subtitle: { fontSize: fontSizes.sm - 1, color: colors.textMuted, marginTop: 1 },
+  title: {
+    fontSize: fontSizes.md,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  subtitle: {
+    fontSize: fontSizes.sm - 1,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
   // ── Month list ──────────────────────────────────────────
   monthList: {
     gap: 12,

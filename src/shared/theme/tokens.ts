@@ -15,7 +15,7 @@ export const colors = {
   info: "#17A2B8",
 
   // Backgrounds - Financial blue theme
-  bgLight: "#F0F7FF",  // Azul muy sutil
+  bgLight: "#F0F7FF", // Azul muy sutil
   bgWhite: "#FFFFFF",
   bgCard: "#FFFFFF",
 
@@ -23,7 +23,7 @@ export const colors = {
   glassBg: "rgba(255, 255, 255, 0.92)",
   glassBorder: "rgba(0, 122, 255, 0.15)",
   glassShadow: "rgba(0, 82, 178, 0.12)",
-  
+
   // Gradient backgrounds
   gradientStart: "#F0F7FF",
   gradientEnd: "#E1EBF8",

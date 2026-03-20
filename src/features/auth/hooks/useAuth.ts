@@ -219,7 +219,8 @@ export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
         ...(await getAuthHeaders()),
       };
       res = await fetch(input, { ...init, headers: headers2 });
-    } catch (_e) {
+    } catch {
+      // si falla refresh, limpiar sesión y redirigir a login
       // si falla refresh, limpiar sesión y redirigir a login
       await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
       await SecureStore.deleteItemAsync("accessToken");
