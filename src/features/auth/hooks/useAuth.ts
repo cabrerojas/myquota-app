@@ -1,5 +1,3 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
 import { useState, useCallback } from "react";
 import {
   emitSessionExpired,
@@ -13,6 +11,12 @@ import {
 } from "@react-native-google-signin/google-signin";
 import { Router } from "expo-router";
 import { API_BASE_URL } from "@/config/api";
+import {
+  clearSession,
+  getAccessToken,
+  getRefreshToken,
+  persistSession,
+} from "@/features/auth/services/sessionStorage";
 
 const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
 
@@ -70,23 +74,20 @@ export const useGoogleSignIn = (router: Router) => {
           console.log("Access token recibido");
           resetSessionExpired();
           try {
-            await SecureStore.setItemAsync("accessToken", data.accessToken);
-            if (data.refreshToken)
-              await SecureStore.setItemAsync("refreshToken", data.refreshToken);
-            // debug: confirm tokens saved
-            try {
-              const savedRt = await SecureStore.getItemAsync("refreshToken");
-              console.log("Saved refreshToken present:", !!savedRt);
-            } catch (e) {
-              console.warn("SecureStore getItemAsync debug error:", e);
-            }
+            const normalizedUser = {
+              givenName: user.givenName ?? undefined,
+              familyName: user.familyName ?? undefined,
+              email: user.email ?? undefined,
+              photo: user.photo ?? undefined,
+            };
+            await persistSession({
+              accessToken: data.accessToken,
+              refreshToken: data.refreshToken,
+              user: normalizedUser,
+            });
           } catch (err) {
-            console.warn("SecureStore error saving tokens:", err);
+            console.warn("Session storage error saving tokens:", err);
           }
-
-          // mantener compatibilidad: guardar jwt en AsyncStorage (legacy)
-          await AsyncStorage.setItem("jwt", data.accessToken);
-          await AsyncStorage.setItem("user", JSON.stringify(user));
 
           // 🔹 Redirigir al Dashboard
           router.replace("/(drawer)/dashboard");
@@ -108,7 +109,7 @@ export const signOut = async (router: Router) => {
   try {
     // Revocar refresh token en el backend antes de limpiar localmente
     try {
-      const refreshToken = await SecureStore.getItemAsync("refreshToken");
+      const refreshToken = await getRefreshToken();
       if (refreshToken) {
         await fetch(`${API_BASE_URL}/logout`, {
           method: "POST",
@@ -121,31 +122,18 @@ export const signOut = async (router: Router) => {
     }
 
     await GoogleSignin.signOut();
-    await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
-    try {
-      await SecureStore.deleteItemAsync("accessToken");
-      await SecureStore.deleteItemAsync("refreshToken");
-    } catch (err) {
-      console.warn("SecureStore error deleting tokens:", err);
-    }
+    await clearSession();
 
     router.replace("/login");
   } catch (error) {
     console.error("Error al cerrar sesión:", error);
-    await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
+    await clearSession();
     router.replace("/login");
   }
 };
 
 export const getAuthHeaders = async () => {
-  // Preferir SecureStore (accessToken), fallback a legacy 'jwt' en AsyncStorage
-  let token: string | null = null;
-  try {
-    token = await SecureStore.getItemAsync("accessToken");
-  } catch (err) {
-    console.warn("SecureStore getItemAsync error:", err);
-  }
-  if (!token) token = await AsyncStorage.getItem("jwt");
+  const token = await getAccessToken();
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -155,18 +143,12 @@ export const getAuthHeaders = async () => {
 };
 
 async function attemptRefresh() {
-  let refreshToken: string | null = null;
-  try {
-    refreshToken = await SecureStore.getItemAsync("refreshToken");
-  } catch (err) {
-    console.warn("SecureStore getItemAsync error:", err);
-  }
+  const refreshToken = await getRefreshToken();
+
   if (!refreshToken) {
     // limpiar sesión local si no hay refresh token para forzar login
     try {
-      await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
-      await SecureStore.deleteItemAsync("accessToken");
-      await SecureStore.deleteItemAsync("refreshToken");
+      await clearSession();
     } catch (e) {
       console.warn("Error clearing storage when missing refresh token:", e);
     }
@@ -183,13 +165,14 @@ async function attemptRefresh() {
   const data = await res.json();
   if (data.accessToken) {
     try {
-      await SecureStore.setItemAsync("accessToken", data.accessToken);
-      if (data.refreshToken)
-        await SecureStore.setItemAsync("refreshToken", data.refreshToken);
+      await persistSession({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      });
     } catch (err) {
-      console.warn("SecureStore setItemAsync error:", err);
+      console.warn("Session storage setItemAsync error:", err);
     }
-    await AsyncStorage.setItem("jwt", data.accessToken); // legacy
+
     return data.accessToken;
   }
   throw new Error("Invalid refresh response");
@@ -219,11 +202,9 @@ export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
         ...(await getAuthHeaders()),
       };
       res = await fetch(input, { ...init, headers: headers2 });
-    } catch (_e) {
+    } catch {
       // si falla refresh, limpiar sesión y redirigir a login
-      await AsyncStorage.multiRemove(["jwt", "user", "pendingAction"]);
-      await SecureStore.deleteItemAsync("accessToken");
-      await SecureStore.deleteItemAsync("refreshToken");
+      await clearSession();
       emitSessionExpired();
       // No throw — el usuario ya fue redirigido a login.
       // Retornar la respuesta 401 original para que el caller
