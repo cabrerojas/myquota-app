@@ -24,6 +24,7 @@ import Constants from "expo-constants";
 import { UserInfo, User } from "@/shared/types/user";
 import { CreditCardSummary } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { getSessionUser } from "@/features/auth/services/sessionStorage";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -38,8 +39,8 @@ export default function ProfileScreen() {
   const [isSavingBudget, setIsSavingBudget] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem("user").then((data) => {
-      if (data) setUser(JSON.parse(data));
+    getSessionUser().then((data) => {
+      if (data) setUser(data);
     });
 
     getCreditCards()
@@ -122,10 +123,8 @@ export default function ProfileScreen() {
           onPress: async () => {
             try {
               // Keep jwt and user, clear everything else
-              const jwt = await AsyncStorage.getItem("jwt");
               const userData = await AsyncStorage.getItem("user");
               await AsyncStorage.clear();
-              if (jwt) await AsyncStorage.setItem("jwt", jwt);
               if (userData) await AsyncStorage.setItem("user", userData);
               Alert.alert("Listo", "Caché limpiado correctamente");
             } catch {
