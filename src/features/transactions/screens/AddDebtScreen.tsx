@@ -12,7 +12,7 @@ import {
   Modal,
 } from "react-native";
 import { useState, useEffect } from "react";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { Href, useRouter, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker, {
   DateTimePickerEvent,
@@ -59,6 +59,10 @@ export default function AddDebtScreen() {
     paidInstallments?: string;
     currency?: string;
     purchaseDate?: string;
+    lastPaidMonth?: string;
+    lastPaidYear?: string;
+    selectedCategoryId?: string;
+    selectedCategoryName?: string;
   }>();
 
   const isEdit = params.editMode === "true";
@@ -73,7 +77,10 @@ export default function AddDebtScreen() {
   } | null>(null);
   const [_suggestionProcessing, setSuggestionProcessing] = useState(false);
   const [chosenCategoryId, setChosenCategoryId] = useState<string | undefined>(
-    undefined,
+    params.selectedCategoryId,
+  );
+  const [chosenCategoryName, setChosenCategoryName] = useState<string>(
+    params.selectedCategoryName || "",
   );
 
   // Form state
@@ -93,10 +100,14 @@ export default function AddDebtScreen() {
     params.paidInstallments || "",
   );
   const [lastPaidMonth, setLastPaidMonth] = useState<number>(
-    new Date().getMonth(),
+    Number.isFinite(Number(params.lastPaidMonth))
+      ? Number(params.lastPaidMonth)
+      : new Date().getMonth(),
   ); // 0-11
   const [lastPaidYear, setLastPaidYear] = useState<number>(
-    new Date().getFullYear(),
+    Number.isFinite(Number(params.lastPaidYear))
+      ? Number(params.lastPaidYear)
+      : new Date().getFullYear(),
   );
   const [currency, setCurrency] = useState<"CLP" | "USD">(
     (params.currency as "CLP" | "USD") || "CLP",
@@ -106,11 +117,20 @@ export default function AddDebtScreen() {
     loadCards();
   }, []);
 
+  useEffect(() => {
+    if (params.selectedCategoryId) {
+      setChosenCategoryId(params.selectedCategoryId);
+      setChosenCategoryName(params.selectedCategoryName || "");
+    }
+  }, [params.selectedCategoryId, params.selectedCategoryName]);
+
   const loadCards = async () => {
     try {
       const data = await getCreditCards();
       setCards(data);
-      if (data.length > 0) setSelectedCardId(data[0].id);
+      if (data.length > 0) {
+        setSelectedCardId((current) => current || data[0].id);
+      }
     } catch {
       Alert.alert("Error", "No se pudieron cargar las tarjetas");
     } finally {
@@ -326,16 +346,42 @@ export default function AddDebtScreen() {
           />
           <TouchableOpacity
             style={{ padding: 10 }}
-            onPress={() =>
-              router.push({
+            onPress={() => {
+              const categorySelectHref: Href = {
                 pathname: "/categories/select",
-                params: { merchant },
-              })
-            }
+                params: {
+                  editMode: params.editMode,
+                  transactionId: params.transactionId,
+                  creditCardId: selectedCardId,
+                  merchant,
+                  quotaAmount,
+                  totalInstallments,
+                  paidInstallments,
+                  currency,
+                  purchaseDate: purchaseDate
+                    ? purchaseDate.toISOString().split("T")[0]
+                    : undefined,
+                  lastPaidMonth: String(lastPaidMonth),
+                  lastPaidYear: String(lastPaidYear),
+                  selectedCategoryId: chosenCategoryId,
+                  selectedCategoryName: chosenCategoryName,
+                },
+              };
+
+              router.push(categorySelectHref);
+            }}
           >
             <Ionicons name="pricetag-outline" size={22} color="#007BFF" />
           </TouchableOpacity>
         </View>
+        {chosenCategoryId ? (
+          <View style={styles.categorySelectedBadge}>
+            <Ionicons name="checkmark-circle" size={14} color="#0B8F3C" />
+            <Text style={styles.categorySelectedText}>
+              Categoría: {chosenCategoryName || "Seleccionada"}
+            </Text>
+          </View>
+        ) : null}
 
         {/* Quota Amount */}
         <Text style={styles.label}>Monto de cada cuota</Text>
@@ -809,5 +855,23 @@ const styles = StyleSheet.create({
   },
   dateClearBtn: {
     padding: 2,
+  },
+  categorySelectedBadge: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#EBFAF0",
+    borderWidth: 1,
+    borderColor: "#B8EBC9",
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  categorySelectedText: {
+    color: "#0B8F3C",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
