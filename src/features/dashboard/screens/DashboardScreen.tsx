@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
@@ -39,6 +38,7 @@ import {
 } from "@/features/notifications/services/notificationService";
 import { CreditCardWithLimits } from "@/shared/types/creditCard";
 import { formatShortDate } from "@/shared/utils/format";
+import { getSessionUser } from "@/features/auth/services/sessionStorage";
 
 const formatTransactionDate = formatShortDate;
 
@@ -178,11 +178,10 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     // Obtener nombre del usuario
-    AsyncStorage.getItem("user").then((user) => {
+    getSessionUser().then((user) => {
       if (user) {
-        const parsedUser = JSON.parse(user);
-        if (parsedUser.givenName) {
-          setUserName(parsedUser.givenName);
+        if (user.givenName) {
+          setUserName(user.givenName);
         }
       }
     });

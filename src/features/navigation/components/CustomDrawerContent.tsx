@@ -14,9 +14,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signOut } from "@/features/auth/hooks/useAuth";
 import { UserInfo } from "@/shared/types/user";
+import { getSessionUser } from "@/features/auth/services/sessionStorage";
 
 export default function CustomDrawerContent(
   props: DrawerContentComponentProps,
@@ -25,8 +25,8 @@ export default function CustomDrawerContent(
   const [user, setUser] = useState<UserInfo | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem("user").then((data) => {
-      if (data) setUser(JSON.parse(data));
+    getSessionUser().then((data) => {
+      if (data) setUser(data);
     });
   }, []);
 
