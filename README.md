@@ -10,7 +10,17 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Configure environment variables
+
+   Copy the example environment file and fill in your values:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   See `.env.example` for all required variables (API base URL, app scheme, EAS project ID, Google OAuth credentials).
+
+3. Start the app
 
    ```bash
     npx expo start
