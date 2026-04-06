@@ -1,5 +1,6 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
+import { useQuery } from "@tanstack/react-query";
 
 export interface MonthlyStat {
   month: string;
@@ -50,4 +51,19 @@ export const getDebtSummary = async (): Promise<DebtSummary> => {
     throw new Error(`Error fetching debt summary: ${msg}`);
   }
   return data as DebtSummary;
+};
+
+export const useDebtSummary = () => {
+  return useQuery({
+    queryKey: ["debtSummary"],
+    queryFn: getDebtSummary,
+  });
+};
+
+export const useMonthlyStats = (creditCardId: string) => {
+  return useQuery({
+    queryKey: ["monthlyStats", creditCardId],
+    queryFn: () => getMonthlyStats(creditCardId),
+    enabled: !!creditCardId,
+  });
 };
