@@ -1,6 +1,7 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 import { CreditCard } from "@/shared/types/creditCard";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const getCreditCards = async (): Promise<CreditCard[]> => {
   const response = await requestWithAuth(`${API_BASE_URL}/creditCards`);
@@ -26,6 +27,13 @@ export const getCreditCards = async (): Promise<CreditCard[]> => {
   return [];
 };
 
+export const useCreditCards = () => {
+  return useQuery({
+    queryKey: ["creditCards"],
+    queryFn: getCreditCards,
+  });
+};
+
 export const getUncategorizedCount = async (): Promise<number> => {
   const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/uncategorized-count`,
@@ -35,6 +43,13 @@ export const getUncategorizedCount = async (): Promise<number> => {
     uncategorizedCount?: number;
   } | null;
   return data?.uncategorizedCount ?? 0;
+};
+
+export const useUncategorizedCount = () => {
+  return useQuery({
+    queryKey: ["uncategorizedCount"],
+    queryFn: getUncategorizedCount,
+  });
 };
 
 export const getCreditCardById = async (
