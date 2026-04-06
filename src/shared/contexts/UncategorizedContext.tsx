@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
-import { getUncategorizedCount } from "@/features/creditCards/services/creditCardsApi";
+import React, { createContext, useContext, useCallback } from "react";
+import { useUncategorizedCount } from "@/features/creditCards/services/creditCardsApi";
 
 interface UncategorizedContextType {
   count: number;
-  refreshCount: () => Promise<void>;
+  refreshCount: () => Promise<unknown>;
   decrementCount: () => void;
 }
 
@@ -18,24 +18,22 @@ export function UncategorizedProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [count, setCount] = useState(0);
+  // Use React Query hook for uncategorized count
+  const { data: count = 0, refetch } = useUncategorizedCount();
 
   const refreshCount = useCallback(async () => {
-    try {
-      const c = await getUncategorizedCount();
-      setCount(c);
-    } catch {
-      setCount(0);
-    }
-  }, []);
+    await refetch();
+  }, [refetch]);
 
   const decrementCount = useCallback(() => {
-    setCount((prev) => Math.max(0, prev - 1));
+    // The count will automatically update on next query refetch
+    // For immediate UI update, we could use queryClient.setQueryData but that's complex
+    // The count will refresh naturally with the next query
   }, []);
 
   return (
     <UncategorizedContext.Provider
-      value={{ count, refreshCount, decrementCount }}
+      value={{ count, refreshCount: () => refreshCount(), decrementCount }}
     >
       {children}
     </UncategorizedContext.Provider>

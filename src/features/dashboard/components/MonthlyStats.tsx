@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
-import { useEffect, useState } from "react";
-import { getMonthlyStats } from "../services/statsApi";
+import { memo } from "react";
+import { useMonthlyStats } from "../services/statsApi";
 
 interface MonthlyStat {
   month: string;
@@ -12,12 +12,17 @@ interface MonthlyStatsProps {
   creditCardId: string;
 }
 
-export default function MonthlyStats({ creditCardId }: MonthlyStatsProps) {
-  const [monthlyStats, setMonthlyStats] = useState<MonthlyStat[]>([]);
+const MonthlyStatsComponent = ({ creditCardId }: MonthlyStatsProps) => {
+  const { data: monthlyStats = [], isLoading } = useMonthlyStats(creditCardId);
 
-  useEffect(() => {
-    getMonthlyStats(creditCardId).then(setMonthlyStats);
-  }, [creditCardId]);
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>Gastos Mensuales</Text>
+        <Text style={styles.loading}>Cargando...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -33,11 +38,15 @@ export default function MonthlyStats({ creditCardId }: MonthlyStatsProps) {
       ))}
     </View>
   );
-}
+};
+
+// Memoize to prevent unnecessary re-renders
+export default memo(MonthlyStatsComponent);
 
 const styles = StyleSheet.create({
   container: { padding: 20, backgroundColor: "#fff" },
   title: { fontSize: 20, fontWeight: "bold", marginBottom: 10 },
+  loading: { fontSize: 14, color: "#868E96", fontStyle: "italic" },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
