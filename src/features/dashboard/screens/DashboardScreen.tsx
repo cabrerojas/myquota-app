@@ -54,8 +54,7 @@ export default function DashboardScreen() {
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   
-  const { data: creditCardsData, isLoading: isLoadingCards } = useCreditCards();
-  const creditCards = creditCardsData || [];
+const { data: creditCards = [], isLoading: isLoadingCards } = useCreditCards();
   const { data: debtSummary } = useDebtSummary();
   const { data: profile } = useMyProfile();
   
