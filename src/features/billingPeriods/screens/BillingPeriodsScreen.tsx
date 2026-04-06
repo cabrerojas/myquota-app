@@ -72,6 +72,7 @@ export default function BillingPeriodsScreen({
   }, [loadPeriods]);
 
   const handleCreate = async (data: {
+    creditCardId: string;
     month: string;
     startDate: string;
     endDate: string;
@@ -83,6 +84,7 @@ export default function BillingPeriodsScreen({
   };
 
   const handleUpdate = async (data: {
+    creditCardId: string;
     month: string;
     startDate: string;
     endDate: string;
@@ -139,6 +141,7 @@ export default function BillingPeriodsScreen({
   const getInitialFormData = () => {
     if (editingPeriod) {
       return {
+        creditCardId: editingPeriod.creditCardId,
         month: editingPeriod.month,
         startDate: editingPeriod.startDate,
         endDate: editingPeriod.endDate,
@@ -171,6 +174,7 @@ export default function BillingPeriodsScreen({
       ];
 
       return {
+        creditCardId,
         month: `${monthNames[nextEnd.getMonth()]} ${nextEnd.getFullYear()}`,
         startDate: nextStart.toISOString(),
         endDate: nextEnd.toISOString(),

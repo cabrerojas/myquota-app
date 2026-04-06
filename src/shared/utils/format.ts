@@ -108,3 +108,14 @@ export const getMonthIndex = (dateStr: string): number => {
     return 0;
   }
 };
+
+/**
+ * Format a Date object as "yyyy-MM-dd" for API payloads.
+ * This format avoids timezone conversion issues when sent to the backend.
+ */
+export const toISODateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};

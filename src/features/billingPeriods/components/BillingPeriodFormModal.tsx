@@ -14,18 +14,20 @@ import { useState, useEffect } from "react";
 import DateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
-import { formatDateInput } from "@/shared/utils/format";
+import { formatDateInput, toISODateString } from "@/shared/utils/format";
 
 interface BillingPeriodFormModalProps {
   visible: boolean;
   onClose: () => void;
   onSubmit: (data: {
+    creditCardId: string;
     month: string;
     startDate: string;
     endDate: string;
     dueDate: string;
   }) => Promise<void>;
   initialData?: {
+    creditCardId?: string;
     month?: string;
     startDate?: string;
     endDate?: string;
@@ -65,6 +67,7 @@ export default function BillingPeriodFormModal({
   isOrphanSuggestion = false,
   orphanedCount = 0,
 }: BillingPeriodFormModalProps) {
+  const [creditCardId, setCreditCardId] = useState("");
   const [month, setMonth] = useState("");
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
@@ -76,11 +79,13 @@ export default function BillingPeriodFormModal({
 
   useEffect(() => {
     if (initialData) {
+      if (initialData.creditCardId) setCreditCardId(initialData.creditCardId);
       if (initialData.month) setMonth(initialData.month);
       if (initialData.startDate) setStartDate(new Date(initialData.startDate));
       if (initialData.endDate) setEndDate(new Date(initialData.endDate));
       if (initialData.dueDate) setDueDate(new Date(initialData.dueDate));
     } else {
+      setCreditCardId("");
       setMonth("");
       setStartDate(new Date());
       setEndDate(new Date());
@@ -95,10 +100,11 @@ export default function BillingPeriodFormModal({
     setIsSubmitting(true);
     try {
       await onSubmit({
+        creditCardId,
         month: month.trim(),
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        dueDate: dueDate.toISOString(),
+        startDate: toISODateString(startDate),
+        endDate: toISODateString(endDate),
+        dueDate: toISODateString(dueDate),
       });
       onClose();
     } catch {
