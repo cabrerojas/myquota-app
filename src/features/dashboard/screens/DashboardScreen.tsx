@@ -160,6 +160,7 @@ export default function DashboardScreen() {
   }, [selectedCardId, refreshCount]);
 
   const handleCreateSuggestedPeriod = async (data: {
+    creditCardId: string;
     month: string;
     startDate: string;
     endDate: string;
