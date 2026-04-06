@@ -1,6 +1,7 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 import { User, UserUpdate } from "@/shared/types/user";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const getMyProfile = async (): Promise<User> => {
   const response = await requestWithAuth(`${API_BASE_URL}/users/me`);
@@ -14,6 +15,13 @@ export const getMyProfile = async (): Promise<User> => {
     throw new Error(`Error fetching profile: ${msg}`);
   }
   return response.json();
+};
+
+export const useMyProfile = () => {
+  return useQuery({
+    queryKey: ["myProfile"],
+    queryFn: getMyProfile,
+  });
 };
 
 export const updateMyProfile = async (data: UserUpdate): Promise<User> => {

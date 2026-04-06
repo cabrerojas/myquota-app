@@ -44,7 +44,8 @@ export default function ProfileScreen() {
     });
 
     getCreditCards()
-      .then((cards) => {
+      .then((response) => {
+        const cards = response.items;
         setCardsSummary({
           total: cards.length,
           active: cards.filter((c: { status: string }) => c.status === "active")

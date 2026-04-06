@@ -1,5 +1,8 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
+import { PaginatedResponse } from "@/features/creditCards/services/creditCardsApi";
+
+export type { PaginatedResponse };
 
 export interface ImportResult {
   message: string;
@@ -39,14 +42,38 @@ export interface Transaction {
 
 export const getTransactionsByCreditCard = async (
   creditCardId: string,
-): Promise<Transaction[]> => {
-  const response = await requestWithAuth(
-    `${API_BASE_URL}/creditCards/${creditCardId}/transactions`,
-  );
+  limit?: number,
+  startAfter?: string,
+  startDate?: string,
+  endDate?: string,
+): Promise<PaginatedResponse<Transaction>> => {
+  let url = `${API_BASE_URL}/creditCards/${creditCardId}/transactions`;
+  const params = new URLSearchParams();
+  if (limit) params.append("limit", limit.toString());
+  if (startAfter) params.append("startAfter", startAfter);
+  if (startDate) params.append("startDate", startDate);
+  if (endDate) params.append("endDate", endDate);
+  if (params.toString()) url += `?${params.toString()}`;
+
+  const response = await requestWithAuth(url);
   if (!response.ok) {
     throw new Error("Error al obtener transacciones");
   }
-  return response.json();
+  
+  const data = await response.json();
+  
+  // Handle both array (legacy) and paginated response
+  if (data && typeof data === "object" && "items" in data && "metadata" in data) {
+    return data as PaginatedResponse<Transaction>;
+  }
+  // Legacy: wrap array response
+  if (Array.isArray(data)) {
+    return {
+      items: data as Transaction[],
+      metadata: { hasMore: false, nextCursor: null },
+    };
+  }
+  return { items: [], metadata: { hasMore: false, nextCursor: null } };
 };
 
 export const getTransactionById = async (

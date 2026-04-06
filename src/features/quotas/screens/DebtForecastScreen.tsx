@@ -70,7 +70,8 @@ export default function DebtForecastScreen() {
 
   const fetchDebtForecast = useCallback(async () => {
     try {
-      const cards = await getCreditCards();
+      const cardsResponse = await getCreditCards();
+      const cards = cardsResponse.items;
       const allQuotas: QuotaEnriched[] = [];
       const allBillingPeriods: BillingPeriod[] = [];
 
@@ -80,13 +81,14 @@ export default function DebtForecastScreen() {
           getTransactionsByCreditCard(card.id),
           getBillingPeriodsByCreditCard(card.id),
         ]);
+        const txItems = txs.items;
         // Tag each period with its creditCardId (may not come from API)
         allBillingPeriods.push(
           ...periods.map((p) => ({ ...p, creditCardId: card.id })),
         );
 
         const results = await Promise.all(
-          txs.map(async (tx) => {
+          txItems.map(async (tx) => {
             const quotas = await getQuotasByTransaction(card.id, tx.id);
             const sorted = [...quotas].sort(
               (a, b) =>

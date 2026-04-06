@@ -10,7 +10,7 @@ import {
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getCreditCards } from "../services/creditCardsApi";
+import { getCreditCards, PaginatedResponse } from "../services/creditCardsApi";
 import { CreditCard } from "@/shared/types/creditCard";
 import { formatCLP } from "@/shared/utils/format";
 import { isSessionExpired } from "@/shared/utils/authEvents";
@@ -20,11 +20,22 @@ export default function CreditCardsScreen() {
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
 
-  const fetchCards = useCallback(async () => {
+  const fetchCards = useCallback(async (cursor?: string, isRefresh = false) => {
     try {
-      const data = await getCreditCards();
-      setCreditCards(data);
+      const data: PaginatedResponse<CreditCard> = await getCreditCards(50, cursor);
+      
+      if (isRefresh || !cursor) {
+        setCreditCards(data.items);
+      } else {
+        setCreditCards(prev => [...prev, ...data.items]);
+      }
+      
+      setHasMore(data.metadata.hasMore);
+      setNextCursor(data.metadata.nextCursor);
     } catch (error) {
       if (!isSessionExpired()) {
         console.error("Error fetching credit cards:", error);
@@ -32,6 +43,7 @@ export default function CreditCardsScreen() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   }, []);
 
@@ -41,7 +53,14 @@ export default function CreditCardsScreen() {
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchCards();
+    setNextCursor(null);
+    fetchCards(undefined, true);
+  };
+
+  const loadMore = () => {
+    if (loadingMore || !hasMore || !nextCursor) return;
+    setLoadingMore(true);
+    fetchCards(nextCursor);
   };
 
   const getCardIcon = (cardType: string): keyof typeof Ionicons.glyphMap => {
@@ -266,6 +285,24 @@ export default function CreditCardsScreen() {
           </View>
         );
       })}
+
+      {/* Load More Button */}
+      {hasMore && (
+        <TouchableOpacity
+          style={[styles.actionButton, styles.loadMoreButton]}
+          onPress={loadMore}
+          disabled={loadingMore}
+        >
+          {loadingMore ? (
+            <ActivityIndicator size="small" color="#007BFF" />
+          ) : (
+            <>
+              <Ionicons name="download-outline" size={18} color="#007BFF" />
+              <Text style={styles.actionText}>Cargar más</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 }
@@ -411,6 +448,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 8,
+  },
+  loadMoreButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 16,
+    marginTop: 8,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
   },
   actionText: {
     fontSize: 14,

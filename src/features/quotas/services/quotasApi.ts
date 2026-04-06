@@ -1,6 +1,14 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 
+export interface PaginatedResponse<T> {
+  items: T[];
+  metadata: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+}
+
 export interface Quota {
   id: string;
   transactionId: string;

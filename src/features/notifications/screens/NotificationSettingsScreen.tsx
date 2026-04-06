@@ -68,7 +68,8 @@ export default function NotificationSettingsScreen() {
           return;
         }
 
-        const cards: CreditCardForNotification[] = await getCreditCards();
+        const cardsResponse = await getCreditCards();
+        const cards: CreditCardForNotification[] = cardsResponse.items;
         const count = await scheduleCardNotifications(cards);
         setScheduledCount(count);
         Alert.alert(

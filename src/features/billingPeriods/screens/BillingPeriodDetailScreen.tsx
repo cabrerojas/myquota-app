@@ -69,7 +69,8 @@ export default function BillingPeriodDetailScreen({
 
   const loadTransactions = useCallback(async () => {
     try {
-      const all = await getTransactionsByCreditCard(creditCardId);
+      const allResponse = await getTransactionsByCreditCard(creditCardId);
+      const all = allResponse.items;
 
       const startDate = new Date(periodStartDate);
       const endDate = new Date(periodEndDate);

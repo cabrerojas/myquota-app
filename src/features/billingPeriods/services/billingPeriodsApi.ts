@@ -1,5 +1,6 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export interface BillingPeriod {
   id: string;
@@ -103,4 +104,74 @@ export const payBillingPeriod = async (
     throw new Error(error.message || "Error al pagar el período");
   }
   return response.json();
+};
+
+// React Query hooks for billing periods
+export const useBillingPeriods = (creditCardId: string) => {
+  return useQuery({
+    queryKey: ["billingPeriods", creditCardId],
+    queryFn: () => getBillingPeriodsByCreditCard(creditCardId),
+    enabled: !!creditCardId,
+  });
+};
+
+export const useCreateBillingPeriod = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      creditCardId,
+      data,
+    }: {
+      creditCardId: string;
+      data: CreateBillingPeriodDto;
+    }) => createBillingPeriod(creditCardId, data),
+    onSuccess: (_, { creditCardId }) => {
+      // Invalidate billing periods cache
+      queryClient.invalidateQueries({
+        queryKey: ["billingPeriods", creditCardId],
+      });
+      // Also invalidate debt summary as it depends on billing periods
+      queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
+    },
+  });
+};
+
+export const useUpdateBillingPeriod = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      creditCardId,
+      billingPeriodId,
+      data,
+    }: {
+      creditCardId: string;
+      billingPeriodId: string;
+      data: Partial<CreateBillingPeriodDto>;
+    }) => updateBillingPeriod(creditCardId, billingPeriodId, data),
+    onSuccess: (_, { creditCardId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["billingPeriods", creditCardId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
+    },
+  });
+};
+
+export const useDeleteBillingPeriod = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      creditCardId,
+      billingPeriodId,
+    }: {
+      creditCardId: string;
+      billingPeriodId: string;
+    }) => deleteBillingPeriod(creditCardId, billingPeriodId),
+    onSuccess: (_, { creditCardId }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["billingPeriods", creditCardId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
+    },
+  });
 };
