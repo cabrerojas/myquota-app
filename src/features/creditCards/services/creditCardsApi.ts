@@ -53,6 +53,13 @@ export const useCreditCards = () => {
   });
 };
 
+export const useCreditCards = () => {
+  return useQuery({
+    queryKey: ["creditCards"],
+    queryFn: getCreditCards,
+  });
+};
+
 export const getUncategorizedCount = async (): Promise<number> => {
   const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/uncategorized-count`,
