@@ -14,6 +14,7 @@ export interface BillingPeriod {
 }
 
 export interface CreateBillingPeriodDto {
+  creditCardId: string;
   month: string;
   startDate: string;
   endDate: string;
