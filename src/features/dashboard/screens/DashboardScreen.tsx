@@ -11,7 +11,7 @@ import {
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 import {
   importBankTransactions,
@@ -19,7 +19,7 @@ import {
   getTransactionsByCreditCard,
   Transaction,
 } from "@/features/transactions/services/transactionsApi";
-import { getMyProfile } from "@/features/profile/services/userApi";
+import { useMyProfile } from "@/features/profile/services/userApi";
 import { createBillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
 import BillingPeriodFormModal from "@/features/billingPeriods/components/BillingPeriodFormModal";
 import CardsSection from "@/features/creditCards/components/CardsSection";
@@ -28,7 +28,7 @@ import MonthSummaryCard from "../components/MonthSummaryCard";
 import CreditCardAlertBanner from "../components/CreditCardAlertBanner";
 import DebtIndicatorCard from "../components/DebtIndicatorCard";
 import FinancialHealthIndicator from "../components/FinancialHealthIndicator";
-import { getDebtSummary, DebtSummary } from "../services/statsApi";
+import { useDebtSummary } from "../services/statsApi";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import DashboardSkeleton from "../components/DashboardSkeleton";
 import {
@@ -39,46 +39,51 @@ import {
 import { CreditCardWithLimits } from "@/shared/types/creditCard";
 import { formatShortDate } from "@/shared/utils/format";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
+import { useQueryClient } from "@tanstack/react-query";
 
 const formatTransactionDate = formatShortDate;
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
   const [userName, setUserName] = useState<string>("");
-  const [creditCards, setCreditCards] = useState<CreditCardWithLimits[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const [debtSummary, setDebtSummary] = useState<DebtSummary | null>(null);
-  const [userBudget, setUserBudget] = useState<{
-    monthlyBudgetCLP?: number;
-    monthlyBudgetUSD?: number;
-  }>({});
+  
+  const { data: creditCards = [], isLoading: isLoadingCards } = useCreditCards();
+  const { data: debtSummary } = useDebtSummary();
+  const { data: profile } = useMyProfile();
+  
+  const [refreshKey, setRefreshKey] = useState(0);
   const { count: uncategorizedCount, refreshCount } = useUncategorized();
 
+  // Initialize selectedCardId when creditCards loads
+  useEffect(() => {
+    if (creditCards.length > 0 && !selectedCardId) {
+      setSelectedCardId(creditCards[0].id);
+    }
+  }, [creditCards, selectedCardId]);
+
+  // Pull to refresh handler using queryClient
   const handlePullRefresh = useCallback(async () => {
     setIsPullRefreshing(true);
     try {
-      const [cards, summary] = await Promise.all([
-        getCreditCards(),
-        getDebtSummary(),
-      ]);
-      setCreditCards(cards);
-      setDebtSummary(summary);
-      setAlertsDismissed(false);
-      setRefreshKey((prev: number) => prev + 1);
+      // Invalidate queries to force refetch
+      await queryClient.invalidateQueries({ queryKey: ["creditCards"] });
+      await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
       await refreshCount();
+      setRefreshKey((prev) => prev + 1);
+      setAlertsDismissed(false);
     } catch (error) {
       if (!isSessionExpired()) console.error("Error refreshing:", error);
     } finally {
       setIsPullRefreshing(false);
     }
-  }, [refreshCount]);
+  }, [queryClient, refreshCount]);
 
   // Estado para el modal de crear período sugerido
   const [showOrphanModal, setShowOrphanModal] = useState(false);
@@ -110,7 +115,7 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     loadTransactions();
-  }, [loadTransactions, refreshKey]);
+  }, [selectedCardId]);
 
   const handleImportTransactions = useCallback(async () => {
     if (!selectedCardId) {
@@ -120,7 +125,7 @@ export default function DashboardScreen() {
     setIsRefreshing(true);
     try {
       const result = await importBankTransactions(selectedCardId);
-      setRefreshKey((prev: number) => prev + 1);
+      setRefreshKey((prev) => prev + 1);
 
       // Refresh uncategorized count after import
       await refreshCount();
@@ -169,7 +174,7 @@ export default function DashboardScreen() {
     if (!selectedCardId) return;
     await createBillingPeriod(selectedCardId, data);
     Alert.alert("Éxito", "Período de facturación creado correctamente.");
-    setRefreshKey((prev: number) => prev + 1);
+    setRefreshKey((prev) => prev + 1);
   };
 
   const _getSelectedCardLabel = () => {
@@ -177,52 +182,26 @@ export default function DashboardScreen() {
     return card ? `${card.cardType} - ${card.cardLastDigits}` : "";
   };
 
+  // Set up notifications when creditCards loads
   useEffect(() => {
-    // Obtener nombre del usuario
+    if (creditCards.length > 0) {
+      configureNotificationHandler();
+      setupAndroidChannel().then(() => {
+        scheduleCardNotifications(creditCards).catch(console.warn);
+      });
+    }
+  }, [creditCards]);
+
+  // Get user name from session
+  useEffect(() => {
     getSessionUser().then((user) => {
-      if (user) {
-        if (user.givenName) {
-          setUserName(user.givenName);
-        }
+      if (user?.givenName) {
+        setUserName(user.givenName);
       }
     });
+  }, []);
 
-    // Obtener tarjetas de crédito y resumen de deuda en paralelo
-    Promise.all([getCreditCards(), getDebtSummary()])
-      .then(([cards, summary]) => {
-        setCreditCards(cards);
-        setDebtSummary(summary);
-        if (cards.length > 0) {
-          setSelectedCardId(cards[0].id);
-        }
-        // Programar notificaciones de cierre/vencimiento
-        configureNotificationHandler();
-        setupAndroidChannel().then(() => {
-          scheduleCardNotifications(cards).catch(console.warn);
-        });
-        setIsInitialLoading(false);
-      })
-      .catch(() => {
-        setIsInitialLoading(false);
-      });
-
-    // Obtener presupuesto del usuario
-    getMyProfile()
-      .then((user) => {
-        setUserBudget({
-          monthlyBudgetCLP: user.monthlyBudgetCLP,
-          monthlyBudgetUSD: user.monthlyBudgetUSD,
-        });
-      })
-      .catch((e) => {
-        if (!isSessionExpired()) console.error("Error loading user budget:", e);
-      });
-
-    // Obtener cantidad de transacciones sin categoría
-    refreshCount();
-  }, [refreshCount]);
-
-  if (isInitialLoading) {
+  if (isLoadingCards) {
     return (
       <ScrollView style={styles.container}>
         <DashboardSkeleton />
@@ -246,8 +225,8 @@ export default function DashboardScreen() {
 
       {/* Indicador de salud financiera */}
       <FinancialHealthIndicator
-        monthlyBudgetCLP={userBudget.monthlyBudgetCLP}
-        monthlyBudgetUSD={userBudget.monthlyBudgetUSD}
+        monthlyBudgetCLP={profile?.monthlyBudgetCLP}
+        monthlyBudgetUSD={profile?.monthlyBudgetUSD}
         spentCLP={debtSummary?.nextMonthCLP}
         spentUSD={debtSummary?.nextMonthUSD}
       />
