@@ -54,7 +54,8 @@ export default function DashboardScreen() {
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   
-  const { data: creditCards = [], isLoading: isLoadingCards } = useCreditCards();
+  const { data: creditCardsData, isLoading: isLoadingCards } = useCreditCards();
+  const creditCards = creditCardsData || [];
   const { data: debtSummary } = useDebtSummary();
   const { data: profile } = useMyProfile();
   
@@ -95,7 +96,8 @@ export default function DashboardScreen() {
     if (!selectedCardId) return;
     setIsLoadingTransactions(true);
     try {
-      const data = await getTransactionsByCreditCard(selectedCardId);
+      const dataResponse = await getTransactionsByCreditCard(selectedCardId);
+      const data = dataResponse.items;
       // Ordenar por fecha desc y tomar las últimas 10
       const sorted = data
         .sort(

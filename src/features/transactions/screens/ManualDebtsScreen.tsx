@@ -33,7 +33,8 @@ export default function ManualDebtsScreen() {
 
   const fetchDebts = useCallback(async () => {
     try {
-      const cardList = await getCreditCards();
+      const cardListResponse = await getCreditCards();
+      const cardList = cardListResponse.items;
       setCards(cardList);
 
       const allDebts: ManualDebtItem[] = [];

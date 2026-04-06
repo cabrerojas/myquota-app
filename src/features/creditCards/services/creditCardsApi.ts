@@ -3,8 +3,25 @@ import { API_BASE_URL } from "@/config/api";
 import { CreditCard } from "@/shared/types/creditCard";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-export const getCreditCards = async (): Promise<CreditCard[]> => {
-  const response = await requestWithAuth(`${API_BASE_URL}/creditCards`);
+export interface PaginatedResponse<T> {
+  items: T[];
+  metadata: {
+    hasMore: boolean;
+    nextCursor: string | null;
+  };
+}
+
+export const getCreditCards = async (
+  limit?: number,
+  startAfter?: string,
+): Promise<PaginatedResponse<CreditCard>> => {
+  let url = `${API_BASE_URL}/creditCards`;
+  const params = new URLSearchParams();
+  if (limit) params.append("limit", limit.toString());
+  if (startAfter) params.append("startAfter", startAfter);
+  if (params.toString()) url += `?${params.toString()}`;
+
+  const response = await requestWithAuth(url);
   const data: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const err = data as Record<string, string> | null;
@@ -15,22 +32,24 @@ export const getCreditCards = async (): Promise<CreditCard[]> => {
     throw new Error(`Error fetching credit cards: ${msg}`);
   }
 
-  // Normalize to array
-  if (Array.isArray(data)) return data as CreditCard[];
-  if (
-    data &&
-    typeof data === "object" &&
-    Array.isArray((data as Record<string, unknown>).data)
-  ) {
-    return (data as Record<string, unknown>).data as CreditCard[];
+  // Handle both array response (backward compat) and paginated response
+  if (data && typeof data === "object" && "items" in data && "metadata" in data) {
+    return data as PaginatedResponse<CreditCard>;
   }
-  return [];
+  // Legacy: wrap array response
+  if (Array.isArray(data)) {
+    return {
+      items: data as CreditCard[],
+      metadata: { hasMore: false, nextCursor: null },
+    };
+  }
+  return { items: [], metadata: { hasMore: false, nextCursor: null } };
 };
 
 export const useCreditCards = () => {
   return useQuery({
     queryKey: ["creditCards"],
-    queryFn: getCreditCards,
+    queryFn: () => getCreditCards().then(r => r.items),
   });
 };
 

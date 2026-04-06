@@ -97,7 +97,8 @@ export default function ChartsScreen() {
   );
 
   useEffect(() => {
-    getCreditCards().then((cards) => {
+    getCreditCards().then((cardsResponse) => {
+      const cards = cardsResponse.items;
       setCreditCards(cards);
       if (cards.length > 0) setSelectedCardId(cards[0].id);
       setLoading(false);

@@ -15,6 +15,7 @@ import {
   getTransactionsByCreditCard,
   Transaction,
   updateTransaction,
+  PaginatedResponse as TransactionsResponse,
 } from "../services/transactionsApi";
 import { exportTransactionsToCSV } from "../services/exportTransactions";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -73,6 +74,11 @@ export default function TransactionsScreen() {
     params.filter === "uncategorized",
   );
 
+  // Pagination state
+  const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   // Snapshot the filter param in a ref so useFocusEffect can read the
   // latest value without being listed as a dependency (avoids loops).
   const filterParamRef = useRef(params.filter);
@@ -120,28 +126,40 @@ export default function TransactionsScreen() {
   // Load credit cards
   useEffect(() => {
     getCreditCards()
-      .then((cards) => {
-        setCreditCards(cards);
-        if (cards.length > 0) {
-          setSelectedCardId(cards[0].id);
+      .then((cardsResponse) => {
+        setCreditCards(cardsResponse.items);
+        if (cardsResponse.items.length > 0) {
+          setSelectedCardId(cardsResponse.items[0].id);
         }
       })
       .finally(() => setLoading(false));
   }, []);
 
   // Load transactions when card changes
-  const loadTransactions = useCallback(async () => {
+  const loadTransactions = useCallback(async (cursor?: string, isRefresh = false) => {
     if (!selectedCardId) return;
     setLoadingTransactions(true);
     try {
-      const data = await getTransactionsByCreditCard(selectedCardId);
-      setTransactions(
-        data.sort(
-          (a, b) =>
-            new Date(b.transactionDate).getTime() -
-            new Date(a.transactionDate).getTime(),
-        ),
+      const data = await getTransactionsByCreditCard(
+        selectedCardId,
+        50,
+        cursor,
       );
+      
+      const sorted = [...data.items].sort(
+        (a, b) =>
+          new Date(b.transactionDate).getTime() -
+          new Date(a.transactionDate).getTime(),
+      );
+      
+      if (isRefresh || !cursor) {
+        setTransactions(sorted);
+      } else {
+        setTransactions(prev => [...prev, ...sorted]);
+      }
+      
+      setHasMore(data.metadata.hasMore);
+      setNextCursor(data.metadata.nextCursor);
     } catch (error) {
       if (!isSessionExpired())
         console.error("Error loading transactions:", error);
@@ -156,9 +174,16 @@ export default function TransactionsScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await loadTransactions();
+    setNextCursor(null);
+    await loadTransactions(undefined, true);
     setRefreshing(false);
   }, [loadTransactions]);
+
+  const loadMore = useCallback(() => {
+    if (loadingMore || !hasMore || !nextCursor) return;
+    setLoadingMore(true);
+    loadTransactions(nextCursor);
+  }, [loadingMore, hasMore, nextCursor, loadTransactions]);
 
   // Filter + search
   const filteredTransactions = useMemo(() => {
@@ -675,6 +700,25 @@ export default function TransactionsScreen() {
               ))}
             </View>
           ))}
+          
+          {/* Load More Button */}
+          {hasMore && (
+            <TouchableOpacity
+              style={styles.loadMoreButton}
+              onPress={loadMore}
+              disabled={loadingMore}
+            >
+              {loadingMore ? (
+                <ActivityIndicator size="small" color="#007BFF" />
+              ) : (
+                <View style={styles.loadMoreContent}>
+                  <Ionicons name="download-outline" size={18} color="#007BFF" />
+                  <Text style={styles.loadMoreText}>Cargar más transacciones</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+          
           <View style={{ height: 20 }} />
         </ScrollView>
       )}
@@ -1045,5 +1089,23 @@ const styles = StyleSheet.create({
     color: "#212529",
     minWidth: 80,
     textAlign: "right",
+  },
+  loadMoreButton: {
+    marginHorizontal: 14,
+    marginVertical: 16,
+    paddingVertical: 12,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  loadMoreContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#007BFF",
   },
 });

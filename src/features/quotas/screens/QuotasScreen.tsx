@@ -42,6 +42,11 @@ export default function QuotasScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterMode>("pending");
 
+  // Pagination state for transactions
+  const [hasMore, setHasMore] = useState(true);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   // Modal para crear cuotas
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -50,8 +55,10 @@ export default function QuotasScreen() {
   const [numQuotas, setNumQuotas] = useState("3");
   const [creating, setCreating] = useState(false);
 
+  // Load credit cards
   useEffect(() => {
-    getCreditCards().then((cards) => {
+    getCreditCards().then((cardsResponse) => {
+      const cards = cardsResponse.items;
       setCreditCards(cards);
       if (cards.length > 0) {
         setSelectedCardId(cards[0].id);
@@ -60,11 +67,24 @@ export default function QuotasScreen() {
     });
   }, []);
 
-  const fetchQuotas = useCallback(async () => {
+  const fetchQuotas = useCallback(async (cursor?: string, isRefresh = false) => {
     if (!selectedCardId) return;
     try {
-      const txs = await getTransactionsByCreditCard(selectedCardId);
-      setTransactions(txs);
+      const txsResponse = await getTransactionsByCreditCard(
+        selectedCardId,
+        50,
+        cursor,
+      );
+      const txs = txsResponse.items;
+
+      if (isRefresh || !cursor) {
+        setTransactions(txs);
+      } else {
+        setTransactions((prev) => [...prev, ...txs]);
+      }
+
+      setHasMore(txsResponse.metadata.hasMore);
+      setNextCursor(txsResponse.metadata.nextCursor);
 
       // Fetch quotas for all transactions in parallel
       const results = await Promise.all(
@@ -93,12 +113,27 @@ export default function QuotasScreen() {
         }),
       );
 
-      const allQuotas = results.flat();
-      // Sort by due date
-      allQuotas.sort(
-        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
-      );
-      setQuotas(allQuotas);
+      setQuotas((prevQuotas: QuotaWithTransaction[]) => {
+        const newQuotas = results.flat();
+        
+        if (isRefresh || !cursor) {
+          // Sort by due date
+          newQuotas.sort(
+            (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+          );
+          return newQuotas;
+        } else {
+          // Append to existing quotas
+          const existingIds = new Set(prevQuotas.map(q => `${q.transactionId}-${q.id}`));
+          const filteredNew = newQuotas.filter(q => !existingIds.has(`${q.transactionId}-${q.id}`));
+          const allQuotas = [...prevQuotas, ...filteredNew];
+          // Sort by due date
+          allQuotas.sort(
+            (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+          );
+          return allQuotas;
+        }
+      });
     } catch (error) {
       if (!isSessionExpired()) console.error("Error fetching quotas:", error);
     }
@@ -113,8 +148,15 @@ export default function QuotasScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchQuotas();
+    setNextCursor(null);
+    await fetchQuotas(undefined, true);
     setRefreshing(false);
+  };
+
+  const loadMore = () => {
+    if (loadingMore || !hasMore || !nextCursor) return;
+    setLoadingMore(true);
+    fetchQuotas(nextCursor);
   };
 
   const filteredQuotas = quotas.filter((q) => {
@@ -473,10 +515,28 @@ export default function QuotasScreen() {
                   <Text style={styles.markPaidText}>Marcar como pagada</Text>
                 </TouchableOpacity>
               )}
-            </View>
-          );
-        })
-      )}
+              </View>
+            );
+          })
+        )}
+
+        {/* Load More Button */}
+        {hasMore && (
+          <TouchableOpacity
+            style={styles.loadMoreButton}
+            onPress={loadMore}
+            disabled={loadingMore}
+          >
+            {loadingMore ? (
+              <ActivityIndicator size="small" color="#007BFF" />
+            ) : (
+              <View style={styles.loadMoreContent}>
+                <Ionicons name="download-outline" size={18} color="#007BFF" />
+                <Text style={styles.loadMoreText}>Cargar más</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
 
       {/* Create Quotas Modal */}
       <Modal visible={showCreateModal} transparent animationType="slide">
@@ -930,4 +990,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#28A745",
   },
   confirmButtonText: { fontSize: 14, fontWeight: "700", color: "#fff" },
+
+  // Load More
+  loadMoreButton: {
+    marginHorizontal: 16,
+    marginVertical: 16,
+    paddingVertical: 12,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  loadMoreContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#007BFF",
+  },
 });
