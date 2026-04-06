@@ -127,9 +127,10 @@ export default function AddDebtScreen() {
   const loadCards = async () => {
     try {
       const data = await getCreditCards();
-      setCards(data);
-      if (data.length > 0) {
-        setSelectedCardId((current) => current || data[0].id);
+      const cards = data.items;
+      setCards(cards);
+      if (cards.length > 0) {
+        setSelectedCardId((current) => current || cards[0].id);
       }
     } catch {
       Alert.alert("Error", "No se pudieron cargar las tarjetas");
