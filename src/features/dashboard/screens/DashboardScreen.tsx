@@ -310,7 +310,6 @@ export default function DashboardScreen() {
       {selectedCardId && (
         <MonthSummaryCard
           creditCardId={selectedCardId}
-          refreshKey={refreshKey}
           nextPeriodCLP={debtSummary?.nextMonthCLP}
           nextPeriodUSD={debtSummary?.nextMonthUSD}
         />
@@ -324,10 +323,7 @@ export default function DashboardScreen() {
 
       {/* Estadísticas Mensuales */}
       {selectedCardId && (
-        <MonthlyStats
-          creditCardId={selectedCardId}
-          key={`${selectedCardId}-${refreshKey}`}
-        />
+        <MonthlyStats creditCardId={selectedCardId} />
       )}
 
       <TouchableOpacity
