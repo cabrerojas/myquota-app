@@ -144,7 +144,8 @@ export async function scheduleCardNotifications(
     let dueDateForCard: Date | null = null;
 
     try {
-      const periods = await getBillingPeriodsByCreditCard(card.id);
+      const periodsResponse = await getBillingPeriodsByCreditCard(card.id);
+      const periods = periodsResponse.items;
       // Find the next period whose endDate is in the future (sorted by endDate asc)
       const upcoming = periods
         .map((p) => ({

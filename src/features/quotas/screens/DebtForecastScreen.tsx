@@ -82,9 +82,10 @@ export default function DebtForecastScreen() {
           getBillingPeriodsByCreditCard(card.id),
         ]);
         const txItems = txs.items;
+        const periodItems = periods.items;
         // Tag each period with its creditCardId (may not come from API)
         allBillingPeriods.push(
-          ...periods.map((p) => ({ ...p, creditCardId: card.id })),
+          ...periodItems.map((p) => ({ ...p, creditCardId: card.id })),
         );
 
         const results = await Promise.all(

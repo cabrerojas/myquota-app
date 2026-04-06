@@ -48,8 +48,8 @@ export default function BillingPeriodsScreen({
 
   const loadPeriods = useCallback(async () => {
     try {
-      const data = await getBillingPeriodsByCreditCard(creditCardId);
-      setPeriods(data);
+      const response = await getBillingPeriodsByCreditCard(creditCardId);
+      setPeriods(response.items);
     } catch (error) {
       Alert.alert(
         "Error",

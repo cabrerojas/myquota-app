@@ -108,11 +108,12 @@ export default function ChartsScreen() {
   const fetchData = useCallback(async () => {
     if (!selectedCardId) return;
     try {
-      const [data, periods] = await Promise.all([
+      const [data, periodsResponse] = await Promise.all([
         getMonthlyStats(selectedCardId),
         getBillingPeriodsByCreditCard(selectedCardId),
       ]);
       setStats(data);
+      const periods = periodsResponse.items;
       // Sort periods chronologically (oldest → newest)
       const sorted = [...periods].sort(
         (a, b) =>
