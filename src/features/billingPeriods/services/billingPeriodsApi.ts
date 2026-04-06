@@ -24,7 +24,7 @@ export interface CreateBillingPeriodDto {
 
 export const getBillingPeriodsByCreditCard = async (
   creditCardId: string,
-): Promise<BillingPeriod[]> => {
+): Promise<{ items: BillingPeriod[]; metadata: { hasMore: boolean; nextCursor: string | null } }> => {
   const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods`,
   );
