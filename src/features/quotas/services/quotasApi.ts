@@ -1,33 +1,8 @@
-import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
+import { requestWithAuth } from "@/features/auth/hooks/useAuth";
+import type { Quota, QuotaWithTransaction } from "@/features/quotas/types/quota";
 
-export interface PaginatedResponse<T> {
-  items: T[];
-  metadata: {
-    hasMore: boolean;
-    nextCursor: string | null;
-  };
-}
-
-export interface Quota {
-  id: string;
-  transactionId: string;
-  amount: number;
-  dueDate: string;
-  status: "pending" | "paid";
-  currency: string;
-  paymentDate?: string;
-}
-
-export interface QuotaWithTransaction extends Quota {
-  merchant: string;
-  transactionDate: string;
-  transactionAmount: number;
-  totalQuotas: number;
-  paidQuotas: number;
-  pendingQuotas: number;
-  quotaNumber: number;
-}
+export type { Quota, QuotaWithTransaction };
 
 export const getQuotasByTransaction = async (
   creditCardId: string,
@@ -39,7 +14,10 @@ export const getQuotasByTransaction = async (
   if (!response.ok) {
     return [];
   }
-  return response.json();
+  const data = await response.json();
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object" && "items" in data) return data.items as Quota[];
+  return [];
 };
 
 export const createQuota = async (

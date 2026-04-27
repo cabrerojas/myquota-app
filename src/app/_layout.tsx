@@ -1,18 +1,25 @@
-import { Stack, useRouter } from "expo-router";
 import { useEffect } from "react";
+import { Stack, useRouter } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { onSessionExpired } from "@/shared/utils/authEvents";
+import { SessionExpiredError } from "@/features/auth/hooks/useAuth";
 
-// Create a client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Cache data for 5 minutes (300 seconds)
       staleTime: 5 * 60 * 1000,
-      // Don't refetch on window focus (reduces unnecessary requests)
       refetchOnWindowFocus: false,
-      // Don't refetch on reconnect (reduces requests when coming back from background)
       refetchOnReconnect: false,
+      retry: (failureCount, error) => {
+        if (error instanceof SessionExpiredError) return false;
+        return failureCount < 2;
+      },
+    },
+    mutations: {
+      retry: (failureCount, error) => {
+        if (error instanceof SessionExpiredError) return false;
+        return failureCount < 1;
+      },
     },
   },
 });
@@ -28,7 +35,6 @@ export default function RootLayout() {
   }, [router]);
 
   return (
-    // Provide the client to your App
     <QueryClientProvider client={queryClient}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
