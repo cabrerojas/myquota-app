@@ -1,11 +1,5 @@
 import { useState, useCallback } from "react";
 import {
-  emitSessionExpired,
-  isSessionExpired,
-  resetSessionExpired,
-} from "@/shared/utils/authEvents";
-
-import {
   GoogleSignin,
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
@@ -17,6 +11,11 @@ import {
   getRefreshToken,
   persistSession,
 } from "@/features/auth/services/sessionStorage";
+import {
+  emitSessionExpired,
+  isSessionExpired,
+  resetSessionExpired,
+} from "@/shared/utils/authEvents";
 
 const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
 
@@ -55,7 +54,7 @@ export const useGoogleSignIn = (router: Router) => {
           serverAuthCode ? "✅" : "❌ no disponible",
         );
 
-        // 🔹 Enviar el idToken y serverAuthCode al backend
+        // Enviar el idToken y serverAuthCode al backend
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 60000);
 
@@ -89,7 +88,7 @@ export const useGoogleSignIn = (router: Router) => {
             console.warn("Session storage error saving tokens:", err);
           }
 
-          // 🔹 Redirigir al Dashboard
+          // Redirigir al Dashboard
           router.replace("/(drawer)/dashboard");
         } else {
           console.error("Error al autenticar con el backend:", data);
@@ -178,13 +177,16 @@ async function attemptRefresh() {
   throw new Error("Invalid refresh response");
 }
 
+export class SessionExpiredError extends Error {
+  constructor() {
+    super("SESSION_EXPIRED");
+    this.name = "SessionExpiredError";
+  }
+}
+
 export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
-  // Si la sesión ya expiró, no hacer la request
   if (isSessionExpired()) {
-    return new Response(JSON.stringify({ message: "Sesión expirada" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
+    throw new SessionExpiredError();
   }
 
   const headers = {
@@ -194,7 +196,6 @@ export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
   let res = await fetch(input, { ...init, headers });
 
   if (res.status === 401) {
-    // intentar refresh una vez
     try {
       await attemptRefresh();
       const headers2 = {
@@ -203,12 +204,9 @@ export async function requestWithAuth(input: RequestInfo, init?: RequestInit) {
       };
       res = await fetch(input, { ...init, headers: headers2 });
     } catch {
-      // si falla refresh, limpiar sesión y redirigir a login
       await clearSession();
       emitSessionExpired();
-      // No throw — el usuario ya fue redirigido a login.
-      // Retornar la respuesta 401 original para que el caller
-      // no muestre errores técnicos al usuario.
+      throw new SessionExpiredError();
     }
   }
 
