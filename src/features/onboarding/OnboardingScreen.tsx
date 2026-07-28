@@ -1,15 +1,13 @@
 import React, { useRef, useCallback } from "react";
 import {
 	View,
-	Text,
-	TouchableOpacity,
 	Animated,
 	SafeAreaView,
 	StyleSheet,
 } from "react-native";
-import { useRouter } from "expo-router";
 import WelcomeStep from "@/features/onboarding/components/WelcomeStep";
 import AddCardStep from "@/features/onboarding/components/AddCardStep";
+import SuccessStep from "@/features/onboarding/components/SuccessStep";
 import type { CreditCard } from "@/shared/types/creditCard";
 
 type Step = 0 | 1 | 2;
@@ -18,6 +16,7 @@ const STEP_ANIMATION_DURATION = 350;
 
 export default function OnboardingScreen() {
 	const [currentStep, setCurrentStep] = React.useState<Step>(0);
+	const [createdCard, setCreatedCard] = React.useState<CreditCard | null>(null);
 
 	// Animated values for opacity and translateY per step
 	const fadeAnims = useRef([
@@ -79,7 +78,8 @@ export default function OnboardingScreen() {
 	}, [currentStep, animateToStep]);
 
 	const handleCardCreated = useCallback(
-		(_card: CreditCard) => {
+		(card: CreditCard) => {
+			setCreatedCard(card);
 			// Advance to success step (2) after card is created
 			if (currentStep < 2) {
 				animateToStep(2 as Step);
@@ -130,48 +130,14 @@ export default function OnboardingScreen() {
 					]}
 					pointerEvents={currentStep === 2 ? "auto" : "none"}
 				>
-					<SuccessStep />
+					{createdCard && <SuccessStep card={createdCard} />}
 				</Animated.View>
 			</View>
 		</SafeAreaView>
 	);
 }
 
-/** SuccessStep — shown after the card has been created */
-function SuccessStep() {
-	const router = useRouter();
 
-	const handleGoToDashboard = useCallback(() => {
-		router.replace("/(drawer)/dashboard");
-	}, [router]);
-
-	return (
-		<View style={styles.successContainer}>
-			<View style={styles.successContent}>
-				<View style={styles.successIconCircle}>
-					<Text style={styles.successIcon}>✅</Text>
-				</View>
-
-				<Text style={styles.successTitle}>¡Todo listo!</Text>
-
-				<Text style={styles.successSubtitle}>
-					Tu tarjeta fue agregada correctamente. Ya podés empezar a
-					controlar tus gastos.
-				</Text>
-			</View>
-
-			<View style={styles.successButtonWrapper}>
-				<TouchableOpacity
-					style={styles.successButton}
-					onPress={handleGoToDashboard}
-					activeOpacity={0.85}
-				>
-					<Text style={styles.successButtonText}>Ir al Dashboard</Text>
-				</TouchableOpacity>
-			</View>
-		</View>
-	);
-}
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -192,59 +158,5 @@ const styles = StyleSheet.create({
 		bottom: 0,
 	},
 
-	// Success step
-	successContainer: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		paddingHorizontal: 24,
-	},
-	successContent: {
-		alignItems: "center",
-		flex: 1,
-		justifyContent: "center",
-	},
-	successIconCircle: {
-		width: 96,
-		height: 96,
-		borderRadius: 48,
-		backgroundColor: "rgba(5, 150, 105, 0.15)",
-		justifyContent: "center",
-		alignItems: "center",
-		marginBottom: 32,
-	},
-	successIcon: {
-		fontSize: 48,
-	},
-	successTitle: {
-		fontSize: 32,
-		fontWeight: "700",
-		color: "#FFFFFF",
-		textAlign: "center",
-		marginBottom: 12,
-	},
-	successSubtitle: {
-		fontSize: 16,
-		color: "#94A3B8",
-		textAlign: "center",
-		lineHeight: 24,
-		paddingHorizontal: 16,
-	},
-	successButtonWrapper: {
-		width: "100%",
-		paddingBottom: 40,
-	},
-	successButton: {
-		width: "100%",
-		height: 56,
-		backgroundColor: "#1E40AF",
-		borderRadius: 28,
-		justifyContent: "center",
-		alignItems: "center",
-	},
-	successButtonText: {
-		fontSize: 17,
-		fontWeight: "600",
-		color: "#FFFFFF",
-	},
+
 });

@@ -15,6 +15,8 @@ export interface CreditCard {
   billingPeriodStart: string;
   billingPeriodEnd: string;
   dueDate: string;
+  closingDay?: number | null;
+  dueDay?: number | null;
   nationalAmountUsed: number;
   nationalAmountAvailable: number;
   nationalTotalLimit: number;

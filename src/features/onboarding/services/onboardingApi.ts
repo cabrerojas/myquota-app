@@ -43,7 +43,15 @@ export async function createCreditCard(
 
 		// If there are field-level validation errors, throw them structured
 		if (err && err.errors) {
-			throw { message, fieldErrors: err.errors } as ApiError;
+			const fieldErrors: FieldErrors = {};
+			if (Array.isArray(err.errors)) {
+				for (const e of err.errors as Array<{ field: string; message: string }>) {
+					if (e.field && e.message) {
+						fieldErrors[e.field] = e.message;
+					}
+				}
+			}
+			throw { message, fieldErrors } as ApiError;
 		}
 		throw new Error(message);
 	}
