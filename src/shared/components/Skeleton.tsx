@@ -47,7 +47,7 @@ export default function Skeleton({
           width,
           height,
           borderRadius: radius,
-          backgroundColor: colors.borderLight,
+          backgroundColor: colors.skeleton.base,
           opacity,
         },
         style,
@@ -101,7 +101,7 @@ export function SkeletonChips({ count = 3 }: { count?: number }) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.bgWhite,
+    backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,

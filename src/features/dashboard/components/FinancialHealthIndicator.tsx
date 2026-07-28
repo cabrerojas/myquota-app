@@ -1,14 +1,12 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { glassSurface, glassSubtle } from "@/shared/theme/effects";
+import { colors } from "@/shared/theme/colors";
 
 interface FinancialHealthIndicatorProps {
-  /** User's monthly budget in CLP */
   monthlyBudgetCLP?: number;
-  /** User's monthly budget in USD */
   monthlyBudgetUSD?: number;
-  /** Actual spending this month in CLP (next month payment) */
   spentCLP?: number;
-  /** Actual spending this month in USD (next month payment) */
   spentUSD?: number;
 }
 
@@ -26,38 +24,38 @@ const healthConfig: Record<
   HealthLevel,
   {
     color: string;
-    bgColor: string;
+    bgAccent: string;
     icon: keyof typeof Ionicons.glyphMap;
     label: string;
   }
 > = {
   excellent: {
-    color: "#28A745",
-    bgColor: "#E8F5E9",
+    color: colors.success,
+    bgAccent: "rgba(5, 150, 105, 0.15)",
     icon: "shield-checkmark",
     label: "Saludable",
   },
   good: {
-    color: "#17A2B8",
-    bgColor: "#E3F2FD",
+    color: colors.accent,
+    bgAccent: "rgba(59, 130, 246, 0.15)",
     icon: "trending-up",
     label: "Moderado",
   },
   moderate: {
-    color: "#FFC107",
-    bgColor: "#FFF8E1",
+    color: colors.warning,
+    bgAccent: "rgba(217, 119, 6, 0.15)",
     icon: "warning",
     label: "Atención",
   },
   warning: {
-    color: "#F57C00",
-    bgColor: "#FFF3E0",
+    color: colors.warning,
+    bgAccent: "rgba(217, 119, 6, 0.15)",
     icon: "alert-circle",
     label: "Alto",
   },
   critical: {
-    color: "#DC3545",
-    bgColor: "#FFEBEE",
+    color: colors.destructive,
+    bgAccent: "rgba(220, 38, 38, 0.15)",
     icon: "close-circle",
     label: "Crítico",
   },
@@ -83,13 +81,9 @@ function BudgetIndicator({ budget, spent, currency }: BudgetIndicatorProps) {
   return (
     <View style={styles.indicatorRow}>
       <View style={[styles.indicatorDot, { backgroundColor: config.color }]} />
-      <Text style={styles.indicatorFlag}>
-        {currency === "CLP" ? "🇨🇱" : "🇺🇸"}
-      </Text>
       <Text style={styles.indicatorText}>
-        {currencySymbol}
-        {spentFormatted} / {currencySymbol}
-        {budgetFormatted}
+        {currency === "CLP" ? "🇨🇱 " : "🇺🇸 "}
+        {currencySymbol}{spentFormatted} / {currencySymbol}{budgetFormatted}
       </Text>
       <Text style={[styles.indicatorPercent, { color: config.color }]}>
         {Math.round(usagePercent)}%
@@ -106,10 +100,31 @@ export default function FinancialHealthIndicator({
 }: FinancialHealthIndicatorProps) {
   const hasCLP = monthlyBudgetCLP && monthlyBudgetCLP > 0;
   const hasUSD = monthlyBudgetUSD && monthlyBudgetUSD > 0;
+  const noBudget = !hasCLP && !hasUSD;
 
-  if (!hasCLP && !hasUSD) return null;
+  if (noBudget) {
+    return (
+      <View style={styles.noBudgetContainer}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={[styles.iconCircle, { backgroundColor: "rgba(59, 130, 246, 0.12)" }]}>
+              <Ionicons name="wallet-outline" size={16} color={colors.accent} />
+            </View>
+            <Text style={[styles.headerLabel, { color: colors.textMuted }]}>
+              Sin presupuesto
+            </Text>
+          </View>
+          <Text style={[styles.headerSubtitle, { color: colors.textSubtle }]}>
+            Configure su presupuesto mensual
+          </Text>
+        </View>
+        <Text style={styles.noBudgetHint}>
+          Vaya a Perfil para definir sus límites mensuales y ver el indicador de salud financiera.
+        </Text>
+      </View>
+    );
+  }
 
-  // Calculate overall health for the header
   let overallHealth: HealthLevel = "excellent";
   let maxUsage = 0;
 
@@ -127,17 +142,12 @@ export default function FinancialHealthIndicator({
   }
 
   const headerConfig = healthConfig[overallHealth];
-  const hasAnyBudget = hasCLP || hasUSD;
-
-  if (!hasAnyBudget) return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: headerConfig.bgColor }]}>
+    <View style={[styles.container, { backgroundColor: headerConfig.bgAccent }]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View
-            style={[styles.iconCircle, { backgroundColor: headerConfig.color }]}
-          >
+          <View style={[styles.iconCircle, { backgroundColor: headerConfig.color }]}>
             <Ionicons name={headerConfig.icon} size={16} color="#fff" />
           </View>
           <Text style={[styles.headerLabel, { color: headerConfig.color }]}>
@@ -172,7 +182,14 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 14,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
+  noBudgetContainer: {
+    ...glassSubtle,
+    padding: 14,
+    marginBottom: 16,
+  } as any,
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -197,7 +214,13 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: 11,
-    color: "#868E96",
+    color: colors.textMuted,
+  },
+  noBudgetHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 17,
+    marginTop: -4,
   },
   indicators: {
     gap: 6,
@@ -212,12 +235,9 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
-  indicatorFlag: {
-    fontSize: 14,
-  },
   indicatorText: {
     fontSize: 13,
-    color: "#495057",
+    color: colors.textSecondary,
     flex: 1,
   },
   indicatorPercent: {

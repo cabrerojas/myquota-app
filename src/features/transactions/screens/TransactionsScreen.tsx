@@ -25,6 +25,8 @@ import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { colors } from "@/shared/theme/tokens";
+import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
 
 type CurrencyFilter = "all" | "CLP" | "USD";
@@ -295,7 +297,7 @@ export default function TransactionsScreen() {
               <Ionicons
                 name="card-outline"
                 size={16}
-                color={selectedCardId === card.id ? "#fff" : "#495057"}
+                color={selectedCardId === card.id ? colors.textPrimary : colors.textMuted}
               />
               <Text
                 style={[
@@ -313,17 +315,17 @@ export default function TransactionsScreen() {
       {/* Search + filter bar */}
       <View style={styles.searchBar}>
         <View style={styles.searchInput}>
-          <Ionicons name="search" size={18} color="#ADB5BD" />
+          <Ionicons name="search" size={18} color={colors.textMuted} />
           <TextInput
             style={styles.searchText}
             placeholder="Buscar comercio..."
-            placeholderTextColor="#ADB5BD"
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={18} color="#ADB5BD" />
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </View>
@@ -337,7 +339,7 @@ export default function TransactionsScreen() {
           <Ionicons
             name="options-outline"
             size={20}
-            color={activeFiltersCount > 0 ? "#fff" : "#495057"}
+            color={activeFiltersCount > 0 ? colors.textPrimary : colors.textSecondary}
           />
           {activeFiltersCount > 0 && (
             <View style={styles.filterBadge}>
@@ -370,7 +372,7 @@ export default function TransactionsScreen() {
                 onlyUncategorized ? "checkmark-circle" : "help-circle-outline"
               }
               size={16}
-              color={onlyUncategorized ? "#fff" : "#F57C00"}
+              color={onlyUncategorized ? colors.textPrimary : colors.warning}
             />
             <Text
               style={[
@@ -487,16 +489,16 @@ export default function TransactionsScreen() {
               keyboardType="numeric"
               value={minAmount}
               onChangeText={setMinAmount}
-              placeholderTextColor="#ADB5BD"
+              placeholderTextColor={colors.textMuted}
             />
-            <Text style={{ marginHorizontal: 8, color: "#495057" }}>—</Text>
+            <Text style={{ marginHorizontal: 8, color: colors.textSecondary }}>—</Text>
             <TextInput
               style={styles.amountInput}
               placeholder="Máximo"
               keyboardType="numeric"
               value={maxAmount}
               onChangeText={setMaxAmount}
-              placeholderTextColor="#ADB5BD"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
 
@@ -561,7 +563,7 @@ export default function TransactionsScreen() {
             }, 300);
           }}
         >
-          <Ionicons name="download-outline" size={20} color="#007BFF" />
+          <Ionicons name="download-outline" size={20} color={colors.accent} />
           <Text style={styles.exportButtonText}>Exportar</Text>
         </TouchableOpacity>
       </View>
@@ -572,11 +574,11 @@ export default function TransactionsScreen() {
       {/* Transactions list */}
       {loadingTransactions ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#007BFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : groupedTransactions.length === 0 ? (
         <View style={styles.centered}>
-          <Ionicons name="receipt-outline" size={48} color="#CED4DA" />
+          <Ionicons name="receipt-outline" size={48} color={colors.textSubtle} />
           <Text style={styles.emptyText}>
             {searchQuery || activeFiltersCount > 0
               ? "Sin resultados para estos filtros"
@@ -671,7 +673,7 @@ export default function TransactionsScreen() {
                           style={[
                             styles.categoryPill,
                             {
-                              backgroundColor: t.categoryColor || "#E9ECEF",
+                              backgroundColor: t.categoryColor || colors.surface,
                             },
                           ]}
                         >
@@ -687,7 +689,7 @@ export default function TransactionsScreen() {
                           <Ionicons
                             name="pricetag-outline"
                             size={13}
-                            color="#F57C00"
+                            color={colors.warning}
                           />
                           <Text style={styles.uncategorizedText}>
                             Categorizar
@@ -709,10 +711,10 @@ export default function TransactionsScreen() {
               disabled={loadingMore}
             >
               {loadingMore ? (
-                <ActivityIndicator size="small" color="#007BFF" />
+                <ActivityIndicator size="small" color={colors.accent} />
               ) : (
                 <View style={styles.loadMoreContent}>
-                  <Ionicons name="download-outline" size={18} color="#007BFF" />
+                  <Ionicons name="download-outline" size={18} color={colors.accent} />
                   <Text style={styles.loadMoreText}>Cargar más transacciones</Text>
                 </View>
               )}
@@ -778,7 +780,7 @@ export default function TransactionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
   centered: {
     flex: 1,
@@ -788,7 +790,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    color: "#868E96",
+    color: colors.textMuted,
     marginTop: 12,
     textAlign: "center",
   },
@@ -797,9 +799,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F3F5",
+    borderBottomColor: colors.borderLight,
   },
   cardChip: {
     flexDirection: "row",
@@ -807,12 +809,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "#F1F3F5",
+    backgroundColor: "rgba(255,255,255,0.06)",
     marginRight: 8,
     gap: 6,
   },
   cardChipActive: {
-    backgroundColor: "#007BFF",
+    backgroundColor: colors.accent,
   },
   // Category pill
   categoryPill: {
@@ -827,16 +829,16 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#212529",
+    color: colors.textPrimary,
     maxWidth: 90,
   },
   cardChipText: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
   },
   cardChipTextActive: {
-    color: "#fff",
+    color: colors.textPrimary,
   },
   // Search
   searchBar: {
@@ -844,14 +846,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     gap: 10,
   },
   searchInput: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -860,24 +862,24 @@ const styles = StyleSheet.create({
   searchText: {
     flex: 1,
     fontSize: 14,
-    color: "#212529",
+    color: colors.textPrimary,
   },
   filterButton: {
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: "#F1F3F5",
+    backgroundColor: "rgba(255,255,255,0.06)",
     justifyContent: "center",
     alignItems: "center",
   },
   filterButtonActive: {
-    backgroundColor: "#007BFF",
+    backgroundColor: colors.accent,
   },
   filterBadge: {
     position: "absolute",
     top: -4,
     right: -4,
-    backgroundColor: "#DC3545",
+    backgroundColor: colors.destructive,
     width: 18,
     height: 18,
     borderRadius: 9,
@@ -887,20 +889,20 @@ const styles = StyleSheet.create({
   filterBadgeText: {
     fontSize: 10,
     fontWeight: "bold",
-    color: "#fff",
+    color: colors.textPrimary,
   },
   // Filters panel
   filtersPanel: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E9ECEF",
+    borderBottomColor: colors.border,
   },
   filterLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#868E96",
+    color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginTop: 10,
@@ -917,19 +919,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "#F1F3F5",
+    backgroundColor: "rgba(255,255,255,0.06)",
     marginRight: 6,
   },
   filterChipActive: {
-    backgroundColor: "#007BFF",
+    backgroundColor: colors.accent,
   },
   filterChipText: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#495057",
+    color: colors.textSecondary,
   },
   filterChipTextActive: {
-    color: "#fff",
+    color: colors.textPrimary,
   },
   clearFilters: {
     marginTop: 8,
@@ -937,7 +939,7 @@ const styles = StyleSheet.create({
   },
   clearFiltersText: {
     fontSize: 13,
-    color: "#DC3545",
+    color: colors.destructive,
     fontWeight: "600",
   },
   // Summary bar
@@ -950,7 +952,7 @@ const styles = StyleSheet.create({
   },
   summaryCount: {
     fontSize: 13,
-    color: "#868E96",
+    color: colors.textMuted,
     fontWeight: "500",
   },
   summaryTotals: {
@@ -960,31 +962,31 @@ const styles = StyleSheet.create({
   summaryAmount: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#DC3545",
+    color: colors.destructive,
   },
   summaryAmountUSD: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#007BFF",
+    color: colors.accent,
   },
   exportButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E9F5FF",
+    backgroundColor: "rgba(59,130,246,0.1)",
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginLeft: 10,
   },
   exportButtonText: {
-    color: "#007BFF",
+    color: colors.accent,
     fontWeight: "700",
     fontSize: 14,
     marginLeft: 6,
   },
   exportInfo: {
     fontSize: 11,
-    color: "#868E96",
+    color: colors.textMuted,
     textAlign: "center",
     marginBottom: 2,
     marginTop: -8,
@@ -993,10 +995,7 @@ const styles = StyleSheet.create({
   dayGroup: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
+    ...glassSurface(),
   },
   dayHeader: {
     flexDirection: "row",
@@ -1005,15 +1004,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F3F5",
-    backgroundColor: "#F8F9FA",
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+    borderBottomColor: colors.borderLight,
+    backgroundColor: "rgba(255,255,255,0.03)",
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   dayTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
     textTransform: "capitalize",
   },
   dayTotals: {
@@ -1023,12 +1022,12 @@ const styles = StyleSheet.create({
   dayTotal: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#DC3545",
+    color: colors.destructive,
   },
   dayTotalUSD: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#007BFF",
+    color: colors.accent,
   },
   transaction: {
     flexDirection: "row",
@@ -1037,7 +1036,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F8F9FA",
+    borderBottomColor: colors.borderLight,
   },
   transactionLeft: {
     flex: 1,
@@ -1046,17 +1045,17 @@ const styles = StyleSheet.create({
   merchant: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#212529",
+    color: colors.textPrimary,
   },
   transactionMeta: {
     fontSize: 12,
-    color: "#ADB5BD",
+    color: colors.textMuted,
     marginTop: 2,
   },
   amount: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#DC3545",
+    color: colors.destructive,
   },
   categoryBtn: {
     marginTop: 4,
@@ -1068,25 +1067,25 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#F57C00",
+    borderColor: colors.warning,
     borderStyle: "dashed",
-    backgroundColor: "#FFF8E1",
+    backgroundColor: "rgba(217,119,6,0.1)",
     gap: 4,
   },
   uncategorizedText: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#F57C00",
+    color: colors.warning,
   },
   amountInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 8,
     fontSize: 15,
-    backgroundColor: "#fff",
-    color: "#212529",
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
     minWidth: 80,
     textAlign: "right",
   },
@@ -1094,7 +1093,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 14,
     marginVertical: 16,
     paddingVertical: 12,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.surface,
     borderRadius: 8,
     alignItems: "center",
   },
@@ -1106,6 +1105,6 @@ const styles = StyleSheet.create({
   loadMoreText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#007BFF",
+    color: colors.accent,
   },
 });

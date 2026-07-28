@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { glassSubtle } from "@/shared/theme/effects";
+import { colors } from "@/shared/theme/colors";
 import { CreditCardWithLimits } from "@/shared/types/creditCard";
 
 interface CreditCardAlertBannerProps {
@@ -24,7 +26,6 @@ export default function CreditCardAlertBanner({
   const alerts: CardAlert[] = [];
 
   creditCards.forEach((card) => {
-    // National
     if (card.nationalTotalLimit > 0) {
       const percent = (card.nationalAmountUsed / card.nationalTotalLimit) * 100;
       if (percent >= WARNING_THRESHOLD) {
@@ -36,7 +37,6 @@ export default function CreditCardAlertBanner({
         });
       }
     }
-    // International
     if (card.internationalTotalLimit > 0) {
       const percent =
         (card.internationalAmountUsed / card.internationalTotalLimit) * 100;
@@ -54,21 +54,25 @@ export default function CreditCardAlertBanner({
   if (alerts.length === 0) return null;
 
   const hasCritical = alerts.some((a) => a.level === "critical");
-  const bgColor = hasCritical ? "#FFF3F3" : "#FFF8E1";
-  const borderColor = hasCritical ? "#FFCDD2" : "#FFE082";
-  const iconColor = hasCritical ? "#DC3545" : "#F57C00";
+  const accentColor = hasCritical ? colors.destructive : colors.warning;
+  const bgGlow = hasCritical
+    ? "rgba(220, 38, 38, 0.1)"
+    : "rgba(217, 119, 6, 0.1)";
+  const borderColor = hasCritical
+    ? "rgba(220, 38, 38, 0.25)"
+    : "rgba(217, 119, 6, 0.25)";
   const icon = hasCritical ? "alert-circle" : "warning";
 
   return (
-    <View style={[styles.container, { backgroundColor: bgColor, borderColor }]}>
+    <View style={[styles.container, { backgroundColor: bgGlow, borderColor }]}>
       <View style={styles.headerRow}>
-        <Ionicons name={icon} size={20} color={iconColor} />
-        <Text style={[styles.headerText, { color: iconColor }]}>
+        <Ionicons name={icon} size={20} color={accentColor} />
+        <Text style={[styles.headerText, { color: accentColor }]}>
           {hasCritical ? "¡Cupo crítico!" : "Alerta de cupo"}
         </Text>
         {onDismiss && (
           <TouchableOpacity onPress={onDismiss} style={styles.dismissButton}>
-            <Ionicons name="close" size={18} color="#ADB5BD" />
+            <Ionicons name="close" size={18} color={colors.textMuted} />
           </TouchableOpacity>
         )}
       </View>
@@ -82,10 +86,7 @@ export default function CreditCardAlertBanner({
             <View
               style={[
                 styles.dot,
-                {
-                  backgroundColor:
-                    alert.level === "critical" ? "#DC3545" : "#F57C00",
-                },
+                { backgroundColor: alert.level === "critical" ? colors.destructive : colors.warning },
               ]}
             />
           </View>
@@ -99,9 +100,7 @@ export default function CreditCardAlertBanner({
             <Text
               style={[
                 styles.alertPercent,
-                {
-                  color: alert.level === "critical" ? "#DC3545" : "#F57C00",
-                },
+                { color: alert.level === "critical" ? colors.destructive : colors.warning },
               ]}
             >
               {alert.percent}%
@@ -150,7 +149,7 @@ const styles = StyleSheet.create({
   },
   alertText: {
     fontSize: 13,
-    color: "#495057",
+    color: colors.textSecondary,
     flex: 1,
   },
   alertCardName: {

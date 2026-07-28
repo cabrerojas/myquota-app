@@ -18,6 +18,7 @@ import { TouchableOpacity, View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, Rect } from "react-native-svg";
 import { getCardTheme } from "@/features/creditCards/utils/cardTheme";
+import { colors } from "@/shared/theme/tokens";
 import type { CreditCardWithLimits } from "@/shared/types/creditCard";
 
 // ─── Dimensions ───────────────────────────────────────────────────────────────
@@ -345,13 +346,13 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: "#F57C00",
+    backgroundColor: colors.warning,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
   },
   alertBadgeCritical: {
-    backgroundColor: "#DC3545",
+    backgroundColor: colors.destructive,
   },
 
   // Selected ring
