@@ -42,6 +42,7 @@ export default function RootLayout() {
           name="login"
           options={{ headerShown: true, title: "Iniciar Sesión" }}
         />
+        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen name="(drawer)" />
         <Stack.Screen name="(screens)" />
       </Stack>
