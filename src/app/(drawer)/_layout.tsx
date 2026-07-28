@@ -1,15 +1,11 @@
 import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
-import { View, Text } from "react-native";
 import { useEffect } from "react";
 import {
   UncategorizedProvider,
   useUncategorized,
 } from "@/shared/contexts/UncategorizedContext";
-
-// Small helper to avoid importing Ionicons in JSX options directly
-import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
 
 export default function DrawerLayout() {
@@ -21,7 +17,7 @@ export default function DrawerLayout() {
 }
 
 function DrawerContent() {
-  const { count: uncategorizedCount, refreshCount } = useUncategorized();
+  const { refreshCount } = useUncategorized();
 
   useEffect(() => {
     refreshCount();
@@ -34,148 +30,34 @@ function DrawerContent() {
         screenOptions={{
           drawerType: "front",
           headerTintColor: colors.accent,
-          headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
+          headerTitleStyle: {
+            fontWeight: "600",
+            fontSize: 17,
+            color: colors.textPrimary,
+          },
           headerStyle: { backgroundColor: colors.bg },
+          headerShadowVisible: false,
         }}
       >
-        <Drawer.Screen
-          name="dashboard"
-          options={{
-            title: "Dashboard",
-            drawerLabel: "Inicio",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="home-outline" color={color} size={size} />
-            ),
-          }}
-        />
-        <Drawer.Screen
-          name="creditCards"
-          options={{
-            title: "Mis Tarjetas",
-            drawerLabel: "Mis Tarjetas",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="card-outline" color={color} size={size} />
-            ),
-          }}
-        />
-        <Drawer.Screen
-          name="transactions"
-          options={{
-            title: "Transacciones",
-            drawerLabel: ({ color }) => (
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Text style={{ color, fontSize: 14, fontWeight: "500" }}>
-                  Transacciones
-                </Text>
-                {uncategorizedCount > 0 && (
-                  <View
-                    style={{
-                      backgroundColor: colors.warning,
-                      borderRadius: 10,
-                      minWidth: 20,
-                      height: 20,
-                      justifyContent: "center",
-                      alignItems: "center",
-                      marginLeft: 8,
-                      paddingHorizontal: 6,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.textPrimary,
-                        fontSize: 11,
-                        fontWeight: "bold",
-                      }}
-                    >
-                      {uncategorizedCount}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ),
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="receipt-outline" color={color} size={size} />
-            ),
-          }}
-        />
+        <Drawer.Screen name="dashboard" options={{ title: "Inicio" }} />
+        <Drawer.Screen name="creditCards" options={{ title: "Mis Tarjetas" }} />
+        <Drawer.Screen name="transactions" options={{ title: "Transacciones" }} />
         <Drawer.Screen
           name="quotas"
-          options={{
-            drawerItemStyle: { display: "none" },
-            title: "Cuotas Vigentes",
-          }}
+          options={{ title: "Cuotas Vigentes", drawerItemStyle: { display: "none" } }}
         />
-        <Drawer.Screen
-          name="charts"
-          options={{
-            title: "Gráficos",
-            drawerLabel: "Gráficos",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="bar-chart-outline" color={color} size={size} />
-            ),
-          }}
-        />
+        <Drawer.Screen name="charts" options={{ title: "Gráficos" }} />
         <Drawer.Screen
           name="debtForecast"
-          options={{
-            title: "Proyección de Deuda",
-            drawerLabel: "Proyección Deuda",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon
-                name="trending-up-outline"
-                color={color}
-                size={size}
-              />
-            ),
-          }}
+          options={{ title: "Proyección de Deuda" }}
         />
-        <Drawer.Screen
-          name="manualDebts"
-          options={{
-            title: "Deudas Manuales",
-            drawerLabel: "Deudas Manuales",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="create-outline" color={color} size={size} />
-            ),
-          }}
-        />
-        <Drawer.Screen
-          name="profile"
-          options={{
-            title: "Mi Perfil",
-            drawerLabel: "Mi Perfil",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon name="person-outline" color={color} size={size} />
-            ),
-          }}
-        />
+        <Drawer.Screen name="manualDebts" options={{ title: "Deudas Manuales" }} />
+        <Drawer.Screen name="profile" options={{ title: "Mi Perfil" }} />
         <Drawer.Screen
           name="notificationSettings"
-          options={{
-            title: "Notificaciones",
-            drawerLabel: "Notificaciones",
-            drawerIcon: ({ color, size }) => (
-              <DrawerIcon
-                name="notifications-outline"
-                color={color}
-                size={size}
-              />
-            ),
-          }}
+          options={{ title: "Notificaciones" }}
         />
       </Drawer>
     </GestureHandlerRootView>
   );
-}
-
-function DrawerIcon({
-  name,
-  color,
-  size,
-}: {
-  name: keyof typeof Ionicons.glyphMap;
-  color: string;
-  size: number;
-}) {
-  return <Ionicons name={name} size={size} color={color} />;
 }
