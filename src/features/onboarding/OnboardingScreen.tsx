@@ -5,6 +5,7 @@ import {
 	SafeAreaView,
 	StyleSheet,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import WelcomeStep from "@/features/onboarding/components/WelcomeStep";
 import AddCardStep from "@/features/onboarding/components/AddCardStep";
 import SuccessStep from "@/features/onboarding/components/SuccessStep";
@@ -12,7 +13,56 @@ import type { CreditCard } from "@/shared/types/creditCard";
 
 type Step = 0 | 1 | 2;
 
-const STEP_ANIMATION_DURATION = 350;
+const STEP_ANIMATION_DURATION = 300;
+
+const STEP_LABELS = ["Bienvenida", "Agregar tarjeta", "Listo"];
+
+interface StepIndicatorProps {
+	currentStep: Step;
+}
+
+function StepIndicator({ currentStep }: StepIndicatorProps) {
+	return (
+		<View style={styles.stepIndicator}>
+			{STEP_LABELS.map((label, i) => {
+				const isActive = currentStep === i;
+				const isPast = currentStep > i;
+				return (
+					<React.Fragment key={label}>
+						{/* Step dot + label row */}
+						<View style={styles.stepItem}>
+							<View
+								style={[
+									styles.stepDot,
+									isActive && styles.stepDotActive,
+									isPast && styles.stepDotPast,
+								]}
+							>
+								<View
+									style={[
+										styles.stepDotInner,
+										isActive && styles.stepDotInnerActive,
+										isPast && styles.stepDotInnerPast,
+									]}
+								/>
+							</View>
+						</View>
+
+						{/* Connector line (not after last) */}
+						{i < STEP_LABELS.length - 1 && (
+							<View
+								style={[
+									styles.stepConnector,
+									(isActive || isPast) && styles.stepConnectorActive,
+								]}
+							/>
+						)}
+					</React.Fragment>
+				);
+			})}
+		</View>
+	);
+}
 
 export default function OnboardingScreen() {
 	const [currentStep, setCurrentStep] = React.useState<Step>(0);
@@ -33,6 +83,8 @@ export default function OnboardingScreen() {
 
 	const animateToStep = useCallback(
 		(toStep: Step) => {
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
 			// Reset the target step to initial animated state
 			fadeAnims[toStep].setValue(0);
 			slideAnims[toStep].setValue(30);
@@ -45,7 +97,7 @@ export default function OnboardingScreen() {
 					useNativeDriver: true,
 				}),
 				Animated.timing(slideAnims[currentStep], {
-					toValue: -30,
+					toValue: -20,
 					duration: STEP_ANIMATION_DURATION,
 					useNativeDriver: true,
 				}),
@@ -60,9 +112,10 @@ export default function OnboardingScreen() {
 						duration: STEP_ANIMATION_DURATION,
 						useNativeDriver: true,
 					}),
-					Animated.timing(slideAnims[toStep], {
+					Animated.spring(slideAnims[toStep], {
 						toValue: 0,
-						duration: STEP_ANIMATION_DURATION,
+						friction: 8,
+						tension: 60,
 						useNativeDriver: true,
 					}),
 				]).start();
@@ -90,6 +143,13 @@ export default function OnboardingScreen() {
 
 	return (
 		<SafeAreaView style={styles.container}>
+			{/* Step indicator (visible on card form, hidden on success) */}
+			{currentStep < 2 && (
+				<View style={styles.headerArea}>
+					<StepIndicator currentStep={currentStep} />
+				</View>
+			)}
+
 			<View style={styles.stepsContainer}>
 				{/* Step 0: Welcome */}
 				<Animated.View
@@ -137,8 +197,6 @@ export default function OnboardingScreen() {
 	);
 }
 
-
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
@@ -146,6 +204,69 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#0F172A",
 	},
+
+	// Step indicator
+	headerArea: {
+		paddingTop: 12,
+		paddingHorizontal: 32,
+		paddingBottom: 8,
+	},
+	stepIndicator: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	stepItem: {
+		alignItems: "center",
+	},
+	stepDot: {
+		width: 28,
+		height: 28,
+		borderRadius: 14,
+		backgroundColor: "rgba(255, 255, 255, 0.06)",
+		justifyContent: "center",
+		alignItems: "center",
+		borderWidth: 2,
+		borderColor: "rgba(255, 255, 255, 0.1)",
+	},
+	stepDotActive: {
+		borderColor: "#3B82F6",
+		backgroundColor: "rgba(59, 130, 246, 0.1)",
+	},
+	stepDotPast: {
+		borderColor: "#059669",
+		backgroundColor: "rgba(5, 150, 105, 0.1)",
+	},
+	stepDotInner: {
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: "rgba(255, 255, 255, 0.2)",
+	},
+	stepDotInnerActive: {
+		backgroundColor: "#3B82F6",
+		width: 10,
+		height: 10,
+		borderRadius: 5,
+	},
+	stepDotInnerPast: {
+		backgroundColor: "#059669",
+		width: 10,
+		height: 10,
+		borderRadius: 5,
+	},
+	stepConnector: {
+		width: 48,
+		height: 2,
+		backgroundColor: "rgba(255, 255, 255, 0.06)",
+		marginHorizontal: 4,
+		borderRadius: 1,
+	},
+	stepConnectorActive: {
+		backgroundColor: "#059669",
+	},
+
+	// Steps container
 	stepsContainer: {
 		flex: 1,
 		position: "relative",
@@ -157,6 +278,4 @@ const styles = StyleSheet.create({
 		right: 0,
 		bottom: 0,
 	},
-
-
 });
