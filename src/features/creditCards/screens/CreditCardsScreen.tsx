@@ -14,6 +14,8 @@ import { getCreditCards, PaginatedResponse } from "../services/creditCardsApi";
 import { CreditCard } from "@/shared/types/creditCard";
 import { formatCLP } from "@/shared/utils/format";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { colors } from "@/shared/theme/tokens";
+import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 
 export default function CreditCardsScreen() {
   const router = useRouter();
@@ -74,7 +76,7 @@ export default function CreditCardsScreen() {
     const type = cardType.toLowerCase();
     if (type.includes("visa")) return "#1A1F71";
     if (type.includes("master")) return "#EB001B";
-    return "#007BFF";
+    return colors.accent;
   };
 
   const formatCurrency = formatCLP;
@@ -87,7 +89,7 @@ export default function CreditCardsScreen() {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.loadingText}>Cargando tarjetas...</Text>
       </View>
     );
@@ -96,7 +98,7 @@ export default function CreditCardsScreen() {
   if (creditCards.length === 0) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="card-outline" size={64} color="#CED4DA" />
+        <Ionicons name="card-outline" size={64} color={colors.textSubtle} />
         <Text style={styles.emptyTitle}>Sin tarjetas</Text>
         <Text style={styles.emptySubtitle}>
           No tienes tarjetas de crédito registradas
@@ -162,20 +164,20 @@ export default function CreditCardsScreen() {
                 style={[
                   styles.cupoAlertStrip,
                   {
-                    backgroundColor: isCritical ? "#FFF3F3" : "#FFF8E1",
-                    borderBottomColor: isCritical ? "#FFCDD2" : "#FFE082",
+                    backgroundColor: isCritical ? "rgba(220,38,38,0.1)" : "rgba(217,119,6,0.1)",
+                    borderBottomColor: isCritical ? "rgba(220,38,38,0.3)" : "rgba(217,119,6,0.3)",
                   },
                 ]}
               >
                 <Ionicons
                   name={isCritical ? "alert-circle" : "warning"}
                   size={16}
-                  color={isCritical ? "#DC3545" : "#F57C00"}
+                  color={isCritical ? colors.destructive : colors.warning}
                 />
                 <Text
                   style={[
                     styles.cupoAlertText,
-                    { color: isCritical ? "#DC3545" : "#F57C00" },
+                    { color: isCritical ? colors.destructive : colors.warning },
                   ]}
                 >
                   {isCritical
@@ -209,10 +211,10 @@ export default function CreditCardsScreen() {
                           width: `${usagePercent}%`,
                           backgroundColor:
                             usagePercent > 80
-                              ? "#DC3545"
+                              ? colors.destructive
                               : usagePercent > 50
-                                ? "#FFC107"
-                                : "#28A745",
+                                ? colors.warning
+                                : colors.success,
                         },
                       ]}
                     />
@@ -244,13 +246,13 @@ export default function CreditCardsScreen() {
                               card.internationalAmountUsed,
                               card.internationalTotalLimit,
                             ) > 80
-                              ? "#DC3545"
+                              ? colors.destructive
                               : getUsagePercent(
                                     card.internationalAmountUsed,
                                     card.internationalTotalLimit,
                                   ) > 50
-                                ? "#FFC107"
-                                : "#28A745",
+                                ? colors.warning
+                                : colors.success,
                         },
                       ]}
                     />
@@ -277,9 +279,9 @@ export default function CreditCardsScreen() {
                   })
                 }
               >
-                <Ionicons name="calendar-outline" size={18} color="#007BFF" />
+                <Ionicons name="calendar-outline" size={18} color={colors.accent} />
                 <Text style={styles.actionText}>Ver Períodos</Text>
-                <Ionicons name="chevron-forward" size={16} color="#007BFF" />
+                <Ionicons name="chevron-forward" size={16} color={colors.accent} />
               </TouchableOpacity>
             </View>
           </View>
@@ -294,10 +296,10 @@ export default function CreditCardsScreen() {
           disabled={loadingMore}
         >
           {loadingMore ? (
-            <ActivityIndicator size="small" color="#007BFF" />
+            <ActivityIndicator size="small" color={colors.accent} />
           ) : (
             <>
-              <Ionicons name="download-outline" size={18} color="#007BFF" />
+              <Ionicons name="download-outline" size={18} color={colors.accent} />
               <Text style={styles.actionText}>Cargar más</Text>
             </>
           )}
@@ -310,7 +312,7 @@ export default function CreditCardsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
   contentContainer: {
     padding: 16,
@@ -320,36 +322,35 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
     padding: 20,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 15,
-    color: "#868E96",
+    color: colors.textMuted,
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#495057",
+    color: colors.textSecondary,
     marginTop: 16,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#868E96",
+    color: colors.textMuted,
     marginTop: 6,
   },
   headerTitle: {
     fontSize: 14,
-    color: "#868E96",
+    color: colors.textMuted,
     marginBottom: 12,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     fontWeight: "600",
   },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    ...glassSurface(),
     marginBottom: 16,
     elevation: 3,
     shadowColor: "#000",
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
   },
   holderName: {
     fontSize: 13,
-    color: "#868E96",
+    color: colors.textMuted,
     marginBottom: 14,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -415,16 +416,16 @@ const styles = StyleSheet.create({
   },
   usageLabel: {
     fontSize: 13,
-    color: "#495057",
+    color: colors.textSecondary,
     fontWeight: "600",
   },
   usageAmount: {
     fontSize: 13,
-    color: "#868E96",
+    color: colors.textMuted,
   },
   progressBar: {
     height: 8,
-    backgroundColor: "#E9ECEF",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 4,
     overflow: "hidden",
   },
@@ -434,13 +435,13 @@ const styles = StyleSheet.create({
   },
   availableText: {
     fontSize: 12,
-    color: "#28A745",
+    color: colors.success,
     marginTop: 4,
     fontWeight: "500",
   },
   cardActions: {
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
     paddingHorizontal: 18,
     paddingVertical: 12,
   },
@@ -454,12 +455,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 16,
     marginTop: 8,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.surface,
     borderRadius: 8,
   },
   actionText: {
     fontSize: 14,
-    color: "#007BFF",
+    color: colors.accent,
     fontWeight: "600",
     marginLeft: 8,
     flex: 1,

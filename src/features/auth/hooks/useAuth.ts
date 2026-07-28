@@ -88,8 +88,8 @@ export const useGoogleSignIn = (router: Router) => {
             console.warn("Session storage error saving tokens:", err);
           }
 
-          // Redirigir al Dashboard
-          router.replace("/(drawer)/dashboard");
+          // Redirigir al root para que index.tsx decida onboarding vs dashboard
+          router.replace("/");
         } else {
           console.error("Error al autenticar con el backend:", data);
         }
