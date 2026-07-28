@@ -16,6 +16,8 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import Svg, { Circle, Rect, Line } from "react-native-svg";
 import CreditCardItem from "@/features/creditCards/components/CreditCardItem";
+import { colors } from "@/shared/theme/tokens";
+import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import type { CreditCardWithLimits } from "@/shared/types/creditCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -49,18 +51,18 @@ function EmptyCards() {
       <View style={emptyStyles.illustrationWrapper}>
         <Svg width={72} height={52} viewBox="0 0 72 52">
           {/* Card shadow */}
-          <Rect x={8} y={10} width={56} height={36} rx={8} fill="#E9ECEF" />
+          <Rect x={8} y={10} width={56} height={36} rx={8} fill={colors.surface} />
           {/* Card body */}
-          <Rect x={4} y={6} width={56} height={36} rx={8} fill="#DEE2E6" />
+          <Rect x={4} y={6} width={56} height={36} rx={8} fill="rgba(255,255,255,0.08)" />
           {/* Chip */}
-          <Rect x={12} y={16} width={14} height={10} rx={2} fill="#CED4DA" />
+          <Rect x={12} y={16} width={14} height={10} rx={2} fill="rgba(255,255,255,0.15)" />
           {/* Stripe lines */}
           <Line
             x1={12}
             y1={32}
             x2={28}
             y2={32}
-            stroke="#CED4DA"
+            stroke="rgba(255,255,255,0.15)"
             strokeWidth={2}
             strokeLinecap="round"
           />
@@ -69,19 +71,19 @@ function EmptyCards() {
             y1={36}
             x2={22}
             y2={36}
-            stroke="#CED4DA"
+            stroke="rgba(255,255,255,0.15)"
             strokeWidth={2}
             strokeLinecap="round"
           />
           {/* Plus circle overlay */}
-          <Circle cx={52} cy={38} r={14} fill="#fff" />
-          <Circle cx={52} cy={38} r={12} fill="#E9ECEF" />
+          <Circle cx={52} cy={38} r={14} fill={colors.surface} />
+          <Circle cx={52} cy={38} r={12} fill="rgba(255,255,255,0.06)" />
           <Line
             x1={52}
             y1={32}
             x2={52}
             y2={44}
-            stroke="#ADB5BD"
+            stroke={colors.textMuted}
             strokeWidth={2.5}
             strokeLinecap="round"
           />
@@ -90,7 +92,7 @@ function EmptyCards() {
             y1={38}
             x2={58}
             y2={38}
-            stroke="#ADB5BD"
+            stroke={colors.textMuted}
             strokeWidth={2.5}
             strokeLinecap="round"
           />
@@ -180,12 +182,12 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#868E96",
+    color: colors.textSecondary,
     letterSpacing: 1.4,
     textTransform: "uppercase",
   },
   countBadge: {
-    backgroundColor: "#E9ECEF",
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: 10,
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -193,7 +195,7 @@ const styles = StyleSheet.create({
   countBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#495057",
+    color: colors.textMuted,
   },
   scrollContent: {
     paddingRight: 20,
@@ -205,32 +207,29 @@ const styles = StyleSheet.create({
 // Empty state
 const emptyStyles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    ...glassSurface(),
     padding: 28,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#F1F3F5",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 2,
   },
   illustrationWrapper: {
     marginBottom: 16,
-    opacity: 0.75,
+    opacity: 0.6,
   },
   title: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#343A40",
+    color: colors.textSecondary,
     marginBottom: 8,
     textAlign: "center",
   },
   subtitle: {
     fontSize: 13,
-    color: "#868E96",
+    color: colors.textMuted,
     textAlign: "center",
     lineHeight: 19,
     maxWidth: 260,

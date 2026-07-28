@@ -10,6 +10,7 @@ import {
 
 // Small helper to avoid importing Ionicons in JSX options directly
 import { Ionicons } from "@expo/vector-icons";
+import { colors } from "@/shared/theme/colors";
 
 export default function DrawerLayout() {
   return (
@@ -32,9 +33,9 @@ function DrawerContent() {
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
           drawerType: "front",
-          headerTintColor: "#007BFF",
-          headerTitleStyle: { fontWeight: "600", color: "#212529" },
-          headerStyle: { backgroundColor: "#fff", elevation: 2 },
+          headerTintColor: colors.accent,
+          headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
+          headerStyle: { backgroundColor: colors.bg },
         }}
       >
         <Drawer.Screen
@@ -69,7 +70,7 @@ function DrawerContent() {
                 {uncategorizedCount > 0 && (
                   <View
                     style={{
-                      backgroundColor: "#F57C00",
+                      backgroundColor: colors.warning,
                       borderRadius: 10,
                       minWidth: 20,
                       height: 20,
@@ -81,7 +82,7 @@ function DrawerContent() {
                   >
                     <Text
                       style={{
-                        color: "#fff",
+                        color: colors.textPrimary,
                         fontSize: 11,
                         fontWeight: "bold",
                       }}

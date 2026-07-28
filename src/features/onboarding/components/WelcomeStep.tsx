@@ -12,71 +12,130 @@ interface WelcomeStepProps {
 	onNext: () => void;
 }
 
+interface ValueProp {
+	icon: keyof typeof Ionicons.glyphMap;
+	title: string;
+	description: string;
+}
+
+const VALUE_PROPS: ValueProp[] = [
+	{
+		icon: "trending-down",
+		title: "Control total",
+		description: "Visualice todos sus gastos en un solo lugar, sin sorpresas",
+	},
+	{
+		icon: "notifications",
+		title: "Alertas inteligentes",
+		description: "Reciba avisos antes del cierre para evitar intereses",
+	},
+	{
+		icon: "calendar",
+		title: "Proyección de deuda",
+		description: "Sepa cuánto va a pagar los próximos meses",
+	},
+];
+
 export default function WelcomeStep({ onNext }: WelcomeStepProps) {
 	const fadeAnim = useRef(new Animated.Value(0)).current;
-	const slideAnim = useRef(new Animated.Value(30)).current;
+	const slideAnim = useRef(new Animated.Value(20)).current;
+	const cardAnims = useRef(VALUE_PROPS.map(() => new Animated.Value(0))).current;
 
 	useEffect(() => {
 		Animated.parallel([
 			Animated.timing(fadeAnim, {
 				toValue: 1,
-				duration: 600,
+				duration: 500,
 				useNativeDriver: true,
 			}),
 			Animated.timing(slideAnim, {
 				toValue: 0,
-				duration: 600,
+				duration: 500,
 				useNativeDriver: true,
 			}),
 		]).start();
-	}, [fadeAnim, slideAnim]);
+
+		// Stagger card animations
+		cardAnims.forEach((anim, i) => {
+			Animated.timing(anim, {
+				toValue: 1,
+				duration: 400,
+				delay: 300 + i * 150,
+				useNativeDriver: true,
+			}).start();
+		});
+	}, [fadeAnim, slideAnim, cardAnims]);
 
 	return (
 		<View style={styles.container}>
 			<View style={styles.content}>
-				{/* Logo / illustration area */}
+				{/* Logo */}
 				<Animated.View
 					style={[
 						styles.logoContainer,
-						{
-							opacity: fadeAnim,
-							transform: [{ translateY: slideAnim }],
-						},
+						{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
 					]}
 				>
-					<View style={styles.logoCircle}>
-						<Ionicons name="card-outline" size={48} color="#3B82F6" />
+					<View style={styles.logoIcon}>
+						<Ionicons name="shield-checkmark" size={32} color="#059669" />
 					</View>
+					<Text style={styles.logoText}>MyQuota</Text>
 				</Animated.View>
 
 				{/* Title */}
 				<Animated.Text
 					style={[
 						styles.title,
-						{
-							opacity: fadeAnim,
-							transform: [{ translateY: slideAnim }],
-						},
+						{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
 					]}
 				>
-					Bienvenido a MyQuota
+					Bienvenido a tu{'\n'}control financiero
 				</Animated.Text>
 
-				{/* Subtitle */}
+				{/* Subtitle — the "why" */}
 				<Animated.Text
 					style={[
 						styles.subtitle,
-						{
-							opacity: fadeAnim,
-							transform: [{ translateY: slideAnim }],
-						},
+						{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
 					]}
 				>
-					Llevá el control de tus tarjetas de crédito en un solo lugar
+				Para ayudarle a gestionar sus tarjetas y entender sus finanzas,
+				necesitamos que agregue su primera tarjeta.
 				</Animated.Text>
+
+				{/* Value props */}
+				<View style={styles.valuePropsContainer}>
+					{VALUE_PROPS.map((prop, i) => (
+						<Animated.View
+							key={prop.title}
+							style={[
+								styles.valueCard,
+								{
+									opacity: cardAnims[i],
+									transform: [
+										{
+											translateY: cardAnims[i].interpolate({
+												inputRange: [0, 1],
+												outputRange: [16, 0],
+											}),
+										},
+									],
+								},
+							]}
+						>
+							<View style={styles.valueIconWrap}>
+								<Ionicons name={prop.icon} size={18} color="#3B82F6" />
+							</View>
+							<View style={styles.valueTextWrap}>
+								<Text style={styles.valueTitle}>{prop.title}</Text>
+								<Text style={styles.valueDesc}>{prop.description}</Text>
+							</View>
+						</Animated.View>
+					))}
+				</View>
 			</View>
 
-			{/* Button */}
+			{/* CTA */}
 			<Animated.View
 				style={[
 					styles.buttonWrapper,
@@ -91,14 +150,15 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
 					onPress={onNext}
 					activeOpacity={0.85}
 				>
-					<Text style={styles.startButtonText}>Comenzar</Text>
+					<Text style={styles.startButtonText}>Agregar mi tarjeta</Text>
 				</TouchableOpacity>
+				<Text style={styles.buttonHint}>
+					Sin compromiso — solo datos básicos
+				</Text>
 			</Animated.View>
 		</View>
 	);
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
 	container: {
@@ -110,38 +170,96 @@ const styles = StyleSheet.create({
 	content: {
 		flex: 1,
 		justifyContent: "center",
-		alignItems: "center",
+		width: "100%",
 	},
+
+	// Logo
 	logoContainer: {
-		marginBottom: 40,
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		gap: 10,
+		marginBottom: 32,
 	},
-	logoCircle: {
-		width: 120,
-		height: 120,
-		borderRadius: 60,
-		backgroundColor: "rgba(59, 130, 246, 0.1)",
+	logoIcon: {
+		width: 44,
+		height: 44,
+		borderRadius: 14,
+		backgroundColor: "rgba(5, 150, 105, 0.15)",
 		justifyContent: "center",
 		alignItems: "center",
-		borderWidth: 1,
-		borderColor: "rgba(59, 130, 246, 0.2)",
 	},
+	logoText: {
+		fontSize: 24,
+		fontWeight: "800",
+		color: "#FFFFFF",
+		letterSpacing: -0.5,
+	},
+
+	// Title
 	title: {
-		fontSize: 32,
+		fontSize: 30,
 		fontWeight: "700",
 		color: "#FFFFFF",
 		textAlign: "center",
-		marginBottom: 16,
+		marginBottom: 12,
+		lineHeight: 38,
 	},
+
+	// Subtitle
 	subtitle: {
-		fontSize: 16,
+		fontSize: 15,
 		color: "#94A3B8",
 		textAlign: "center",
-		lineHeight: 24,
-		paddingHorizontal: 20,
+		lineHeight: 22,
+		paddingHorizontal: 8,
+		marginBottom: 32,
 	},
+
+	// Value props
+	valuePropsContainer: {
+		gap: 10,
+		paddingHorizontal: 4,
+	},
+	valueCard: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#192134",
+		borderRadius: 14,
+		borderWidth: StyleSheet.hairlineWidth,
+		borderColor: "rgba(255,255,255,0.06)",
+		padding: 14,
+		gap: 14,
+	},
+	valueIconWrap: {
+		width: 40,
+		height: 40,
+		borderRadius: 12,
+		backgroundColor: "rgba(59, 130, 246, 0.12)",
+		justifyContent: "center",
+		alignItems: "center",
+		flexShrink: 0,
+	},
+	valueTextWrap: {
+		flex: 1,
+	},
+	valueTitle: {
+		fontSize: 14,
+		fontWeight: "600",
+		color: "#FFFFFF",
+		marginBottom: 2,
+	},
+	valueDesc: {
+		fontSize: 12,
+		color: "#94A3B8",
+		lineHeight: 17,
+	},
+
+	// Button
 	buttonWrapper: {
 		width: "100%",
 		paddingBottom: 40,
+		alignItems: "center",
 	},
 	startButton: {
 		width: "100%",
@@ -155,5 +273,10 @@ const styles = StyleSheet.create({
 		fontSize: 17,
 		fontWeight: "600",
 		color: "#FFFFFF",
+	},
+	buttonHint: {
+		fontSize: 12,
+		color: "#64748B",
+		marginTop: 10,
 	},
 });

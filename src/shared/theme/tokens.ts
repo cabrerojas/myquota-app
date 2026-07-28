@@ -5,46 +5,12 @@
  * Always import from "@/shared/theme/tokens".
  */
 
-export const colors = {
-  primary: "#007BFF",
-  primaryDark: "#0056B3",
-  danger: "#DC3545",
-  dangerDark: "#C82333",
-  success: "#28A745",
-  warning: "#FFC107",
-  info: "#17A2B8",
+import { colors } from "./colors";
 
-  bgLight: "#F8F9FA",
-  bgWhite: "#FFFFFF",
-
-  textPrimary: "#212529",
-  textSecondary: "#495057",
-  textMuted: "#868E96",
-  textLight: "#6C757D",
-
-  border: "#DEE2E6",
-  borderLight: "#E9ECEF",
-
-  // Card brand colors
-  cardVisa: "#1A1F71",
-  cardMastercard: "#EB001B",
-
-  // Chart palette
-  chartPalette: [
-    "#007BFF",
-    "#DC3545",
-    "#28A745",
-    "#FFC107",
-    "#17A2B8",
-    "#6F42C1",
-    "#FD7E14",
-    "#20C997",
-    "#E83E8C",
-    "#6C757D",
-    "#0056B3",
-    "#C82333",
-  ] as readonly string[],
-} as const;
+// Re-export semantic colors for convenience
+export { colors } from "./colors";
+export { typography } from "./typography";
+export { effects, glassSurface, glassSubtle, accentGlow } from "./effects";
 
 export const spacing = {
   xs: 4,
@@ -69,4 +35,40 @@ export const borderRadius = {
   lg: 14,
   xl: 18,
   full: 999,
+} as const;
+
+// Legacy color names — maintained for backward compatibility
+// during migration. New code should use the semantic colors above.
+export const legacyColors = {
+  primary: "#3B82F6",
+  primaryDark: "#2563EB",
+  danger: colors.destructive,
+  dangerDark: "#B91C1C",
+  success: colors.success,
+  warning: colors.warning,
+  info: "#3B82F6",
+  bgLight: colors.bg,
+  bgWhite: colors.surface,
+  textPrimary: colors.textPrimary,
+  textSecondary: colors.textSecondary,
+  textMuted: colors.textMuted,
+  textLight: colors.textMuted,
+  border: colors.border,
+  borderLight: colors.borderLight,
+  cardVisa: "#1A1F71",
+  cardMastercard: "#EB001B",
+  chartPalette: [
+    "#3B82F6",
+    "#DC2626",
+    "#059669",
+    "#D97706",
+    "#3B82F6",
+    "#8B5CF6",
+    "#F97316",
+    "#14B8A6",
+    "#EC4899",
+    "#6B7280",
+    "#2563EB",
+    "#B91C1C",
+  ] as readonly string[],
 } as const;

@@ -71,7 +71,7 @@ export default function SuccessStep({ card }: SuccessStepProps) {
 				</Animated.View>
 
 				{/* Title */}
-				<Text style={styles.title}>¡Todo listo!</Text>
+				<Text style={styles.title}>Listo</Text>
 
 				{/* Card preview */}
 				<Animated.View style={[styles.cardPreview, { opacity: fadeIn }]}>
@@ -138,8 +138,8 @@ export default function SuccessStep({ card }: SuccessStepProps) {
 				{/* Hint card */}
 				<View style={styles.hintCard}>
 					<Text style={styles.hintText}>
-						💡 Podés importar tus movimientos bancarios automáticamente
-						conectando tu Gmail.
+						Puede importar sus movimientos bancarios automáticamente
+						conectando su Gmail.
 					</Text>
 				</View>
 			</View>

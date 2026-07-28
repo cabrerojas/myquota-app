@@ -6,6 +6,7 @@ import {
   Image,
   Alert,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import {
   DrawerContentScrollView,
   DrawerItemList,
@@ -17,6 +18,7 @@ import { useEffect, useState } from "react";
 import { signOut } from "@/features/auth/hooks/useAuth";
 import { UserInfo } from "@/shared/types/user";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
+import { colors } from "@/shared/theme/colors";
 
 export default function CustomDrawerContent(
   props: DrawerContentComponentProps,
@@ -32,13 +34,14 @@ export default function CustomDrawerContent(
 
   return (
     <View style={styles.container}>
-      {/* Header del usuario */}
+      {/* Header del usuario con glass effect */}
       <View style={styles.userSection}>
+        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
         {user?.photo ? (
           <Image source={{ uri: user.photo }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
-            <Ionicons name="person" size={28} color="#fff" />
+            <Ionicons name="person" size={28} color={colors.textPrimary} />
           </View>
         )}
         <Text style={styles.userName}>
@@ -71,7 +74,7 @@ export default function CustomDrawerContent(
             );
           }}
         >
-          <Ionicons name="log-out-outline" size={20} color="#DC3545" />
+          <Ionicons name="log-out-outline" size={20} color={colors.destructive} />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>
@@ -82,13 +85,14 @@ export default function CustomDrawerContent(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.bg,
   },
   userSection: {
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    backgroundColor: "#007BFF",
+    backgroundColor: colors.surface,
+    overflow: "hidden",
   },
   avatar: {
     width: 56,
@@ -96,7 +100,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     marginBottom: 10,
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: colors.border,
   },
   avatarPlaceholder: {
     width: 56,
@@ -110,27 +114,16 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#fff",
+    color: colors.textPrimary,
   },
   userEmail: {
     fontSize: 13,
-    color: "rgba(255,255,255,0.75)",
+    color: colors.textSecondary,
     marginTop: 2,
-  },
-  quickActions: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
-  quickActionsTitle: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#868E96",
-    letterSpacing: 1,
-    marginBottom: 12,
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
     paddingHorizontal: 20,
     paddingVertical: 16,
   },
@@ -141,7 +134,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 14,
-    color: "#DC3545",
+    color: colors.destructive,
     fontWeight: "500",
   },
 });

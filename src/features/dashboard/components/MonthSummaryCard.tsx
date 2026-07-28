@@ -1,26 +1,17 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { memo } from "react";
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { glassSurface } from "@/shared/theme/effects";
+import { colors } from "@/shared/theme/colors";
 import { useMonthlyStats } from "../services/statsApi";
-
-interface MonthlyStat {
-  month: string;
-  totalCLP: number;
-  totalUSD: number;
-  categoryBreakdown: { [merchant: string]: { CLP: number; USD: number } };
-}
 
 interface MonthSummaryCardProps {
   creditCardId: string;
-  /** Sum of quota installments falling in the current billing period (the real bill). */
   nextPeriodCLP?: number;
-  /** Sum of USD quota installments falling in the current billing period. */
   nextPeriodUSD?: number;
 }
 
-// Helper functions moved outside component to avoid recreation
 const getCurrentMonthName = (): string => {
   const date = new Date();
   const monthFormatter = new Intl.DateTimeFormat("es-CL", {
@@ -60,26 +51,21 @@ const MonthSummaryCardComponent = ({
   const router = useRouter();
   const { data: stats = [], isLoading } = useMonthlyStats(creditCardId);
 
-  // Extract current and previous month data using useMemo to avoid recalculating on every render
   const { currentMonth, previousMonth } = useMemo(() => {
     const currentName = getCurrentMonthName();
     const previousName = getPreviousMonthName();
-
     const current = stats.find((s) => s.month === currentName) || null;
     const previous = stats.find((s) => s.month === previousName) || null;
-
     return { currentMonth: current, previousMonth: previous };
   }, [stats]);
 
-  if (isLoading) {
-    return null;
-  }
+  if (isLoading) return null;
 
   const totalCLP = currentMonth?.totalCLP ?? 0;
   const totalUSD = currentMonth?.totalUSD ?? 0;
   const prevCLP = previousMonth?.totalCLP ?? 0;
+  const hasData = totalCLP > 0 || totalUSD > 0 || prevCLP > 0;
 
-  // Calculate variation vs previous month
   let variationPercent = 0;
   let variationDirection: "up" | "down" | "same" = "same";
   if (prevCLP > 0 && totalCLP > 0) {
@@ -89,8 +75,7 @@ const MonthSummaryCardComponent = ({
   }
 
   const monthName = getCurrentMonthName();
-  const monthDisplayName = monthName.split(" ")[0]; // Solo el mes sin año
-
+  const monthDisplayName = monthName.split(" ")[0];
   const hasEstimatedBill = nextPeriodCLP !== undefined && nextPeriodCLP > 0;
 
   const handleViewTransactions = () => {
@@ -106,94 +91,111 @@ const MonthSummaryCardComponent = ({
       onPress={handleViewTransactions}
       activeOpacity={0.7}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>{monthDisplayName}</Text>
-        <View style={styles.totalContainer}>
-          <Text style={styles.totalCLP}>
-            ${totalCLP.toLocaleString("es-CL")}
-          </Text>
-          {totalUSD > 0 && (
-            <Text style={styles.totalUSD}>US$ {totalUSD.toFixed(2)}</Text>
-          )}
-        </View>
-      </View>
+      {hasData ? (
+        <>
+          <View style={styles.header}>
+            <Text style={styles.title}>{monthDisplayName}</Text>
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalCLP}>
+                ${totalCLP.toLocaleString("es-CL")}
+              </Text>
+              {totalUSD > 0 && (
+                <Text style={styles.totalUSD}>US$ {totalUSD.toFixed(2)}</Text>
+              )}
+            </View>
+          </View>
 
-      {/* Variation indicator */}
-      {prevCLP > 0 && (
-        <View style={styles.variationRow}>
-          <Text style={styles.variationLabel}>vs mes anterior</Text>
-          <View
-            style={[
-              styles.variationBadge,
-              variationDirection === "up" && styles.variationUp,
-              variationDirection === "down" && styles.variationDown,
-            ]}
-          >
-            <Ionicons
-              name={
-                variationDirection === "up"
-                  ? "arrow-up"
-                  : variationDirection === "down"
-                    ? "arrow-down"
-                    : "remove"
-              }
-              size={12}
-              color={
-                variationDirection === "up"
-                  ? "#DC3545"
-                  : variationDirection === "down"
-                    ? "#28A745"
-                    : "#6C757D"
-              }
-            />
-            <Text
-              style={[
-                styles.variationPercent,
-                variationDirection === "up" && styles.variationUpText,
-                variationDirection === "down" && styles.variationDownText,
-              ]}
-            >
-              {Math.abs(variationPercent)}%
+          {prevCLP > 0 && (
+            <View style={styles.variationRow}>
+              <Text style={styles.variationLabel}>vs mes anterior</Text>
+              <View
+                style={[
+                  styles.variationBadge,
+                  variationDirection === "up" && styles.variationUp,
+                  variationDirection === "down" && styles.variationDown,
+                ]}
+              >
+                <Ionicons
+                  name={
+                    variationDirection === "up"
+                      ? "arrow-up"
+                      : variationDirection === "down"
+                        ? "arrow-down"
+                        : "remove"
+                  }
+                  size={12}
+                  color={
+                    variationDirection === "up"
+                      ? colors.destructive
+                      : variationDirection === "down"
+                        ? colors.success
+                        : colors.textMuted
+                  }
+                />
+                <Text
+                  style={[
+                    styles.variationPercent,
+                    variationDirection === "up" && styles.variationUpText,
+                    variationDirection === "down" && styles.variationDownText,
+                  ]}
+                >
+                  {Math.abs(variationPercent)}%
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {hasEstimatedBill && (
+            <View style={styles.estimatedContainer}>
+              <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+              <Text style={styles.estimatedLabel}>
+                Proyección próximo período:{" "}
+                <Text style={styles.estimatedAmount}>
+                  ${nextPeriodCLP.toLocaleString("es-CL")}
+                </Text>
+              </Text>
+            </View>
+          )}
+
+          {currentMonth?.categoryBreakdown && (
+            <View style={styles.categoryContainer}>
+              {Object.entries(currentMonth.categoryBreakdown)
+                .sort(([, a], [, b]) => b.CLP - a.CLP)
+                .slice(0, 3)
+                .map(([category, amounts]) => (
+                  <View key={category} style={styles.categoryRow}>
+                    <Text style={styles.categoryName} numberOfLines={1}>
+                      {category}
+                    </Text>
+                    <Text style={styles.categoryAmount}>
+                      ${amounts.CLP.toLocaleString("es-CL")}
+                    </Text>
+                  </View>
+                ))}
+            </View>
+          )}
+        </>
+      ) : (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyIconWrap}>
+            <Ionicons name="card-outline" size={24} color={colors.accent} />
+          </View>
+          <View style={styles.emptyTextBlock}>
+            <Text style={styles.emptyTitle}>
+              Sin gastos en {monthDisplayName}
+            </Text>
+            <Text style={styles.emptySubtitle}>
+              Importe sus movimientos para ver el resumen del mes aquí
             </Text>
           </View>
         </View>
       )}
 
-      {/* Estimated bill indicator */}
-      {hasEstimatedBill && (
-        <View style={styles.estimatedContainer}>
-          <Ionicons name="calendar-outline" size={14} color="#6C757D" />
-          <Text style={styles.estimatedLabel}>
-            Proyección próximo período:{" "}
-            <Text style={styles.estimatedAmount}>
-              ${nextPeriodCLP.toLocaleString("es-CL")}
-            </Text>
-          </Text>
-        </View>
-      )}
-
-      {/* Category breakdown */}
-      {currentMonth?.categoryBreakdown && (
-        <View style={styles.categoryContainer}>
-          {Object.entries(currentMonth.categoryBreakdown)
-            .sort(([, a], [, b]) => b.CLP - a.CLP)
-            .slice(0, 3)
-            .map(([category, amounts]) => (
-              <View key={category} style={styles.categoryRow}>
-                <Text style={styles.categoryName} numberOfLines={1}>
-                  {category}
-                </Text>
-                <Text style={styles.categoryAmount}>
-                  ${amounts.CLP.toLocaleString("es-CL")}
-                </Text>
-              </View>
-            ))}
-        </View>
-      )}
-
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Ver detalle</Text>
-        <Ionicons name="chevron-forward" size={16} color="#007BFF" />
+        <Text style={styles.footerText}>
+          {hasData ? "Ver detalle" : "Ir a movimientos"}
+        </Text>
+        <Ionicons name="chevron-forward" size={16} color={colors.accent} />
       </View>
     </TouchableOpacity>
   );
@@ -201,16 +203,10 @@ const MonthSummaryCardComponent = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    ...glassSurface(false),
     padding: 16,
     marginTop: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
+  } as any,
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -219,7 +215,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
   },
   totalContainer: {
     alignItems: "flex-end",
@@ -227,11 +223,11 @@ const styles = StyleSheet.create({
   totalCLP: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#212529",
+    color: colors.textPrimary,
   },
   totalUSD: {
     fontSize: 14,
-    color: "#007BFF",
+    color: colors.accent,
     fontWeight: "500",
   },
   variationRow: {
@@ -242,7 +238,7 @@ const styles = StyleSheet.create({
   },
   variationLabel: {
     fontSize: 12,
-    color: "#6C757D",
+    color: colors.textMuted,
   },
   variationBadge: {
     flexDirection: "row",
@@ -250,25 +246,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.borderLight,
     gap: 2,
   },
   variationUp: {
-    backgroundColor: "#FFEBEE",
+    backgroundColor: "rgba(220, 38, 38, 0.12)",
   },
   variationDown: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: "rgba(5, 150, 105, 0.12)",
   },
   variationPercent: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6C757D",
+    color: colors.textMuted,
   },
   variationUpText: {
-    color: "#DC3545",
+    color: colors.destructive,
   },
   variationDownText: {
-    color: "#28A745",
+    color: colors.success,
   },
   estimatedContainer: {
     flexDirection: "row",
@@ -277,21 +273,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
   estimatedLabel: {
     fontSize: 12,
-    color: "#6C757D",
+    color: colors.textMuted,
   },
   estimatedAmount: {
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
   },
   categoryContainer: {
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
   categoryRow: {
     flexDirection: "row",
@@ -300,13 +296,41 @@ const styles = StyleSheet.create({
   },
   categoryName: {
     fontSize: 13,
-    color: "#495057",
+    color: colors.textSecondary,
     flex: 1,
   },
   categoryAmount: {
     fontSize: 13,
     fontWeight: "500",
-    color: "#212529",
+    color: colors.textPrimary,
+  },
+  emptyState: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 4,
+  },
+  emptyIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyTextBlock: {
+    flex: 1,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    marginBottom: 2,
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 17,
   },
   footer: {
     flexDirection: "row",
@@ -316,14 +340,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
   footerText: {
     fontSize: 13,
-    color: "#007BFF",
+    color: colors.accent,
     fontWeight: "500",
   },
 });
 
-// Memoize to prevent unnecessary re-renders
 export default memo(MonthSummaryCardComponent);
