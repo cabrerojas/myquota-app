@@ -31,6 +31,8 @@ import FinancialHealthIndicator from "../components/FinancialHealthIndicator";
 import { useDebtSummary } from "../services/statsApi";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import DashboardSkeleton from "../components/DashboardSkeleton";
+import EmptyDashboardState from "../components/EmptyDashboardState";
+import FirstImportPrompt from "../components/FirstImportPrompt";
 import {
   configureNotificationHandler,
   setupAndroidChannel,
@@ -203,6 +205,27 @@ export default function DashboardScreen() {
     );
   }
 
+  // No cards yet → show unified empty state
+  if (creditCards.length === 0) {
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isPullRefreshing}
+            onRefresh={handlePullRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+          />
+        }
+      >
+        <EmptyDashboardState userName={userName} />
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -248,20 +271,51 @@ export default function DashboardScreen() {
       )}
 
       {selectedCardId && (
-        <TouchableOpacity
-          style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
-          onPress={handleImportTransactions}
-          disabled={isRefreshing}
-        >
-          {isRefreshing ? (
-            <ActivityIndicator size="small" color={colors.accent} />
+        <>
+          {/*
+           * First-time user with card but no data yet:
+           * Show a cohesive import prompt instead of scattered empty cards.
+           * Once they import, the switches flip and normal dashboard renders.
+           */}
+          {isLoadingTransactions === false && transactions.length === 0 ? (
+            <FirstImportPrompt
+              onImport={handleImportTransactions}
+              isImporting={isRefreshing}
+              cardCount={creditCards.length}
+            />
           ) : (
-            <Ionicons name="sync-outline" size={16} color={colors.accent} />
+            <>
+              {/* Data exists — show normal dashboard components */}
+              <TouchableOpacity
+                style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
+                onPress={handleImportTransactions}
+                disabled={isRefreshing}
+              >
+                {isRefreshing ? (
+                  <ActivityIndicator size="small" color={colors.accent} />
+                ) : (
+                  <Ionicons name="sync-outline" size={16} color={colors.accent} />
+                )}
+                <Text style={styles.importButtonText}>
+                  {isRefreshing ? "Sincronizando..." : "Sincronizar movimientos"}
+                </Text>
+              </TouchableOpacity>
+
+              <MonthSummaryCard
+                creditCardId={selectedCardId}
+                nextPeriodCLP={debtSummary?.nextMonthCLP}
+                nextPeriodUSD={debtSummary?.nextMonthUSD}
+              />
+
+              <DebtIndicatorCard
+                refreshKey={refreshKey}
+                summary={debtSummary ?? undefined}
+              />
+
+              <MonthlyStats creditCardId={selectedCardId} />
+            </>
           )}
-          <Text style={styles.importButtonText}>
-            {isRefreshing ? "Sincronizando..." : "Sincronizar movimientos"}
-          </Text>
-        </TouchableOpacity>
+        </>
       )}
 
       {uncategorizedCount > 0 && (
@@ -298,23 +352,6 @@ export default function DashboardScreen() {
         </TouchableOpacity>
       )}
 
-      {selectedCardId && (
-        <MonthSummaryCard
-          creditCardId={selectedCardId}
-          nextPeriodCLP={debtSummary?.nextMonthCLP}
-          nextPeriodUSD={debtSummary?.nextMonthUSD}
-        />
-      )}
-
-      <DebtIndicatorCard
-        refreshKey={refreshKey}
-        summary={debtSummary ?? undefined}
-      />
-
-      {selectedCardId && (
-        <MonthlyStats creditCardId={selectedCardId} />
-      )}
-
       <TouchableOpacity
         style={styles.sectionHeader}
         onPress={() => router.push("/(drawer)/transactions")}
@@ -333,8 +370,20 @@ export default function DashboardScreen() {
         />
       ) : transactions.length === 0 ? (
         <View style={styles.emptyTransactions}>
-          <Ionicons name="receipt-outline" size={40} color={colors.textMuted} />
-          <Text style={styles.emptyText}>No hay transacciones aún</Text>
+          <View style={styles.emptyTxIconWrap}>
+            <Ionicons name="receipt-outline" size={28} color={colors.textMuted} />
+          </View>
+          <Text style={styles.emptyTxTitle}>Sin movimientos recientes</Text>
+          <Text style={styles.emptyTxBody}>
+            Usa "Sincronizar movimientos" para importar tus gastos bancarios.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyTxCta}
+            onPress={handleImportTransactions}
+          >
+            <Ionicons name="sync-outline" size={14} color={colors.accent} />
+            <Text style={styles.emptyTxCtaText}>Sincronizar ahora</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.transactionsContainer}>
@@ -497,13 +546,52 @@ const styles = StyleSheet.create({
   negative: { color: colors.destructive, fontSize: 15, fontWeight: "bold" },
   emptyTransactions: {
     alignItems: "center",
-    paddingVertical: 30,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
+    gap: 8,
   },
-  emptyText: { color: colors.textMuted, marginTop: 8, fontSize: 14 },
+  emptyTxIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  emptyTxTitle: {
+    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  emptyTxBody: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 18,
+    maxWidth: 260,
+  },
+  emptyTxCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(59,130,246,0.3)",
+    backgroundColor: "rgba(59,130,246,0.08)",
+  },
+  emptyTxCtaText: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "600",
+  },
   buttonDisabled: { opacity: 0.6 },
   importButton: {
     flexDirection: "row",
