@@ -1,7 +1,7 @@
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
@@ -22,47 +22,50 @@ import {
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { colors } from "@/shared/theme/colors";
+import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 
 type ChartTab = "monthly" | "categories" | "usd";
 const ALL_PERIODS = "__all__";
 
-const screenWidth = Dimensions.get("window").width - 32;
+const screenWidth = Dimensions.get("window").width - 48;
 
 const CHART_COLORS = [
-  "#007BFF",
-  "#DC3545",
-  "#28A745",
-  "#FFC107",
-  "#17A2B8",
-  "#6F42C1",
-  "#FD7E14",
-  "#20C997",
-  "#E83E8C",
-  "#6C757D",
-  "#0056B3",
-  "#C82333",
+  colors.accent,
+  colors.destructive,
+  colors.success,
+  colors.warning,
+  "#06B6D4",
+  "#8B5CF6",
+  "#F97316",
+  "#14B8A6",
+  "#EC4899",
+  "#6B7280",
+  "#2563EB",
+  "#B91C1C",
 ];
 
 const chartConfig = {
-  backgroundColor: "#fff",
-  backgroundGradientFrom: "#fff",
-  backgroundGradientTo: "#fff",
+  backgroundColor: colors.surface,
+  backgroundGradientFrom: colors.surface,
+  backgroundGradientTo: colors.surface,
   decimalCount: 0,
-  color: (opacity = 1) => `rgba(0, 123, 255, ${opacity})`,
-  labelColor: () => "#868E96",
+  color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
+  labelColor: () => colors.textMuted,
   barPercentage: 0.6,
   propsForLabels: {
     fontSize: 11,
+    fill: colors.textMuted,
   },
   propsForBackgroundLines: {
     strokeDasharray: "4 4",
-    stroke: "#E9ECEF",
+    stroke: colors.border,
   },
 };
 
 const usdChartConfig = {
   ...chartConfig,
-  color: (opacity = 1) => `rgba(40, 167, 69, ${opacity})`,
+  color: (opacity = 1) => `rgba(5, 150, 105, ${opacity})`,
 };
 
 export default function ChartsScreen() {
@@ -76,7 +79,6 @@ export default function ChartsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<ChartTab>("monthly");
 
-  // Detect the current billing period (today falls between startDate and endDate)
   const detectCurrentPeriod = useCallback(
     (periods: BillingPeriod[]): string => {
       const now = Date.now();
@@ -85,7 +87,6 @@ export default function ChartsScreen() {
         const end = new Date(p.endDate).getTime();
         return now >= start && now <= end;
       });
-      // If found, use its month; otherwise fall back to the most recent period
       if (current) return current.month;
       const sorted = [...periods].sort(
         (a, b) =>
@@ -114,7 +115,6 @@ export default function ChartsScreen() {
       ]);
       setStats(data);
       const periods = periodsResponse.items;
-      // Sort periods chronologically (oldest → newest)
       const sorted = [...periods].sort(
         (a, b) =>
           new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
@@ -140,15 +140,13 @@ export default function ChartsScreen() {
     setRefreshing(false);
   };
 
-  // ── Derived data helpers ────────────────────────────────────────────────────
+  // ── Derived data ─────────────────────────────────────────────────────────
 
-  // The MonthlyStat entry for the selected billing period (or null if "Todos")
   const selectedStat: MonthlyStat | null =
     selectedPeriodMonth === ALL_PERIODS
       ? null
       : (stats.find((s) => s.month === selectedPeriodMonth) ?? null);
 
-  // Stats to use for bar charts (always all periods for trend context)
   const getBarChartData = () => {
     const last6 = stats.slice(-6);
     return {
@@ -165,11 +163,9 @@ export default function ChartsScreen() {
     };
   };
 
-  // Pie: use selected period's breakdown, or merge all periods when "Todos"
   const getPieChartData = () => {
     const merged: { [cat: string]: number } = {};
     const source = selectedStat ? [selectedStat] : stats;
-
     source.forEach((s) => {
       if (s.categoryBreakdown) {
         Object.entries(s.categoryBreakdown).forEach(([cat, amounts]) => {
@@ -178,29 +174,28 @@ export default function ChartsScreen() {
         });
       }
     });
-
     const entries = Object.entries(merged).sort((a, b) => b[1] - a[1]);
     const top = entries.slice(0, 8);
     const othersTotal = entries.slice(8).reduce((sum, [, v]) => sum + v, 0);
     if (othersTotal > 0) top.push(["Otros", othersTotal]);
-
     return top.map(([name, amount], idx) => ({
       name: name.length > 15 ? name.substring(0, 14) + "…" : name,
       fullName: name,
       amount: Math.round(amount),
       color: CHART_COLORS[idx % CHART_COLORS.length],
-      legendFontColor: "#495057",
+      legendFontColor: colors.textMuted,
       legendFontSize: 11,
     }));
   };
 
-  // Summary: selected period vs all-time
   const getSummaryCards = () => {
     const totalCLP = stats.reduce((sum, s) => sum + s.totalCLP, 0);
     const totalUSD = stats.reduce((sum, s) => sum + s.totalUSD, 0);
     const avgCLP = stats.length > 0 ? Math.round(totalCLP / stats.length) : 0;
     const avgUSD =
-      stats.length > 0 ? Math.round((totalUSD / stats.length) * 100) / 100 : 0;
+      stats.length > 0
+        ? Math.round((totalUSD / stats.length) * 100) / 100
+        : 0;
     if (selectedStat) {
       return {
         label1: "Gasto del período",
@@ -235,7 +230,7 @@ export default function ChartsScreen() {
   if (loading && creditCards.length === 0) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -246,107 +241,86 @@ export default function ChartsScreen() {
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+        />
       }
     >
-      {/* ── Card Selector ─────────────────────────────────────────── */}
+      {/* ── Card Selector ───────────────────────────────────── */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ marginBottom: 12 }}
       >
-        {creditCards.map((card) => (
-          <TouchableOpacity
-            key={card.id}
-            style={[
-              styles.cardChip,
-              selectedCardId === card.id && styles.cardChipActive,
-            ]}
-            onPress={() => setSelectedCardId(card.id)}
-          >
-            <Ionicons
-              name="card-outline"
-              size={16}
-              color={selectedCardId === card.id ? "#fff" : "#495057"}
-            />
-            <Text
+        {creditCards.map((card) => {
+          const isSelected = selectedCardId === card.id;
+          return (
+            <Pressable
+              key={card.id}
+              onPress={() => setSelectedCardId(card.id)}
               style={[
-                styles.cardChipText,
-                selectedCardId === card.id && styles.cardChipTextActive,
+                styles.cardChip,
+                isSelected && styles.cardChipActive,
               ]}
+              accessibilityLabel={card.cardType}
+              accessibilityRole="button"
             >
-              {card.cardType} •{card.cardLastDigits}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Ionicons
+                name="card-outline"
+                size={16}
+                color={isSelected ? colors.textPrimary : colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.cardChipText,
+                  isSelected && styles.cardChipTextActive,
+                ]}
+              >
+                {card.cardType} •{card.cardLastDigits}
+              </Text>
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
-      {/* ── Billing Period Selector ────────────────────────────────── */}
+      {/* ── Billing Period Selector ─────────────────────────── */}
       {!loading && billingPeriods.length > 0 && (
-        <View style={styles.periodSelectorWrapper}>
-          <Text style={styles.periodSelectorLabel}>Período de facturación</Text>
+        <View style={styles.periodCard}>
+          <Text style={styles.periodLabel}>Período de facturación</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ marginTop: 6 }}
+            style={{ marginTop: 8 }}
           >
-            {/* "Todos" chip */}
-            <TouchableOpacity
-              style={[
-                styles.periodChip,
-                selectedPeriodMonth === ALL_PERIODS && styles.periodChipActive,
-              ]}
+            <PeriodChip
+              label="Todos"
+              isActive={selectedPeriodMonth === ALL_PERIODS}
               onPress={() => setSelectedPeriodMonth(ALL_PERIODS)}
-            >
-              <Text
-                style={[
-                  styles.periodChipText,
-                  selectedPeriodMonth === ALL_PERIODS &&
-                    styles.periodChipTextActive,
-                ]}
-              >
-                Todos
-              </Text>
-            </TouchableOpacity>
-
-            {/* One chip per billing period (newest last = scroll right for latest) */}
+            />
             {[...billingPeriods].reverse().map((p) => {
               const isSelected = selectedPeriodMonth === p.month;
-              // Detect if this is the "current" period
               const now = Date.now();
               const isCurrent =
                 now >= new Date(p.startDate).getTime() &&
                 now <= new Date(p.endDate).getTime();
               return (
-                <TouchableOpacity
+                <PeriodChip
                   key={p.id}
-                  style={[
-                    styles.periodChip,
-                    isSelected && styles.periodChipActive,
-                    isCurrent &&
-                      !isSelected &&
-                      styles.periodChipCurrentUnselected,
-                  ]}
+                  label={p.month}
+                  isActive={isSelected}
+                  isCurrent={isCurrent && !isSelected}
                   onPress={() => setSelectedPeriodMonth(p.month)}
-                >
-                  {isCurrent && <View style={styles.periodChipDot} />}
-                  <Text
-                    style={[
-                      styles.periodChipText,
-                      isSelected && styles.periodChipTextActive,
-                      isCurrent && !isSelected && styles.periodChipTextCurrent,
-                    ]}
-                  >
-                    {p.month}
-                  </Text>
-                </TouchableOpacity>
+                />
               );
             })}
           </ScrollView>
         </View>
       )}
 
-      {/* ── Summary Cards ─────────────────────────────────────────── */}
+      {/* ── Summary Cards ───────────────────────────────────── */}
       {!loading && stats.length > 0 && (
         <View style={styles.summaryRow}>
           <View style={styles.summaryCard}>
@@ -380,7 +354,7 @@ export default function ChartsScreen() {
 
       {maxMonth && !loading && selectedPeriodMonth === ALL_PERIODS && (
         <View style={styles.highlightCard}>
-          <Ionicons name="trending-up" size={18} color="#DC3545" />
+          <Ionicons name="trending-up" size={18} color={colors.accent} />
           <Text style={styles.highlightText}>
             Mes más alto:{" "}
             <Text style={styles.highlightBold}>{maxMonth.month}</Text>
@@ -390,7 +364,7 @@ export default function ChartsScreen() {
         </View>
       )}
 
-      {/* ── Tab Selector ──────────────────────────────────────────── */}
+      {/* ── Tab Selector ─────────────────────────────────────── */}
       <View style={styles.tabRow}>
         {[
           {
@@ -408,43 +382,62 @@ export default function ChartsScreen() {
             label: "Categorías",
             icon: "pie-chart-outline" as const,
           },
-        ].map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-          >
-            <Ionicons
-              name={tab.icon}
-              size={16}
-              color={activeTab === tab.key ? "#fff" : "#495057"}
-            />
-            <Text
+        ].map((tab) => {
+          const isActive = activeTab === tab.key;
+          return (
+            <Pressable
+              key={tab.key}
+              onPress={() => setActiveTab(tab.key)}
               style={[
-                styles.tabText,
-                activeTab === tab.key && styles.tabTextActive,
+                styles.tab,
+                isActive && styles.tabActive,
               ]}
+              accessibilityLabel={tab.label}
+              accessibilityRole="tab"
             >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Ionicons
+                name={tab.icon}
+                size={16}
+                color={isActive ? colors.textPrimary : colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  isActive && styles.tabTextActive,
+                ]}
+              >
+                {tab.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
 
-      {/* ── Charts ────────────────────────────────────────────────── */}
+      {/* ── Charts ──────────────────────────────────────────── */}
       {loading ? (
         <ActivityIndicator
           size="large"
-          color="#007BFF"
+          color={colors.accent}
           style={{ marginTop: 40 }}
         />
       ) : stats.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="analytics-outline" size={56} color="#CED4DA" />
+        <View style={styles.emptyCard}>
+          <View style={styles.emptyIconWrap}>
+            <Ionicons name="analytics-outline" size={36} color={colors.textMuted} />
+          </View>
           <Text style={styles.emptyTitle}>Sin datos suficientes</Text>
           <Text style={styles.emptySubtitle}>
-            Importa transacciones para ver tus gráficos
+            Importá transacciones para ver tus gráficos
           </Text>
+          <Pressable
+            style={styles.emptyCta}
+            onPress={() => {}}
+            accessibilityLabel="Sincronizar movimientos"
+            accessibilityRole="button"
+          >
+            <Ionicons name="sync-outline" size={14} color={colors.accent} />
+            <Text style={styles.emptyCtaText}>Sincronizar ahora</Text>
+          </Pressable>
         </View>
       ) : (
         <View style={styles.chartCard}>
@@ -458,7 +451,7 @@ export default function ChartsScreen() {
               {getBarChartData().datasets[0].data.some((v) => v > 0) ? (
                 <BarChart
                   data={getBarChartData()}
-                  width={screenWidth - 32}
+                  width={screenWidth - 48}
                   height={220}
                   yAxisLabel="$"
                   yAxisSuffix=""
@@ -466,13 +459,14 @@ export default function ChartsScreen() {
                   style={styles.chart}
                   fromZero
                   showValuesOnTopOfBars
+                  withVerticalLabels
+                  withHorizontalLabels
                 />
               ) : (
                 <Text style={styles.noDataText}>
                   No hay gastos CLP en este período
                 </Text>
               )}
-
               <View style={styles.breakdownContainer}>
                 {[...stats]
                   .reverse()
@@ -482,18 +476,19 @@ export default function ChartsScreen() {
                       selectedPeriodMonth !== ALL_PERIODS &&
                       s.month === selectedPeriodMonth;
                     return (
-                      <TouchableOpacity
+                      <Pressable
                         key={s.month}
+                        onPress={() => setSelectedPeriodMonth(s.month)}
                         style={[
                           styles.breakdownRow,
                           isSelected && styles.breakdownRowSelected,
                         ]}
-                        onPress={() => setSelectedPeriodMonth(s.month)}
-                        activeOpacity={0.7}
+                        accessibilityLabel={s.month}
+                        accessibilityRole="button"
                       >
                         <View style={styles.breakdownMonthRow}>
                           {isSelected && (
-                            <View style={styles.breakdownSelectedDot} />
+                            <View style={styles.breakdownDot} />
                           )}
                           <Text
                             style={[
@@ -506,13 +501,13 @@ export default function ChartsScreen() {
                         </View>
                         <Text
                           style={[
-                            styles.breakdownCLP,
-                            isSelected && styles.breakdownCLPSelected,
+                            styles.breakdownAmount,
+                            isSelected && styles.breakdownAmountSelected,
                           ]}
                         >
                           {formatCLP(s.totalCLP)}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     );
                   })}
               </View>
@@ -529,7 +524,7 @@ export default function ChartsScreen() {
               {getUsdBarChartData().datasets[0].data.some((v) => v > 0) ? (
                 <BarChart
                   data={getUsdBarChartData()}
-                  width={screenWidth - 32}
+                  width={screenWidth - 48}
                   height={220}
                   yAxisLabel="US$"
                   yAxisSuffix=""
@@ -537,13 +532,14 @@ export default function ChartsScreen() {
                   style={styles.chart}
                   fromZero
                   showValuesOnTopOfBars
+                  withVerticalLabels
+                  withHorizontalLabels
                 />
               ) : (
                 <Text style={styles.noDataText}>
                   No hay gastos USD en este período
                 </Text>
               )}
-
               <View style={styles.breakdownContainer}>
                 {[...stats]
                   .reverse()
@@ -553,18 +549,19 @@ export default function ChartsScreen() {
                       selectedPeriodMonth !== ALL_PERIODS &&
                       s.month === selectedPeriodMonth;
                     return (
-                      <TouchableOpacity
+                      <Pressable
                         key={s.month}
+                        onPress={() => setSelectedPeriodMonth(s.month)}
                         style={[
                           styles.breakdownRow,
                           isSelected && styles.breakdownRowSelected,
                         ]}
-                        onPress={() => setSelectedPeriodMonth(s.month)}
-                        activeOpacity={0.7}
+                        accessibilityLabel={s.month}
+                        accessibilityRole="button"
                       >
                         <View style={styles.breakdownMonthRow}>
                           {isSelected && (
-                            <View style={styles.breakdownSelectedDot} />
+                            <View style={styles.breakdownDot} />
                           )}
                           <Text
                             style={[
@@ -577,16 +574,13 @@ export default function ChartsScreen() {
                         </View>
                         <Text
                           style={[
-                            styles.breakdownCLP,
-                            isSelected && {
-                              color: "#28A745",
-                              fontWeight: "700",
-                            },
+                            styles.breakdownUSD,
+                            isSelected && styles.breakdownUSDSelected,
                           ]}
                         >
                           US${s.totalUSD.toFixed(2)}
                         </Text>
-                      </TouchableOpacity>
+                      </Pressable>
                     );
                   })}
               </View>
@@ -605,7 +599,7 @@ export default function ChartsScreen() {
               {getPieChartData().length > 0 ? (
                 <PieChart
                   data={getPieChartData()}
-                  width={screenWidth - 32}
+                  width={screenWidth - 48}
                   height={200}
                   chartConfig={chartConfig}
                   accessor="amount"
@@ -618,7 +612,6 @@ export default function ChartsScreen() {
                   Sin categorías en este período
                 </Text>
               )}
-
               <View style={styles.categoryList}>
                 {getPieChartData().map((cat, idx) => {
                   const grandTotal = getPieChartData().reduce(
@@ -654,203 +647,313 @@ export default function ChartsScreen() {
   );
 }
 
+// ─── PeriodChip sub-component ──────────────────────────────────────────────
+
+function PeriodChip({
+  label,
+  isActive,
+  isCurrent,
+  onPress,
+}: {
+  label: string;
+  isActive: boolean;
+  isCurrent?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        chipStyles.chip,
+        isActive && chipStyles.chipActive,
+        isCurrent && chipStyles.chipCurrent,
+      ]}
+      accessibilityLabel={label}
+      accessibilityRole="button"
+    >
+      {isCurrent && <View style={chipStyles.dot} />}
+      <Text
+        style={[
+          chipStyles.chipText,
+          isActive && chipStyles.chipTextActive,
+          isCurrent && !isActive && chipStyles.chipTextCurrent,
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+const chipStyles = StyleSheet.create({
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 16,
+    marginRight: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  chipCurrent: {
+    borderColor: colors.accent,
+    borderWidth: 1.5,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.accent,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  chipTextActive: {
+    color: colors.textPrimary,
+  },
+  chipTextCurrent: {
+    color: colors.accent,
+  },
+});
+
+// ─── Main styles ─────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
-  contentContainer: { padding: 16, paddingBottom: 40 },
+  container: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  contentContainer: {
+    padding: 24,
+    paddingBottom: 40,
+  },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
 
-  // ── Card chips ──────────────────────────────────────────────────
+  // ── Card chips ─────────────────────────────────────────
   cardChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
-  cardChipActive: { backgroundColor: "#007BFF", borderColor: "#007BFF" },
-  cardChipText: { fontSize: 13, fontWeight: "600", color: "#495057" },
-  cardChipTextActive: { color: "#fff" },
-
-  // ── Billing period selector ──────────────────────────────────────
-  periodSelectorWrapper: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
+  cardChipActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
-  periodSelectorLabel: {
-    fontSize: 10,
+  cardChipText: {
+    fontSize: 13,
     fontWeight: "600",
-    color: "#868E96",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: colors.textSecondary,
   },
-  periodChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: "#F8F9FA",
-    borderRadius: 16,
-    marginRight: 6,
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
+  cardChipTextActive: {
+    color: colors.textPrimary,
   },
-  periodChipActive: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
-  },
-  periodChipCurrentUnselected: {
-    borderColor: "#007BFF",
-    borderWidth: 1.5,
-  },
-  periodChipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#007BFF",
-  },
-  periodChipText: { fontSize: 12, fontWeight: "600", color: "#495057" },
-  periodChipTextActive: { color: "#fff" },
-  periodChipTextCurrent: { color: "#007BFF" },
 
-  // ── Summary ─────────────────────────────────────────────────────
-  summaryRow: { flexDirection: "row", gap: 10, marginBottom: 10 },
+  // ── Period selector ────────────────────────────────────
+  periodCard: {
+    ...glassSurface(false),
+    padding: 14,
+    marginBottom: 14,
+  },
+  periodLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+  },
+
+  // ── Summary ────────────────────────────────────────────
+  summaryRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 10,
+  },
   summaryCard: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    ...glassSurface(false),
     padding: 14,
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
   },
   summaryLabel: {
     fontSize: 11,
-    color: "#868E96",
+    color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    fontWeight: "600",
   },
   summaryValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#212529",
+    color: colors.textPrimary,
     marginTop: 4,
   },
   summaryUsd: {
     fontSize: 12,
-    color: "#28A745",
+    color: colors.success,
     fontWeight: "600",
     marginTop: 2,
   },
-  summarySmall: { fontSize: 14, fontWeight: "400", color: "#868E96" },
 
+  // ── Highlight ─────────────────────────────────────────
   highlightCard: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#FFF3F3",
+    backgroundColor: "rgba(59,130,246,0.06)",
     borderRadius: 10,
     padding: 12,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: "#FFCDD2",
+    borderColor: "rgba(59,130,246,0.15)",
   },
-  highlightText: { fontSize: 13, color: "#495057", flex: 1 },
-  highlightBold: { fontWeight: "700" },
+  highlightText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  highlightBold: {
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
 
-  // ── Tabs ────────────────────────────────────────────────────────
-  tabRow: { flexDirection: "row", gap: 6, marginBottom: 14 },
+  // ── Tabs ──────────────────────────────────────────────
+  tabRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginBottom: 14,
+  },
   tab: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
-  tabActive: { backgroundColor: "#007BFF", borderColor: "#007BFF" },
-  tabText: { fontSize: 12, fontWeight: "600", color: "#495057" },
-  tabTextActive: { color: "#fff" },
+  tabActive: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  tabText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  tabTextActive: {
+    color: colors.textPrimary,
+  },
 
-  // ── Chart card ──────────────────────────────────────────────────
+  // ── Chart card ────────────────────────────────────────
   chartCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
+    ...glassSurface(false),
+    padding: 20,
   },
-  chartTitle: { fontSize: 16, fontWeight: "700", color: "#212529" },
+  chartTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
   chartSubtitle: {
     fontSize: 12,
-    color: "#868E96",
-    marginTop: 2,
-    marginBottom: 14,
+    color: colors.textMuted,
+    marginTop: 4,
+    marginBottom: 16,
   },
-  chart: { borderRadius: 10, marginVertical: 8 },
+  chart: {
+    borderRadius: 10,
+    marginVertical: 8,
+  },
   noDataText: {
     textAlign: "center",
-    color: "#868E96",
+    color: colors.textMuted,
     paddingVertical: 30,
     fontSize: 14,
   },
 
-  // ── Period breakdown list ────────────────────────────────────────
+  // ── Period breakdown ──────────────────────────────────
   breakdownContainer: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
     paddingTop: 8,
   },
   breakdownRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 9,
+    paddingVertical: 10,
     paddingHorizontal: 8,
     borderRadius: 8,
     marginVertical: 1,
   },
   breakdownRowSelected: {
-    backgroundColor: "#EBF4FF",
+    backgroundColor: "rgba(59,130,246,0.08)",
   },
   breakdownMonthRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  breakdownSelectedDot: {
+  breakdownDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#007BFF",
+    backgroundColor: colors.accent,
   },
-  breakdownMonth: { fontSize: 13, fontWeight: "500", color: "#495057" },
-  breakdownMonthSelected: { fontWeight: "700", color: "#212529" },
-  breakdownCLP: { fontSize: 13, fontWeight: "600", color: "#007BFF" },
-  breakdownCLPSelected: { fontWeight: "700" },
+  breakdownMonth: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textSecondary,
+  },
+  breakdownMonthSelected: {
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  breakdownAmount: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.accent,
+  },
+  breakdownAmountSelected: {
+    fontWeight: "700",
+  },
+  breakdownUSD: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.success,
+  },
+  breakdownUSDSelected: {
+    fontWeight: "700",
+  },
 
-  // ── Category list ────────────────────────────────────────────────
+  // ── Category list ─────────────────────────────────────
   categoryList: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
     paddingTop: 12,
   },
   categoryRow: {
@@ -858,30 +961,75 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 7,
   },
-  categoryDot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
-  categoryName: { flex: 1, fontSize: 13, color: "#495057" },
+  categoryDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  categoryName: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   categoryPct: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#868E96",
+    color: colors.textMuted,
     marginRight: 10,
     minWidth: 32,
     textAlign: "right",
   },
-  categoryAmount: { fontSize: 13, fontWeight: "700", color: "#212529" },
+  categoryAmount: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
 
-  // ── Empty ────────────────────────────────────────────────────────
-  emptyContainer: { alignItems: "center", paddingVertical: 50 },
+  // ── Empty state ───────────────────────────────────────
+  emptyCard: {
+    ...glassSurface(false),
+    alignItems: "center",
+    paddingVertical: 50,
+    paddingHorizontal: 24,
+    gap: 8,
+  },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   emptyTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#495057",
-    marginTop: 12,
+    color: colors.textSecondary,
+    marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#868E96",
-    marginTop: 6,
+    color: colors.textMuted,
     textAlign: "center",
+    lineHeight: 19,
+  },
+  emptyCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(59,130,246,0.3)",
+    backgroundColor: "rgba(59,130,246,0.08)",
+  },
+  emptyCtaText: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "600",
   },
 });
