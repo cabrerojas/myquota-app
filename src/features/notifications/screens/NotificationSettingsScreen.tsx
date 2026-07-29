@@ -1,27 +1,15 @@
 import { useState, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, Switch, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import {
-  NotificationSettings,
-  getNotificationSettings,
-  saveNotificationSettings,
-  requestNotificationPermissions,
-  scheduleCardNotifications,
-  cancelAllScheduledNotifications,
-  getScheduledNotifications,
-  CreditCardForNotification,
+  NotificationSettings, getNotificationSettings, saveNotificationSettings,
+  requestNotificationPermissions, scheduleCardNotifications,
+  cancelAllScheduledNotifications, getScheduledNotifications, CreditCardForNotification,
 } from "@/features/notifications/services/notificationService";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import { colors } from "@/shared/theme/colors";
+import { glassSurface } from "@/shared/theme/effects";
 
 const DAYS_OPTIONS = [1, 2, 3, 5];
 const HOUR_OPTIONS = [7, 8, 9, 10, 12, 18, 20];
@@ -38,99 +26,69 @@ export default function NotificationSettingsScreen() {
       setSettings(s);
       const scheduled = await getScheduledNotifications();
       setScheduledCount(scheduled.length);
-    } catch {
-      Alert.alert("Error", "No se pudieron cargar las preferencias");
-    } finally {
-      setLoading(false);
-    }
+    } catch { Alert.alert("Error", "No se pudieron cargar las preferencias"); }
+    finally { setLoading(false); }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSettings();
-    }, []),
-  );
+  useFocusEffect(useCallback(() => { loadSettings(); }, []));
 
   const handleSave = async () => {
     if (!settings) return;
     setSaving(true);
     try {
       await saveNotificationSettings(settings);
-
       if (settings.enabled) {
         const hasPermission = await requestNotificationPermissions();
         if (!hasPermission) {
-          Alert.alert(
-            "Permisos denegados",
-            "Debes habilitar las notificaciones en la configuración de tu dispositivo.",
-          );
-          setSaving(false);
-          return;
+          Alert.alert("Permisos denegados", "Habilitá las notificaciones en la configuración.");
+          setSaving(false); return;
         }
-
-        const cardsResponse = await getCreditCards();
-        const cards: CreditCardForNotification[] = cardsResponse.items;
+        const cardsR = await getCreditCards();
+        const cards: CreditCardForNotification[] = cardsR.items;
         const count = await scheduleCardNotifications(cards);
         setScheduledCount(count);
-        Alert.alert(
-          "Notificaciones programadas",
-          `Se programaron ${count} recordatorio${count !== 1 ? "s" : ""} para tus tarjetas.`,
-        );
+        Alert.alert("Programadas", `${count} recordatorio${count !== 1 ? "s" : ""}.`);
       } else {
         await cancelAllScheduledNotifications();
         setScheduledCount(0);
-        Alert.alert(
-          "Notificaciones desactivadas",
-          "Se cancelaron todos los recordatorios.",
-        );
+        Alert.alert("Desactivadas", "Se cancelaron los recordatorios.");
       }
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "No se pudieron guardar las preferencias";
-      Alert.alert("Error", message);
-    } finally {
-      setSaving(false);
-    }
+      Alert.alert("Error", err instanceof Error ? err.message : "No se pudo guardar");
+    } finally { setSaving(false); }
   };
 
-  const updateSetting = <K extends keyof NotificationSettings>(
-    key: K,
-    value: NotificationSettings[K],
-  ) => {
-    setSettings((prev) => (prev ? { ...prev, [key]: value } : prev));
+  const updateSetting = <K extends keyof NotificationSettings>(key: K, value: NotificationSettings[K]) => {
+    setSettings((prev) => prev ? { ...prev, [key]: value } : prev);
   };
 
   if (loading || !settings) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007BFF" />
-      </View>
-    );
+    return <View style={s.center}><ActivityIndicator size="large" color={colors.accent} /></View>;
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Enable / Disable */}
-      <View style={styles.card}>
-        <View style={styles.switchRow}>
-          <View style={styles.switchInfo}>
-            <Ionicons name="notifications-outline" size={22} color="#007BFF" />
-            <Text style={styles.switchLabel}>Activar recordatorios</Text>
+    <ScrollView style={s.container} contentContainerStyle={s.content}>
+      {/* Enable toggle */}
+      <View style={[s.card, settings.enabled && s.cardActive]}>
+        <View style={s.switchRow}>
+          <View style={s.switchInfo}>
+            <View style={s.switchIconBox}>
+              <Ionicons name="notifications-outline" size={18} color={colors.accent} />
+            </View>
+            <View>
+              <Text style={s.switchLabel}>Recordatorios</Text>
+              <Text style={s.switchHint}>
+                {settings.enabled ? "Activados" : "Desactivados"}
+              </Text>
+            </View>
           </View>
-          <Switch
-            value={settings.enabled}
-            onValueChange={(v) => updateSetting("enabled", v)}
-            trackColor={{ false: "#DEE2E6", true: "#007BFF" }}
-            thumbColor="#fff"
-          />
+          <Switch value={settings.enabled} onValueChange={(v) => updateSetting("enabled", v)}
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor={settings.enabled ? colors.textPrimary : colors.textMuted} />
         </View>
         {scheduledCount > 0 && (
-          <Text style={styles.scheduledInfo}>
-            {scheduledCount} notificación{scheduledCount !== 1 ? "es" : ""}{" "}
-            programada
-            {scheduledCount !== 1 ? "s" : ""}
+          <Text style={s.scheduledInfo}>
+            {scheduledCount} notificación{scheduledCount !== 1 ? "es" : ""} programada{scheduledCount !== 1 ? "s" : ""}
           </Text>
         )}
       </View>
@@ -138,204 +96,116 @@ export default function NotificationSettingsScreen() {
       {settings.enabled && (
         <>
           {/* Days before closing */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>
-              <Ionicons name="calendar-outline" size={16} color="#495057" />{" "}
-              Días antes del cierre
+          <View style={s.cardOption}>
+            <Text style={s.optionTitle}>
+              <Ionicons name="calendar-outline" size={15} color={colors.textSecondary} /> Días antes del cierre
             </Text>
-            <Text style={styles.sectionDesc}>
-              Recibir aviso antes de que cierre el período de facturación
-            </Text>
-            <View style={styles.chipRow}>
+            <Text style={s.optionDesc}>Recibir aviso antes del cierre del período</Text>
+            <View style={s.chipRow}>
               {DAYS_OPTIONS.map((d) => (
-                <TouchableOpacity
-                  key={d}
-                  style={[
-                    styles.chip,
-                    settings.daysBeforeClosing === d && styles.chipSelected,
-                  ]}
-                  onPress={() => updateSetting("daysBeforeClosing", d)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      settings.daysBeforeClosing === d &&
-                        styles.chipTextSelected,
-                    ]}
-                  >
-                    {d} día{d !== 1 ? "s" : ""}
-                  </Text>
-                </TouchableOpacity>
+                <OptionChip key={d} label={`${d} día${d !== 1 ? "s" : ""}`}
+                  active={settings.daysBeforeClosing === d}
+                  onPress={() => updateSetting("daysBeforeClosing", d)} />
               ))}
             </View>
           </View>
 
           {/* Days before due date */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>
-              <Ionicons name="alert-circle-outline" size={16} color="#495057" />{" "}
-              Días antes del vencimiento
+          <View style={s.cardOption}>
+            <Text style={s.optionTitle}>
+              <Ionicons name="alert-circle-outline" size={15} color={colors.textSecondary} /> Días antes del vencimiento
             </Text>
-            <Text style={styles.sectionDesc}>
-              Recibir aviso antes de la fecha de pago
-            </Text>
-            <View style={styles.chipRow}>
+            <Text style={s.optionDesc}>Recibir aviso antes de la fecha de pago</Text>
+            <View style={s.chipRow}>
               {DAYS_OPTIONS.map((d) => (
-                <TouchableOpacity
-                  key={d}
-                  style={[
-                    styles.chip,
-                    settings.daysBeforeDueDate === d && styles.chipSelected,
-                  ]}
-                  onPress={() => updateSetting("daysBeforeDueDate", d)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      settings.daysBeforeDueDate === d &&
-                        styles.chipTextSelected,
-                    ]}
-                  >
-                    {d} día{d !== 1 ? "s" : ""}
-                  </Text>
-                </TouchableOpacity>
+                <OptionChip key={d} label={`${d} día${d !== 1 ? "s" : ""}`}
+                  active={settings.daysBeforeDueDate === d}
+                  onPress={() => updateSetting("daysBeforeDueDate", d)} />
               ))}
             </View>
           </View>
 
-          {/* Notification hour */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>
-              <Ionicons name="time-outline" size={16} color="#495057" /> Hora de
-              notificación
+          {/* Hour */}
+          <View style={s.cardOption}>
+            <Text style={s.optionTitle}>
+              <Ionicons name="time-outline" size={15} color={colors.textSecondary} /> Hora de notificación
             </Text>
-            <Text style={styles.sectionDesc}>
-              ¿A qué hora quieres recibir los recordatorios?
-            </Text>
-            <View style={styles.chipRow}>
+            <Text style={s.optionDesc}>¿A qué hora querés recibirlas?</Text>
+            <View style={s.chipRow}>
               {HOUR_OPTIONS.map((h) => (
-                <TouchableOpacity
-                  key={h}
-                  style={[
-                    styles.chip,
-                    settings.notificationHour === h && styles.chipSelected,
-                  ]}
-                  onPress={() => updateSetting("notificationHour", h)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      settings.notificationHour === h &&
-                        styles.chipTextSelected,
-                    ]}
-                  >
-                    {h.toString().padStart(2, "0")}:00
-                  </Text>
-                </TouchableOpacity>
+                <OptionChip key={h} label={`${h.toString().padStart(2, "0")}:00`}
+                  active={settings.notificationHour === h}
+                  onPress={() => updateSetting("notificationHour", h)} />
               ))}
             </View>
           </View>
         </>
       )}
 
-      {/* Save Button */}
-      <TouchableOpacity
-        style={[styles.saveButton, saving && { opacity: 0.7 }]}
-        onPress={handleSave}
-        disabled={saving}
-      >
-        {saving ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <>
-            <Ionicons name="checkmark-circle" size={20} color="#fff" />
-            <Text style={styles.saveText}>Guardar y Programar</Text>
-          </>
-        )}
-      </TouchableOpacity>
+      {/* Save */}
+      <Pressable onPress={handleSave} disabled={saving}
+        style={({ pressed }) => [s.saveButton, saving && { opacity: 0.7 }, pressed && { opacity: 0.85 }]}>
+        {saving ? <ActivityIndicator color={colors.textPrimary} /> : <>
+          <Ionicons name="checkmark-circle" size={18} color={colors.textPrimary} />
+          <Text style={s.saveText}>Guardar y Programar</Text>
+        </>}
+      </Pressable>
 
-      {/* Info Box */}
-      <View style={styles.infoBox}>
-        <Ionicons name="information-circle-outline" size={18} color="#6C757D" />
-        <Text style={styles.infoText}>
-          Los recordatorios se calculan con las fechas de cierre y vencimiento
-          de tus tarjetas. Se reprograman cada vez que abres la app o guardas
-          cambios aquí.
+      {/* Info */}
+      <View style={s.infoBox}>
+        <Ionicons name="information-circle-outline" size={16} color={colors.textSubtle} />
+        <Text style={s.infoText}>
+          Los recordatorios se calculan con las fechas de cierre y vencimiento de tus tarjetas.
+          Se reprograman cada vez que abrís la app o guardás cambios.
         </Text>
       </View>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
-  content: { padding: 16, paddingBottom: 40 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+function OptionChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress}
+      style={[s.chip, active && s.chipActive]}
+      accessibilityLabel={label} accessibilityRole="radio">
+      <Text style={[s.chipText, active && s.chipTextActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: 24, paddingBottom: 40 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
+
+  card: { ...glassSurface(false), padding: 18, marginBottom: 14 },
+  cardActive: { borderColor: colors.accent, borderWidth: 1.5 },
+  cardOption: { ...glassSurface(false), padding: 16, marginBottom: 10 },
+
+  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  switchInfo: { flexDirection: "row", alignItems: "center", gap: 12 },
+  switchIconBox: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: "rgba(59,130,246,0.12)", justifyContent: "center", alignItems: "center",
   },
-  switchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  switchInfo: { flexDirection: "row", alignItems: "center", gap: 10 },
-  switchLabel: { fontSize: 16, fontWeight: "600", color: "#212529" },
-  scheduledInfo: {
-    marginTop: 8,
-    fontSize: 13,
-    color: "#28A745",
-    fontWeight: "500",
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#495057",
-    marginBottom: 4,
-  },
-  sectionDesc: { fontSize: 13, color: "#6C757D", marginBottom: 12 },
+  switchLabel: { fontSize: 16, fontWeight: "600", color: colors.textPrimary },
+  switchHint: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
+  scheduledInfo: { marginTop: 10, fontSize: 13, color: colors.success, fontWeight: "500" },
+
+  optionTitle: { fontSize: 14, fontWeight: "600", color: colors.textPrimary, marginBottom: 4 },
+  optionDesc: { fontSize: 12, color: colors.textMuted, marginBottom: 12 },
+
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#F1F3F5",
-    borderWidth: 1,
-    borderColor: "#DEE2E6",
-  },
-  chipSelected: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
-  },
-  chipText: { fontSize: 14, color: "#495057", fontWeight: "500" },
-  chipTextSelected: { color: "#fff" },
-  saveButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#007BFF",
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 6,
-    marginBottom: 16,
-  },
-  saveText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  infoBox: {
-    flexDirection: "row",
-    gap: 8,
-    backgroundColor: "#E9ECEF",
-    borderRadius: 10,
-    padding: 12,
-    alignItems: "flex-start",
-  },
-  infoText: { flex: 1, fontSize: 12, color: "#6C757D", lineHeight: 18 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: colors.border },
+  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { fontSize: 13, fontWeight: "500", color: colors.textSecondary },
+  chipTextActive: { color: colors.textPrimary },
+
+  saveButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    backgroundColor: colors.accent, borderRadius: 12, padding: 14, marginTop: 6, marginBottom: 16 },
+  saveText: { color: colors.textPrimary, fontSize: 15, fontWeight: "600" },
+  infoBox: { flexDirection: "row", gap: 8, backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 10, borderWidth: 1, borderColor: colors.border, padding: 12, alignItems: "flex-start" },
+  infoText: { flex: 1, fontSize: 12, color: colors.textSubtle, lineHeight: 18 },
 });

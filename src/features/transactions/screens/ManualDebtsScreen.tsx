@@ -3,7 +3,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   Alert,
   ActivityIndicator,
   RefreshControl,
@@ -19,6 +19,8 @@ import {
 } from "@/features/transactions/services/transactionsApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { colors } from "@/shared/theme/colors";
+import { glassSurface } from "@/shared/theme/effects";
 
 interface ManualDebtItem extends ManualTransaction {
   cardLabel: string;
@@ -47,8 +49,6 @@ export default function ManualDebtsScreen() {
           })),
         );
       }
-
-      // Sort by merchant
       allDebts.sort((a, b) => a.merchant.localeCompare(b.merchant));
       setDebts(allDebts);
     } catch (error) {
@@ -71,7 +71,7 @@ export default function ManualDebtsScreen() {
   const handleDelete = (debt: ManualDebtItem) => {
     Alert.alert(
       "Eliminar deuda",
-      `¿Eliminar "${debt.merchant}" y todas sus cuotas?\n\nEsta acción no se puede deshacer.`,
+      `¿Eliminar "${debt.merchant}" y todas sus cuotas?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -79,20 +79,11 @@ export default function ManualDebtsScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const result = await deleteManualTransaction(
-                debt.creditCardId,
-                debt.id,
-              );
-              Alert.alert(
-                "Eliminada",
-                `Se eliminaron ${result.deletedQuotas} cuotas`,
-              );
+              const result = await deleteManualTransaction(debt.creditCardId, debt.id);
+              Alert.alert("Eliminada", `Se eliminaron ${result.deletedQuotas} cuotas`);
               fetchDebts();
             } catch (error) {
-              Alert.alert(
-                "Error",
-                error instanceof Error ? error.message : "No se pudo eliminar",
-              );
+              Alert.alert("Error", error instanceof Error ? error.message : "No se pudo eliminar");
             }
           },
         },
@@ -120,7 +111,7 @@ export default function ManualDebtsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -130,18 +121,19 @@ export default function ManualDebtsScreen() {
       <FlatList
         data={debts}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={
-          debts.length === 0 ? styles.emptyList : styles.list
-        }
+        contentContainerStyle={debts.length === 0 ? styles.emptyList : styles.list}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
+            tintColor={colors.accent} colors={[colors.accent]} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={56} color="#CED4DA" />
+          <View style={styles.emptyCard}>
+            <View style={styles.emptyIconWrap}>
+              <Ionicons name="document-text-outline" size={36} color={colors.textMuted} />
+            </View>
             <Text style={styles.emptyTitle}>Sin deudas manuales</Text>
             <Text style={styles.emptySubtitle}>
-              Agrega deudas desde la Proyección de Deuda
+              Agregá deudas manuales para registrar{"\n"}compras en cuotas sin importar
             </Text>
           </View>
         }
@@ -149,9 +141,12 @@ export default function ManualDebtsScreen() {
           const remaining = item.totalInstallments - item.paidInstallments;
           const totalDebt = remaining * item.amount;
           const prefix = item.currency === "USD" ? "US$" : "$";
+          const progress = (item.paidInstallments / item.totalInstallments) * 100;
+          const isComplete = progress >= 100;
 
           return (
             <View style={styles.card}>
+              {/* Header */}
               <View style={styles.cardHeader}>
                 <View style={styles.cardInfo}>
                   <Text style={styles.merchant} numberOfLines={1}>
@@ -160,27 +155,31 @@ export default function ManualDebtsScreen() {
                   <Text style={styles.cardLabel}>{item.cardLabel}</Text>
                 </View>
                 <View style={styles.actions}>
-                  <TouchableOpacity
-                    style={styles.actionBtn}
+                  <Pressable
                     onPress={() => handleEdit(item)}
+                    style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+                    accessibilityLabel="Editar deuda"
+                    accessibilityRole="button"
                   >
-                    <Ionicons name="create-outline" size={20} color="#007BFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.actionBtn}
+                    <Ionicons name="create-outline" size={18} color={colors.accent} />
+                  </Pressable>
+                  <Pressable
                     onPress={() => handleDelete(item)}
+                    style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+                    accessibilityLabel="Eliminar deuda"
+                    accessibilityRole="button"
                   >
-                    <Ionicons name="trash-outline" size={20} color="#DC3545" />
-                  </TouchableOpacity>
+                    <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+                  </Pressable>
                 </View>
               </View>
 
+              {/* Detail columns */}
               <View style={styles.details}>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Cuota</Text>
                   <Text style={styles.detailValue}>
-                    {prefix}
-                    {item.amount.toLocaleString("es-CL")}
+                    {prefix}{item.amount.toLocaleString("es-CL")}
                   </Text>
                 </View>
                 <View style={styles.detailItem}>
@@ -191,26 +190,18 @@ export default function ManualDebtsScreen() {
                 </View>
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Pendiente</Text>
-                  <Text style={[styles.detailValue, { color: "#DC3545" }]}>
-                    {prefix}
-                    {totalDebt.toLocaleString("es-CL")}
+                  <Text style={[styles.detailValue, isComplete && styles.detailDone]}>
+                    {isComplete ? "Completo" : `${prefix}${totalDebt.toLocaleString("es-CL")}`}
                   </Text>
                 </View>
               </View>
 
               {/* Progress bar */}
               <View style={styles.progressBg}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    {
-                      width: `${(item.paidInstallments / item.totalInstallments) * 100}%`,
-                    },
-                  ]}
-                />
+                <View style={[styles.progressFill, { width: `${progress}%` }, isComplete && styles.progressFillDone]} />
               </View>
-              <Text style={styles.progressText}>
-                {remaining} cuotas restantes
+              <Text style={[styles.progressText, isComplete && styles.progressTextDone]}>
+                {isComplete ? "Todas las cuotas pagadas" : `${remaining} cuotas restantes`}
               </Text>
             </View>
           );
@@ -218,106 +209,118 @@ export default function ManualDebtsScreen() {
       />
 
       {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
+      <Pressable
         onPress={() => router.push("/(screens)/addDebt")}
-        activeOpacity={0.8}
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
+        accessibilityLabel="Agregar deuda manual"
+        accessibilityRole="button"
       >
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+        <Ionicons name="add" size={26} color={colors.textPrimary} />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  list: { padding: 16, paddingBottom: 80 },
-  emptyList: { flex: 1, justifyContent: "center", alignItems: "center" },
-  emptyContainer: { alignItems: "center" },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#495057",
-    marginTop: 16,
+  container: { flex: 1, backgroundColor: colors.bg },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
+  list: { padding: 24, paddingBottom: 80 },
+  emptyList: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
+
+  // Empty
+  emptyCard: {
+    ...glassSurface(false),
+    alignItems: "center",
+    paddingVertical: 50,
+    paddingHorizontal: 24,
+    gap: 8,
   },
-  emptySubtitle: { fontSize: 14, color: "#868E96", marginTop: 6 },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: "600", color: colors.textSecondary, marginTop: 8 },
+  emptySubtitle: { fontSize: 13, color: colors.textMuted, textAlign: "center", lineHeight: 19 },
+
+  // Card
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    ...glassSurface(false),
     padding: 16,
     marginBottom: 12,
-    borderWidth: 1,
-    borderColor: "#E9ECEF",
-    elevation: 1,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: 14,
   },
   cardInfo: { flex: 1, marginRight: 8 },
-  merchant: { fontSize: 15, fontWeight: "700", color: "#212529" },
-  cardLabel: { fontSize: 12, color: "#868E96", marginTop: 2 },
-  actions: { flexDirection: "row", gap: 4 },
+  merchant: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
+  cardLabel: { fontSize: 12, color: colors.textMuted, marginTop: 3 },
+  actions: { flexDirection: "row", gap: 6 },
   actionBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: "#F8F9FA",
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  details: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  detailItem: { alignItems: "center" },
+  actionBtnPressed: { opacity: 0.7 },
+
+  // Details
+  details: { flexDirection: "row", justifyContent: "space-between", marginBottom: 14 },
+  detailItem: { alignItems: "center", flex: 1 },
   detailLabel: {
-    fontSize: 11,
-    color: "#868E96",
+    fontSize: 10,
+    fontWeight: "600",
+    color: colors.textMuted,
     textTransform: "uppercase",
-    letterSpacing: 0.3,
-    marginBottom: 2,
+    letterSpacing: 0.4,
+    marginBottom: 4,
   },
-  detailValue: { fontSize: 14, fontWeight: "700", color: "#212529" },
+  detailValue: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
+  detailDone: { color: colors.success },
+
+  // Progress
   progressBg: {
-    height: 6,
-    backgroundColor: "#F1F3F5",
-    borderRadius: 3,
+    height: 4,
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 2,
     overflow: "hidden",
   },
   progressFill: {
     height: "100%",
-    backgroundColor: "#28A745",
-    borderRadius: 3,
+    backgroundColor: colors.accent,
+    borderRadius: 2,
   },
-  progressText: {
-    fontSize: 11,
-    color: "#868E96",
-    marginTop: 4,
-    textAlign: "right",
-  },
+  progressFillDone: { backgroundColor: colors.success },
+  progressText: { fontSize: 11, color: colors.textMuted, marginTop: 6, textAlign: "right" },
+  progressTextDone: { color: colors.success },
+
+  // FAB
   fab: {
     position: "absolute",
-    right: 20,
-    bottom: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#007BFF",
+    right: 24,
+    bottom: 28,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
+  fabPressed: { opacity: 0.85 },
 });
