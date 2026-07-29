@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   scrollContent: {
-    paddingRight: 20,
+    paddingHorizontal: 20,
     paddingBottom: 6,
     paddingTop: 3, // room for the selected ring overhang
   },

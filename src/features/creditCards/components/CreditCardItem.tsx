@@ -216,13 +216,7 @@ export default function CreditCardItem({
 
       {/* ── Selected ring ────────────────────────────────────────────────── */}
       {selected && (
-        <View
-          style={[
-            styles.selectedRing,
-            { borderColor: theme.networkLabelColor },
-          ]}
-          pointerEvents="none"
-        />
+        <View style={styles.selectedRing} pointerEvents="none" />
       )}
     </TouchableOpacity>
   );
@@ -246,12 +240,10 @@ const styles = StyleSheet.create({
     padding: 18,
     overflow: "hidden",
     justifyContent: "space-between",
-    // Elevation
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
-    elevation: 8,
+    // Premium subtle border + controlled elevation (no shadowColor to avoid white glow on Android)
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+    elevation: 4,
   },
 
   // Top row (chip + network)
@@ -355,7 +347,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.destructive,
   },
 
-  // Selected ring
+  // Selected ring — accent glow instead of brand white
   selectedRing: {
     position: "absolute",
     top: -3,
@@ -363,6 +355,11 @@ const styles = StyleSheet.create({
     right: -3,
     bottom: -3,
     borderRadius: CARD_RADIUS + 3,
-    borderWidth: 2.5,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
   },
 });
