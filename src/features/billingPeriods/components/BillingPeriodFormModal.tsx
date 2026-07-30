@@ -1,6 +1,6 @@
 import {
   Modal, View, Text, TextInput, Pressable, StyleSheet,
-  ActivityIndicator, Platform, ScrollView, KeyboardAvoidingView, Animated,
+  ActivityIndicator, Platform, ScrollView, KeyboardAvoidingView, Animated, Alert,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -75,8 +75,9 @@ export default function BillingPeriodFormModal({
       await onSubmit({ creditCardId, month: month.trim(),
         startDate: toISODateString(startDate), endDate: toISODateString(endDate), dueDate: toISODateString(dueDate) });
       onClose();
-    } catch { /* handled by parent */ }
-    finally { setIsSubmitting(false); }
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "No se pudo crear el período");
+    } finally { setIsSubmitting(false); }
   };
 
   const onDateChange = (setter: (d: Date) => void, showSetter: (v: boolean) => void) =>
