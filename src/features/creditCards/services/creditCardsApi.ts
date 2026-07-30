@@ -68,6 +68,7 @@ export const useUncategorizedCount = () => {
   return useQuery({
     queryKey: ["uncategorizedCount"],
     queryFn: getUncategorizedCount,
+    staleTime: 0, // Always fresh — critical for real-time badge accuracy
   });
 };
 
