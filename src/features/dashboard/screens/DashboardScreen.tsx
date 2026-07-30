@@ -176,7 +176,10 @@ export default function DashboardScreen() {
     dueDate: string;
   }) => {
     if (!selectedCardId) return;
-    await createBillingPeriod(selectedCardId, data);
+    await createBillingPeriod(selectedCardId, {
+      ...data,
+      creditCardId: selectedCardId, // Override with actual card ID
+    });
     Alert.alert("Éxito", "Período de facturación creado correctamente.");
     setRefreshKey((prev) => prev + 1);
   };
