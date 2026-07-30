@@ -27,6 +27,12 @@ const MONTH_NAMES = [
 ];
 const getMonthLabel = (date: Date): string => `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
 
+/** Parses an ISO date string as local time, avoiding UTC shift */
+function parseDateLocal(dateStr: string): Date {
+  const parts = dateStr.split(/[-T:]/);
+  return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+}
+
 type WizardStep = "intro" | "form";
 
 export default function BillingPeriodFormModal({
@@ -59,9 +65,9 @@ export default function BillingPeriodFormModal({
     if (initialData) {
       if (initialData.creditCardId) setCreditCardId(initialData.creditCardId);
       if (initialData.month) setMonth(initialData.month);
-      if (initialData.startDate) setStartDate(new Date(initialData.startDate));
-      if (initialData.endDate) setEndDate(new Date(initialData.endDate));
-      if (initialData.dueDate) setDueDate(new Date(initialData.dueDate));
+      if (initialData.startDate) setStartDate(parseDateLocal(initialData.startDate));
+      if (initialData.endDate) setEndDate(parseDateLocal(initialData.endDate));
+      if (initialData.dueDate) setDueDate(parseDateLocal(initialData.dueDate));
     } else {
       setCreditCardId(""); setMonth("");
       setStartDate(new Date()); setEndDate(new Date()); setDueDate(new Date());
