@@ -2,6 +2,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -53,6 +54,7 @@ export default function DashboardScreen() {
   const queryClient = useQueryClient();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -114,6 +116,7 @@ export default function DashboardScreen() {
         console.error("Error loading transactions:", error);
     } finally {
       setIsLoadingTransactions(false);
+      setInitialLoadDone(true);
     }
   }, [selectedCardId]);
 
@@ -205,6 +208,15 @@ export default function DashboardScreen() {
     );
   }
 
+  // Show skeleton until first transaction load attempt completes
+  if (creditCards.length > 0 && !initialLoadDone) {
+    return (
+      <ScrollView style={styles.container}>
+        <DashboardSkeleton />
+      </ScrollView>
+    );
+  }
+
   // No cards yet → show unified empty state
   if (creditCards.length === 0) {
     return (
@@ -285,7 +297,7 @@ export default function DashboardScreen() {
             />
           ) : (
             <>
-              {/* Data exists — show normal dashboard components */}
+              {/* Normal dashboard — data exists */}
               <TouchableOpacity
                 style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
                 onPress={handleImportTransactions}
@@ -301,18 +313,45 @@ export default function DashboardScreen() {
                 </Text>
               </TouchableOpacity>
 
-              <MonthSummaryCard
-                creditCardId={selectedCardId}
-                nextPeriodCLP={debtSummary?.nextMonthCLP}
-                nextPeriodUSD={debtSummary?.nextMonthUSD}
-              />
-
-              <DebtIndicatorCard
-                refreshKey={refreshKey}
-                summary={debtSummary ?? undefined}
-              />
-
-              <MonthlyStats creditCardId={selectedCardId} />
+              {/*
+               * Has transactions but no billing period yet:
+               * show prompt to create one instead of broken stat cards.
+               */}
+              {!debtSummary || ((debtSummary.totalCLP ?? 0) === 0 && (debtSummary.totalUSD ?? 0) === 0 && !debtSummary.nextMonthCLP) ? (
+                <View style={styles.billingPromptCard}>
+                  <View style={styles.billingPromptIcon}>
+                    <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+                  </View>
+                  <View style={styles.billingPromptContent}>
+                    <Text style={styles.billingPromptTitle}>Creá un período de facturación</Text>
+                    <Text style={styles.billingPromptBody}>
+                      Para ver estadísticas, proyecciones y organizar tus gastos por mes.
+                    </Text>
+                    <Pressable
+                      onPress={() => setShowOrphanModal(true)}
+                      style={({ pressed }) => [styles.billingPromptBtn, pressed && { opacity: 0.8 }]}
+                      accessibilityLabel="Crear período de facturación"
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
+                      <Text style={styles.billingPromptBtnText}>Crear período</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : (
+                <>
+                  <MonthSummaryCard
+                    creditCardId={selectedCardId}
+                    nextPeriodCLP={debtSummary?.nextMonthCLP}
+                    nextPeriodUSD={debtSummary?.nextMonthUSD}
+                  />
+                  <DebtIndicatorCard
+                    refreshKey={refreshKey}
+                    summary={debtSummary ?? undefined}
+                  />
+                  <MonthlyStats creditCardId={selectedCardId} />
+                </>
+              )}
             </>
           )}
         </>
@@ -676,5 +715,57 @@ const styles = StyleSheet.create({
     right: 0,
     height: 160,
     pointerEvents: "none",
+  },
+  billingPromptCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 14,
+    marginTop: 16,
+    padding: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(59,130,246,0.2)",
+    backgroundColor: "rgba(59,130,246,0.05)",
+  },
+  billingPromptIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(59,130,246,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  billingPromptContent: {
+    flex: 1,
+    gap: 8,
+  },
+  billingPromptTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  billingPromptBody: {
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 18,
+  },
+  billingPromptBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: "rgba(59,130,246,0.1)",
+    alignSelf: "flex-start",
+    marginTop: 2,
+  },
+  billingPromptBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.accent,
   },
 });
