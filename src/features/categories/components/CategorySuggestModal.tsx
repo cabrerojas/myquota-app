@@ -1,342 +1,186 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-  StyleSheet,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  Modal, View, Text, Pressable, TextInput, ActivityIndicator,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  getAllCategories,
-  getMerchantCategoryHistory,
-  createCategoryWithMerchant,
-  Category,
-  MerchantCategoryHistoryItem,
+  getAllCategories, getMerchantCategoryHistory,
+  createCategoryWithMerchant, Category, MerchantCategoryHistoryItem,
 } from "@/features/categories/services/categoryApi";
+import { colors } from "@/shared/theme/colors";
 
 interface Props {
-  visible: boolean;
-  merchant: string;
-  onClose: () => void;
+  visible: boolean; merchant: string; onClose: () => void;
   onCategorySelected: (category: Category) => void;
 }
 
 type ModalStep = "pick" | "create";
 
-export default function CategorySuggestModal({
-  visible,
-  merchant,
-  onClose,
-  onCategorySelected,
-}: Props) {
+const PRESET_COLORS = [
+  "#3B82F6","#E53935","#F9A825","#43A047","#FB8C00",
+  "#8E24AA","#00ACC1","#6D4C41","#E91E63","#3949AB",
+];
+
+export default function CategorySuggestModal({ visible, merchant, onClose, onCategorySelected }: Props) {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<Category[]>([]);
   const [history, setHistory] = useState<MerchantCategoryHistoryItem[]>([]);
   const [step, setStep] = useState<ModalStep>("pick");
   const [searchText, setSearchText] = useState("");
-
-  // Create form state
   const [newName, setNewName] = useState("");
-  const [emoji, setEmoji] = useState("🏷️");
-  const [color, setColor] = useState("#1E88E5");
+  const [emoji, setEmoji] = useState("");
+  const [color, setColor] = useState(PRESET_COLORS[0]);
   const [creating, setCreating] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [cats, hist] = await Promise.all([
-        getAllCategories(),
-        getMerchantCategoryHistory(merchant),
-      ]);
-      setCategories(cats);
-      setHistory(hist);
-    } catch (e) {
-      console.warn("Error loading categories for modal", e);
-    } finally {
-      setLoading(false);
-    }
+      const [cats, hist] = await Promise.all([getAllCategories(), getMerchantCategoryHistory(merchant)]);
+      setCategories(cats); setHistory(hist);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
   }, [merchant]);
 
   useEffect(() => {
     if (!visible) return;
-    setStep("pick");
-    setSearchText("");
-    setNewName("");
-    setEmoji("🏷️");
-    setColor("#1E88E5");
+    setStep("pick"); setSearchText(""); setNewName(""); setEmoji(""); setColor(PRESET_COLORS[0]);
     loadData();
   }, [visible, loadData]);
 
-  const handlePickCategory = (cat: Category) => {
-    onCategorySelected(cat);
-  };
+  const handlePickCategory = (cat: Category) => onCategorySelected(cat);
 
   const handlePickFromHistory = (item: MerchantCategoryHistoryItem) => {
-    onCategorySelected({
-      id: item.categoryId,
-      name: item.categoryName,
-      icon: item.categoryIcon,
-      color: item.categoryColor,
-    });
+    onCategorySelected({ id: item.categoryId, name: item.categoryName, icon: item.categoryIcon, color: item.categoryColor });
   };
 
   const handleCreate = async () => {
-    if (!newName.trim()) {
-      Alert.alert("Nombre requerido", "Ingresa un nombre para la categoría");
-      return;
-    }
+    if (!newName.trim()) { Alert.alert("Nombre requerido", "Ingresá un nombre para la categoría"); return; }
     setCreating(true);
     try {
       const created = await createCategoryWithMerchant({
-        name: newName.trim(),
-        icon: emoji.trim() || "🏷️",
-        color: color.trim() || "#1E88E5",
-        isGlobal: true,
+        name: newName.trim(), icon: emoji || "🏷️", color, isGlobal: true,
       });
       onCategorySelected(created);
-    } catch {
-      Alert.alert("Error", "No se pudo crear la categoría");
-    } finally {
-      setCreating(false);
-    }
+    } catch { Alert.alert("Error", "No se pudo crear la categoría"); }
+    finally { setCreating(false); }
   };
 
-  const filteredCategories = categories
-    .filter((c, index, arr) => {
-      // Deduplicate by id to avoid duplicate keys
-      if (arr.findIndex((x) => x.id === c.id) !== index) return false;
-      if (!searchText.trim()) return true;
-      return c.name.toLowerCase().includes(searchText.toLowerCase());
-    })
+  const filtered = categories
+    .filter((c, i, arr) => arr.findIndex((x) => x.id === c.id) === i)
+    .filter((c) => !searchText.trim() || c.name.toLowerCase().includes(searchText.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 
-  // Set of category IDs already in history, to visually mark them in the full list
   const historyIds = new Set(history.map((h) => h.categoryId));
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <KeyboardAvoidingView
-        style={styles.overlay}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
-      >
-        <View style={styles.content}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={s.overlay}>
+        <Pressable style={s.backdrop} onPress={onClose} />
+        <View style={s.modal}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title} numberOfLines={1}>
-              Categoría para {merchant}
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Ionicons name="close" size={24} color="#495057" />
-            </TouchableOpacity>
+          <View style={s.header}>
+            <Text style={s.title} numberOfLines={1}>Categorizar "{merchant}"</Text>
+            <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Cerrar">
+              <Ionicons name="close" size={22} color={colors.textMuted} />
+            </Pressable>
           </View>
 
           {loading ? (
-            <ActivityIndicator
-              style={{ marginVertical: 40 }}
-              size="large"
-              color="#007BFF"
-            />
+            <ActivityIndicator style={{ marginVertical: 40 }} size="large" color={colors.accent} />
           ) : step === "pick" ? (
             <>
-              {/* History section */}
+              {/* History */}
               {history.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Usadas antes</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.historyRow}
-                  >
+                <View style={s.section}>
+                  <Text style={s.sectionTitle}>Usadas antes</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.historyRow}>
                     {history.map((item) => (
-                      <TouchableOpacity
-                        key={item.categoryId}
-                        style={[
-                          styles.historyChip,
-                          {
-                            backgroundColor: item.categoryColor || "#E9ECEF",
-                          },
-                        ]}
+                      <Pressable key={item.categoryId}
                         onPress={() => handlePickFromHistory(item)}
-                      >
-                        <Text style={styles.historyEmoji}>
-                          {item.categoryIcon || "🏷️"}
-                        </Text>
-                        <Text style={styles.historyName} numberOfLines={1}>
-                          {item.categoryName}
-                        </Text>
-                        <Text style={styles.historyCount}>({item.count})</Text>
-                      </TouchableOpacity>
+                        style={[s.historyChip, { backgroundColor: (item.categoryColor || colors.surface) + "1A" }]}
+                        accessibilityLabel={item.categoryName}>
+                        <Text style={s.historyEmoji}>{item.categoryIcon || "🏷️"}</Text>
+                        <Text style={s.historyName} numberOfLines={1}>{item.categoryName}</Text>
+                      </Pressable>
                     ))}
                   </ScrollView>
                 </View>
               )}
 
               {/* Search */}
-              <View style={styles.searchContainer}>
-                <Ionicons name="search" size={16} color="#ADB5BD" />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Buscar categoría..."
-                  placeholderTextColor="#ADB5BD"
-                  value={searchText}
-                  onChangeText={setSearchText}
-                />
+              <View style={s.searchBox}>
+                <Ionicons name="search" size={16} color={colors.textMuted} />
+                <TextInput style={s.searchInput} placeholder="Buscar categoría..." placeholderTextColor={colors.textSubtle}
+                  value={searchText} onChangeText={setSearchText} />
                 {searchText.length > 0 && (
-                  <TouchableOpacity onPress={() => setSearchText("")}>
-                    <Ionicons name="close-circle" size={16} color="#ADB5BD" />
-                  </TouchableOpacity>
+                  <Pressable onPress={() => setSearchText("")}>
+                    <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                  </Pressable>
                 )}
               </View>
 
-              {/* All categories list */}
-              <ScrollView
-                style={styles.categoryList}
-                showsVerticalScrollIndicator={false}
-              >
-                {filteredCategories.map((cat, index) => (
-                  <TouchableOpacity
-                    key={cat.id || `cat-${index}`}
-                    style={styles.categoryRow}
+              {/* List */}
+              <ScrollView style={s.list} showsVerticalScrollIndicator={false}>
+                {filtered.map((cat, i) => (
+                  <Pressable key={cat.id || `cat-${i}`}
                     onPress={() => handlePickCategory(cat)}
-                  >
-                    <View
-                      style={[
-                        styles.categoryIconBg,
-                        {
-                          backgroundColor: cat.color || "#E9ECEF",
-                        },
-                      ]}
-                    >
-                      <Text style={styles.categoryEmoji}>
-                        {cat.icon || "🏷️"}
-                      </Text>
+                    style={({ pressed }) => [s.row, pressed && { opacity: 0.7 }]}
+                    accessibilityLabel={cat.name}>
+                    <View style={[s.rowIcon, { backgroundColor: (cat.color || colors.surface) + "20" }]}>
+                      <Text style={s.rowEmoji}>{cat.icon || "🏷️"}</Text>
                     </View>
-                    <Text style={styles.categoryName}>{cat.name}</Text>
+                    <Text style={s.rowName}>{cat.name}</Text>
                     {historyIds.has(cat.id) && (
-                      <Ionicons
-                        name="time-outline"
-                        size={14}
-                        color="#ADB5BD"
-                        style={{ marginLeft: "auto" }}
-                      />
+                      <Ionicons name="time-outline" size={14} color={colors.textSubtle} />
                     )}
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
-                {filteredCategories.length === 0 && (
-                  <Text style={styles.emptyText}>
-                    No se encontraron categorías
-                  </Text>
+                {filtered.length === 0 && (
+                  <Text style={s.emptyText}>No se encontraron categorías</Text>
                 )}
               </ScrollView>
 
-              {/* Create new button */}
-              <TouchableOpacity
-                style={styles.createNewBtn}
-                onPress={() => {
-                  setNewName(searchText || "");
-                  setStep("create");
-                }}
-              >
-                <Ionicons name="add-circle-outline" size={18} color="#007BFF" />
-                <Text style={styles.createNewBtnText}>
-                  Crear nueva categoría
-                </Text>
-              </TouchableOpacity>
+              {/* Create button */}
+              <Pressable onPress={() => { setNewName(searchText || ""); setStep("create"); }}
+                style={({ pressed }) => [s.createBtn, pressed && { opacity: 0.8 }]}>
+                <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                <Text style={s.createBtnText}>Crear nueva categoría</Text>
+              </Pressable>
             </>
           ) : (
-            /* Create category step */
-            <View style={styles.createForm}>
-              <TextInput
-                style={styles.input}
-                placeholder="Nombre de la categoría"
-                value={newName}
-                onChangeText={setNewName}
-                autoFocus
-              />
-              <View style={styles.rowInputs}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>Emoji</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Ej: 🏷️"
-                    value={emoji}
-                    onChangeText={setEmoji}
-                    maxLength={2}
-                  />
-                </View>
-                <View style={{ flex: 1, marginLeft: 8 }}>
-                  <Text style={styles.inputLabel}>Color</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      { backgroundColor: color, color: "#212529" },
-                    ]}
-                    placeholder="#AABBCC"
-                    value={color}
-                    onChangeText={setColor}
-                  />
-                  <View style={styles.colorRow}>
-                    {[
-                      "#E53935",
-                      "#1E88E5",
-                      "#F9A825",
-                      "#43A047",
-                      "#FB8C00",
-                      "#8E24AA",
-                      "#00897B",
-                      "#6D4C41",
-                    ].map((c) => (
-                      <TouchableOpacity
-                        key={c}
-                        style={[
-                          styles.colorSwatch,
-                          {
-                            backgroundColor: c,
-                            borderColor: color === c ? "#007BFF" : "#fff",
-                          },
-                        ]}
-                        onPress={() => setColor(c)}
-                      />
-                    ))}
-                  </View>
-                </View>
+            /* Create step */
+            <ScrollView style={s.form} showsVerticalScrollIndicator={false} bounces={false}>
+              <Text style={s.inputLabel}>Nombre</Text>
+              <TextInput style={s.input} placeholder="Ej: Supermercado" placeholderTextColor={colors.textSubtle}
+                value={newName} onChangeText={setNewName} autoFocus />
+
+              <Text style={s.inputLabel}>Ícono</Text>
+              <TextInput style={s.input} placeholder="🏷️" placeholderTextColor={colors.textSubtle}
+                value={emoji} onChangeText={setEmoji} maxLength={2} />
+
+              <Text style={s.inputLabel}>Color</Text>
+              <View style={s.colorRow}>
+                {PRESET_COLORS.map((c) => (
+                  <Pressable key={c} onPress={() => setColor(c)}
+                    style={[s.colorSwatch, { backgroundColor: c }, color === c && s.colorSwatchActive]}>
+                    {color === c && <Ionicons name="checkmark" size={14} color="#fff" />}
+                  </Pressable>
+                ))}
               </View>
-              <View style={styles.createActions}>
-                <TouchableOpacity
-                  style={styles.backBtn}
-                  onPress={() => setStep("pick")}
-                >
-                  <Text style={styles.backBtnText}>Volver</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.confirmCreateBtn}
-                  onPress={handleCreate}
-                  disabled={creating}
-                >
-                  {creating ? (
-                    <ActivityIndicator color="#fff" size="small" />
-                  ) : (
-                    <Text style={styles.confirmCreateBtnText}>Crear</Text>
-                  )}
-                </TouchableOpacity>
+
+              <View style={s.createActions}>
+                <Pressable onPress={() => setStep("pick")}
+                  style={({ pressed }) => [s.btn, s.btnCancel, pressed && { opacity: 0.7 }]}>
+                  <Text style={s.btnCancelText}>Volver</Text>
+                </Pressable>
+                <Pressable onPress={handleCreate} disabled={creating}
+                  style={({ pressed }) => [s.btn, s.btnCreate, creating && { opacity: 0.6 }, pressed && { opacity: 0.85 }]}>
+                  {creating ? <ActivityIndicator color={colors.textPrimary} size="small" /> :
+                    <Text style={s.btnCreateText}>Crear</Text>}
+                </Pressable>
               </View>
-            </View>
+            </ScrollView>
           )}
         </View>
       </KeyboardAvoidingView>
@@ -344,202 +188,49 @@ export default function CategorySuggestModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  content: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 24,
-    maxHeight: "80%",
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F3F5",
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#212529",
-    flex: 1,
-    marginRight: 12,
-  },
-  section: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#868E96",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  historyRow: {
-    gap: 8,
-    paddingBottom: 4,
-  },
-  historyChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 4,
-  },
-  historyEmoji: {
-    fontSize: 14,
-  },
-  historyName: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#212529",
-    maxWidth: 100,
-  },
-  historyCount: {
-    fontSize: 11,
-    color: "#495057",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 20,
-    marginTop: 12,
-    backgroundColor: "#F8F9FA",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 6,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: "#212529",
-    padding: 0,
-  },
-  categoryList: {
-    maxHeight: 280,
-    marginTop: 8,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  categoryIconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  categoryEmoji: {
-    fontSize: 16,
-  },
-  categoryName: {
-    fontSize: 15,
-    color: "#212529",
-    fontWeight: "500",
-  },
-  emptyText: {
-    textAlign: "center",
-    color: "#868E96",
-    paddingVertical: 20,
-    fontSize: 14,
-  },
-  createNewBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    marginTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
-    gap: 6,
-  },
-  createNewBtnText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#007BFF",
-  },
-  createForm: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-  },
-  rowInputs: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 8,
-  },
-  inputLabel: {
-    fontSize: 13,
-    color: "#868E96",
-    marginBottom: 2,
-    marginLeft: 2,
-  },
-  input: {
-    backgroundColor: "#F8F9FA",
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 15,
-    color: "#212529",
-  },
-  colorRow: {
-    flexDirection: "row",
-    gap: 4,
-    marginTop: 4,
-  },
-  colorSwatch: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    marginRight: 2,
-  },
-  createActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-    gap: 12,
-  },
-  backBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#DEE2E6",
-    alignItems: "center",
-  },
-  backBtnText: {
-    fontWeight: "600",
-    color: "#495057",
-    fontSize: 15,
-  },
-  confirmCreateBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    backgroundColor: "#28A745",
-    alignItems: "center",
-  },
-  confirmCreateBtnText: {
-    fontWeight: "700",
-    color: "#fff",
-    fontSize: 15,
-  },
+const s = StyleSheet.create({
+  overlay: { flex: 1, justifyContent: "flex-end" },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.6)" },
+  modal: { backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    paddingBottom: 30, maxHeight: "85%", borderTopWidth: 1, borderColor: colors.border },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: 20, paddingTop: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
+  title: { fontSize: 17, fontWeight: "700", color: colors.textPrimary, flex: 1, marginRight: 12 },
+  section: { paddingHorizontal: 20, paddingTop: 14 },
+  sectionTitle: { fontSize: 11, fontWeight: "700", color: colors.textMuted,
+    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 },
+  historyRow: { gap: 8, paddingBottom: 4 },
+  historyChip: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14,
+    paddingVertical: 9, borderRadius: 20, gap: 5 },
+  historyEmoji: { fontSize: 14 },
+  historyName: { fontSize: 13, fontWeight: "600", color: colors.textPrimary, maxWidth: 100 },
+  searchBox: { flexDirection: "row", alignItems: "center", marginHorizontal: 20, marginTop: 14,
+    backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10, paddingHorizontal: 12,
+    paddingVertical: 10, gap: 8, borderWidth: 1, borderColor: colors.border },
+  searchInput: { flex: 1, fontSize: 14, color: colors.textPrimary },
+  list: { maxHeight: 260, marginTop: 6 },
+  row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 11, gap: 12 },
+  rowIcon: { width: 34, height: 34, borderRadius: 10, justifyContent: "center", alignItems: "center" },
+  rowEmoji: { fontSize: 16 },
+  rowName: { fontSize: 15, color: colors.textPrimary, fontWeight: "500", flex: 1 },
+  emptyText: { textAlign: "center", color: colors.textMuted, paddingVertical: 20, fontSize: 14 },
+  createBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center",
+    paddingVertical: 14, marginHorizontal: 20, marginTop: 8, borderTopWidth: 1,
+    borderTopColor: colors.borderLight, gap: 6 },
+  createBtnText: { fontSize: 14, fontWeight: "600", color: colors.accent },
+  form: { paddingHorizontal: 20, paddingTop: 16 },
+  inputLabel: { fontSize: 11, fontWeight: "600", color: colors.textMuted,
+    textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, marginTop: 12 },
+  input: { backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: colors.border,
+    padding: 12, borderRadius: 10, fontSize: 15, color: colors.textPrimary, marginBottom: 4 },
+  colorRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+  colorSwatch: { width: 34, height: 34, borderRadius: 10, justifyContent: "center",
+    alignItems: "center", borderWidth: 2, borderColor: "transparent" },
+  colorSwatchActive: { borderColor: colors.textPrimary },
+  createActions: { flexDirection: "row", gap: 12, marginTop: 24 },
+  btn: { flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: "center" },
+  btnCancel: { backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: colors.border },
+  btnCancelText: { fontWeight: "600", color: colors.textSecondary, fontSize: 15 },
+  btnCreate: { backgroundColor: colors.accent },
+  btnCreateText: { fontWeight: "700", color: colors.textPrimary, fontSize: 15 },
 });
