@@ -464,7 +464,7 @@ export default function DashboardScreen() {
                   </View>
                 </View>
                 <View style={styles.transactionRight}>
-                  <Text style={styles.negative}>
+                  <Text style={styles.amount}>
                     {item.currency === "USD" ? "US$" : "$"}
                     {item.amount.toLocaleString("es-CL")}
                   </Text>
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(59,130,246,0.06)",
   },
   txUncategorizedText: { fontSize: 10, fontWeight: "600", color: colors.accent },
-  negative: { color: colors.destructive, fontSize: 15, fontWeight: "bold" },
+  amount: { color: colors.textPrimary, fontSize: 15, fontWeight: "600" },
   emptyTransactions: {
     alignItems: "center",
     paddingVertical: 28,

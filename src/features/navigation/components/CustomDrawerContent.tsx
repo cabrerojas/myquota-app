@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
 
   // ── Badge ──────────────────────────────────────────────────
   badge: {
-    backgroundColor: colors.warning,
+    backgroundColor: colors.accent,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
