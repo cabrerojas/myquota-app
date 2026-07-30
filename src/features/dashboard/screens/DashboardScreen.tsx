@@ -328,7 +328,10 @@ export default function DashboardScreen() {
                       Para ver estadísticas, proyecciones y organizar tus gastos por mes.
                     </Text>
                     <Pressable
-                      onPress={() => setShowOrphanModal(true)}
+                      onPress={() => {
+                        console.log("[Dashboard] Opening billing period modal, suggestion:", orphanSuggestion);
+                        setShowOrphanModal(true);
+                      }}
                       style={({ pressed }) => [styles.billingPromptBtn, pressed && { opacity: 0.8 }]}
                       accessibilityLabel="Crear período de facturación"
                       accessibilityRole="button"
