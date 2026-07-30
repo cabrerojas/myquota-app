@@ -448,6 +448,7 @@ export default function DashboardScreen() {
         title="Crear Período de Facturación"
         isOrphanSuggestion
         orphanedCount={orphanedCount}
+        isFirstTime
       />
     </ScrollView>
   );
