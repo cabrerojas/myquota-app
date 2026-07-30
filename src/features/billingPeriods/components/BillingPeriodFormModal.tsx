@@ -1,8 +1,8 @@
 import {
   Modal, View, Text, TextInput, Pressable, StyleSheet,
-  ActivityIndicator, Platform, ScrollView, KeyboardAvoidingView,
+  ActivityIndicator, Platform, ScrollView, KeyboardAvoidingView, Animated,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { formatDateInput, toISODateString } from "@/shared/utils/format";
@@ -18,6 +18,7 @@ interface BillingPeriodFormModalProps {
   title?: string;
   isOrphanSuggestion?: boolean;
   orphanedCount?: number;
+  isFirstTime?: boolean;
 }
 
 const MONTH_NAMES = [
@@ -26,10 +27,14 @@ const MONTH_NAMES = [
 ];
 const getMonthLabel = (date: Date): string => `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
 
+type WizardStep = "intro" | "form";
+
 export default function BillingPeriodFormModal({
   visible, onClose, onSubmit, initialData,
   title = "Crear Período de Facturación", isOrphanSuggestion = false, orphanedCount = 0,
+  isFirstTime = false,
 }: BillingPeriodFormModalProps) {
+  const [step, setStep] = useState<WizardStep>(isFirstTime ? "intro" : "form");
   const [creditCardId, setCreditCardId] = useState("");
   const [month, setMonth] = useState("");
   const [startDate, setStartDate] = useState(new Date());
@@ -39,6 +44,16 @@ export default function BillingPeriodFormModal({
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showDuePicker, setShowDuePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setStep(isFirstTime ? "intro" : "form");
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    } else {
+      fadeAnim.setValue(0);
+    }
+  }, [visible, isFirstTime, fadeAnim]);
 
   useEffect(() => {
     if (initialData) {
@@ -75,82 +90,203 @@ export default function BillingPeriodFormModal({
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={s.overlay}>
         <Pressable style={s.backdrop} onPress={onClose} />
         <View style={s.modal}>
-          <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-            {/* Header */}
-            <View style={s.header}>
-              <View style={s.headerIcon}>
-                <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-              </View>
-              <Text style={s.title}>{title}</Text>
-              <Pressable onPress={onClose} style={({ pressed }) => [s.closeBtn, pressed && { opacity: 0.6 }]}
-                accessibilityLabel="Cerrar" accessibilityRole="button">
-                <Ionicons name="close" size={20} color={colors.textMuted} />
-              </Pressable>
-            </View>
+          {step === "intro" ? (
+            <IntroStep
+              orphanedCount={orphanedCount}
+              onContinue={() => setStep("form")}
+              onSkip={onClose}
+            />
+          ) : (
+            <Animated.View style={{ opacity: fadeAnim }}>
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+                {/* Header */}
+                <View style={s.header}>
+                  <View style={s.headerIcon}>
+                    <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.title}>{title}</Text>
+                    {isFirstTime && (
+                      <Text style={s.stepHint}>Paso 2 de 2</Text>
+                    )}
+                  </View>
+                  <Pressable onPress={onClose} style={({ pressed }) => [s.closeBtn, pressed && { opacity: 0.6 }]}
+                    accessibilityLabel="Cerrar" accessibilityRole="button">
+                    <Ionicons name="close" size={20} color={colors.textMuted} />
+                  </Pressable>
+                </View>
 
-            {/* Orphan alert */}
-            {isOrphanSuggestion && orphanedCount > 0 && (
-              <View style={s.alertBox}>
-                <Ionicons name="warning" size={18} color={colors.warning} style={{ marginTop: 1 }} />
-                <Text style={s.alertText}>
-                  <Text style={s.alertBold}>{orphanedCount} transacciones</Text> sin período de
-                  facturación. Creá uno para no perder trazabilidad.
-                </Text>
-              </View>
-            )}
+                {/* Progress bar for wizard mode */}
+                {isFirstTime && (
+                  <View style={s.progressBar}>
+                    <View style={s.progressFill} />
+                  </View>
+                )}
 
-            {/* Period name */}
-            <Text style={s.label}>Nombre del período</Text>
-            <TextInput style={s.input} value={month} onChangeText={setMonth}
-              placeholder="Ej: Febrero 2026" placeholderTextColor={colors.textSubtle} />
+                {/* Orphan alert */}
+                {isOrphanSuggestion && orphanedCount > 0 && (
+                  <View style={s.alertBox}>
+                    <Ionicons name="warning" size={18} color={colors.warning} style={{ marginTop: 1 }} />
+                    <Text style={s.alertText}>
+                      <Text style={s.alertBold}>{orphanedCount} transacciones</Text> sin período asignado.
+                      Completá el formulario para organizarlas.
+                    </Text>
+                  </View>
+                )}
 
-            {/* Start date */}
-            <Text style={s.label}>Fecha de inicio</Text>
-            <DateField date={startDate} onPress={() => setShowStartPicker(true)} />
-            {showStartPicker && <DateTimePicker value={startDate} mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={onDateChange(setStartDate, setShowStartPicker)} />}
+                {/* Period name */}
+                <Text style={s.label}>Nombre del período</Text>
+                <TextInput style={s.input} value={month} onChangeText={setMonth}
+                  placeholder="Ej: Febrero 2026" placeholderTextColor={colors.textSubtle} />
 
-            {/* End date */}
-            <Text style={s.label}>Fecha de cierre</Text>
-            <DateField date={endDate} onPress={() => setShowEndPicker(true)} />
-            {showEndPicker && <DateTimePicker value={endDate} mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={(e, d) => {
-                setShowEndPicker(Platform.OS === "ios");
-                if (d) {
-                  setEndDate(d); setMonth(getMonthLabel(d));
-                  const suggested = new Date(d); suggested.setDate(suggested.getDate() + 20);
-                  setDueDate(suggested);
-                }
-              }} />}
+                {/* Start date */}
+                <Text style={s.label}>Fecha de inicio</Text>
+                <DateField date={startDate} onPress={() => setShowStartPicker(true)} />
+                {showStartPicker && <DateTimePicker value={startDate} mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={onDateChange(setStartDate, setShowStartPicker)} />}
 
-            {/* Due date */}
-            <Text style={s.label}>Fecha de vencimiento</Text>
-            <DateField date={dueDate} onPress={() => setShowDuePicker(true)} />
-            {showDuePicker && <DateTimePicker value={dueDate} mode="date"
-              display={Platform.OS === "ios" ? "spinner" : "default"}
-              onChange={onDateChange(setDueDate, setShowDuePicker)} />}
+                {/* End date */}
+                <Text style={s.label}>Fecha de cierre</Text>
+                <DateField date={endDate} onPress={() => setShowEndPicker(true)} />
+                {showEndPicker && <DateTimePicker value={endDate} mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={(e, d) => {
+                    setShowEndPicker(Platform.OS === "ios");
+                    if (d) {
+                      setEndDate(d); setMonth(getMonthLabel(d));
+                      const suggested = new Date(d); suggested.setDate(suggested.getDate() + 20);
+                      setDueDate(suggested);
+                    }
+                  }} />}
 
-            {/* Buttons */}
-            <View style={s.buttonRow}>
-              <Pressable onPress={onClose} disabled={isSubmitting}
-                style={({ pressed }) => [s.btn, s.btnCancel, pressed && { opacity: 0.7 }]}>
-                <Text style={s.btnCancelText}>Cancelar</Text>
-              </Pressable>
-              <Pressable onPress={handleSubmit} disabled={isSubmitting || !month.trim()}
-                style={({ pressed }) => [s.btn, s.btnSubmit, (isSubmitting || !month.trim()) && { opacity: 0.5 },
-                  pressed && { opacity: 0.85 }]}>
-                {isSubmitting ? <ActivityIndicator size="small" color={colors.textPrimary} /> :
-                  <Text style={s.btnSubmitText}>Guardar</Text>}
-              </Pressable>
-            </View>
-          </ScrollView>
+                {/* Due date */}
+                <Text style={s.label}>Fecha de vencimiento</Text>
+                <DateField date={dueDate} onPress={() => setShowDuePicker(true)} />
+                {showDuePicker && <DateTimePicker value={dueDate} mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={onDateChange(setDueDate, setShowDuePicker)} />}
+
+                {/* Buttons */}
+                <View style={s.buttonRow}>
+                  <Pressable onPress={onClose} disabled={isSubmitting}
+                    style={({ pressed }) => [s.btn, s.btnCancel, pressed && { opacity: 0.7 }]}>
+                    <Text style={s.btnCancelText}>Cancelar</Text>
+                  </Pressable>
+                  <Pressable onPress={handleSubmit} disabled={isSubmitting || !month.trim()}
+                    style={({ pressed }) => [s.btn, s.btnSubmit, (isSubmitting || !month.trim()) && { opacity: 0.5 },
+                      pressed && { opacity: 0.85 }]}>
+                    {isSubmitting ? <ActivityIndicator size="small" color={colors.textPrimary} /> :
+                      <Text style={s.btnSubmitText}>Crear período</Text>}
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </Animated.View>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
   );
 }
+
+// ─── Intro Step (first-time users) ────────────────────────────────────────
+
+function IntroStep({ orphanedCount, onContinue, onSkip }: {
+  orphanedCount: number; onContinue: () => void; onSkip: () => void;
+}) {
+  return (
+    <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+      {/* Celebration */}
+      <View style={is.hero}>
+        <View style={is.heroIcon}>
+          <Ionicons name="checkmark-circle" size={40} color={colors.success} />
+        </View>
+        <Text style={is.heroTitle}>¡Importación exitosa!</Text>
+        <Text style={is.heroSub}>
+          {orphanedCount} transacciones encontradas. Ahora organicémoslas.
+        </Text>
+        <View style={is.progressBar}>
+          <View style={is.progressDone} />
+          <View style={is.progressPending} />
+        </View>
+        <View style={is.stepLabels}>
+          <Text style={is.stepDone}>Importación ✓</Text>
+          <Text style={is.stepActive}>Período</Text>
+        </View>
+      </View>
+
+      {/* What is it */}
+      <Text style={is.sectionTitle}>¿Qué es un período de facturación?</Text>
+      <View style={is.infoCards}>
+        <View style={is.infoCard}>
+          <Ionicons name="calendar-outline" size={22} color={colors.accent} />
+          <View style={is.infoText}>
+            <Text style={is.infoTitle}>Ciclo mensual</Text>
+            <Text style={is.infoDesc}>Es el rango de fechas que cubre cada estado de cuenta de tu tarjeta.</Text>
+          </View>
+        </View>
+        <View style={is.infoCard}>
+          <Ionicons name="layers-outline" size={22} color={colors.accent} />
+          <View style={is.infoText}>
+            <Text style={is.infoTitle}>Organizá tus gastos</Text>
+            <Text style={is.infoDesc}>Agrupa transacciones por mes para ver proyecciones y estadísticas.</Text>
+          </View>
+        </View>
+        <View style={is.infoCard}>
+          <Ionicons name="alert-circle-outline" size={22} color={colors.accent} />
+          <View style={is.infoText}>
+            <Text style={is.infoTitle}>Control de vencimientos</Text>
+            <Text style={is.infoDesc}>MyQuota te avisará antes del cierre y vencimiento de cada período.</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* CTA */}
+      <Pressable onPress={onContinue}
+        style={({ pressed }) => [is.cta, pressed && { opacity: 0.85 }]}>
+        <Text style={is.ctaText}>Entendido, crear período</Text>
+        <Ionicons name="arrow-forward" size={18} color={colors.textPrimary} />
+      </Pressable>
+
+      <Pressable onPress={onSkip} style={is.skipBtn}>
+        <Text style={is.skipText}>Ahora no, después lo configuro</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+const is = StyleSheet.create({
+  hero: { alignItems: "center", paddingVertical: 20 },
+  heroIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(5,150,105,0.1)",
+    justifyContent: "center", alignItems: "center", marginBottom: 14, borderWidth: 1, borderColor: "rgba(5,150,105,0.2)" },
+  heroTitle: { fontSize: 22, fontWeight: "800", color: colors.textPrimary, marginBottom: 6 },
+  heroSub: { fontSize: 14, color: colors.textMuted, textAlign: "center", lineHeight: 20, marginBottom: 16 },
+
+  progressBar: { flexDirection: "row", height: 4, borderRadius: 2, overflow: "hidden",
+    width: 120, marginBottom: 6 },
+  progressDone: { flex: 1, backgroundColor: colors.success },
+  progressPending: { flex: 1, backgroundColor: colors.border },
+  stepLabels: { flexDirection: "row", justifyContent: "space-between", width: 160 },
+  stepDone: { fontSize: 10, fontWeight: "600", color: colors.success },
+  stepActive: { fontSize: 10, fontWeight: "600", color: colors.accent },
+
+  sectionTitle: { fontSize: 15, fontWeight: "700", color: colors.textPrimary, marginTop: 20, marginBottom: 12 },
+
+  infoCards: { gap: 10 },
+  infoCard: { flexDirection: "row", gap: 12, backgroundColor: "rgba(255,255,255,0.03)",
+    borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border },
+  infoText: { flex: 1 },
+  infoTitle: { fontSize: 14, fontWeight: "600", color: colors.textPrimary, marginBottom: 2 },
+  infoDesc: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
+
+  cta: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    backgroundColor: colors.accent, borderRadius: 14, padding: 16, marginTop: 24 },
+  ctaText: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
+  skipBtn: { alignItems: "center", marginTop: 14, paddingVertical: 8 },
+  skipText: { fontSize: 13, color: colors.textMuted, fontWeight: "500" },
+});
+
+// ─── DateField ────────────────────────────────────────────────────────────
 
 function DateField({ date, onPress }: { date: Date; onPress: () => void }) {
   return (
@@ -162,6 +298,8 @@ function DateField({ date, onPress }: { date: Date; onPress: () => void }) {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────
+
 const s = StyleSheet.create({
   overlay: { flex: 1, justifyContent: "flex-end" },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.6)" },
@@ -170,12 +308,16 @@ const s = StyleSheet.create({
     padding: 24, paddingBottom: 36, maxHeight: "88%",
     borderTopWidth: 1, borderColor: colors.border,
   },
-  header: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 },
+  header: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 16 },
   headerIcon: { width: 36, height: 36, borderRadius: 10,
     backgroundColor: "rgba(59,130,246,0.12)", justifyContent: "center", alignItems: "center" },
-  title: { flex: 1, fontSize: 18, fontWeight: "700", color: colors.textPrimary },
+  title: { fontSize: 18, fontWeight: "700", color: colors.textPrimary },
+  stepHint: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
   closeBtn: { width: 32, height: 32, borderRadius: 16,
     backgroundColor: "rgba(255,255,255,0.06)", justifyContent: "center", alignItems: "center" },
+  progressBar: { height: 3, backgroundColor: colors.border, borderRadius: 2,
+    marginBottom: 18, overflow: "hidden" },
+  progressFill: { height: "100%", width: "100%", backgroundColor: colors.accent, borderRadius: 2 },
 
   alertBox: { flexDirection: "row", gap: 10, backgroundColor: "rgba(217,119,6,0.08)",
     borderRadius: 12, borderWidth: 1, borderColor: "rgba(217,119,6,0.15)",
