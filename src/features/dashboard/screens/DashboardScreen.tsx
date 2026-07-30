@@ -122,7 +122,7 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     loadTransactions();
-  }, [selectedCardId]);
+  }, [selectedCardId, refreshKey]);
 
   const handleImportTransactions = useCallback(async () => {
     if (!selectedCardId) {
