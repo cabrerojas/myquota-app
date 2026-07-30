@@ -372,7 +372,7 @@ export default function TransactionsScreen() {
                 onlyUncategorized ? "checkmark-circle" : "help-circle-outline"
               }
               size={16}
-              color={onlyUncategorized ? colors.textPrimary : colors.warning}
+              color={onlyUncategorized ? colors.textPrimary : colors.accent}
             />
             <Text
               style={[
@@ -689,7 +689,7 @@ export default function TransactionsScreen() {
                           <Ionicons
                             name="pricetag-outline"
                             size={13}
-                            color={colors.warning}
+                            color={colors.accent}
                           />
                           <Text style={styles.uncategorizedText}>
                             Categorizar
@@ -879,7 +879,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -4,
     right: -4,
-    backgroundColor: colors.destructive,
+    backgroundColor: colors.accent,
     width: 18,
     height: 18,
     borderRadius: 9,
@@ -939,7 +939,7 @@ const styles = StyleSheet.create({
   },
   clearFiltersText: {
     fontSize: 13,
-    color: colors.destructive,
+    color: colors.accent,
     fontWeight: "600",
   },
   // Summary bar
@@ -962,7 +962,7 @@ const styles = StyleSheet.create({
   summaryAmount: {
     fontSize: 14,
     fontWeight: "700",
-    color: colors.destructive,
+    color: colors.textPrimary,
   },
   summaryAmountUSD: {
     fontSize: 14,
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
   dayTotal: {
     fontSize: 13,
     fontWeight: "700",
-    color: colors.destructive,
+    color: colors.textPrimary,
   },
   dayTotalUSD: {
     fontSize: 13,
@@ -1055,7 +1055,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 15,
     fontWeight: "700",
-    color: colors.destructive,
+    color: colors.textPrimary,
   },
   categoryBtn: {
     marginTop: 4,
@@ -1067,15 +1067,15 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.warning,
+    borderColor: colors.accent,
     borderStyle: "dashed",
-    backgroundColor: "rgba(217,119,6,0.1)",
+    backgroundColor: "rgba(59,130,246,0.08)",
     gap: 4,
   },
   uncategorizedText: {
     fontSize: 11,
     fontWeight: "600",
-    color: colors.warning,
+    color: colors.accent,
   },
   amountInput: {
     flex: 1,
