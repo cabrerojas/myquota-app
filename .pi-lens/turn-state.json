@@ -1,0 +1,28 @@
+{
+  "files": {
+    "src/features/billingPeriods/components/BillingPeriodFormModal.tsx": {
+      "modifiedRanges": [
+        {
+          "start": 1,
+          "end": 377
+        }
+      ],
+      "importsChanged": true,
+      "lastEdit": "2026-05-18T22:59:50.414Z"
+    },
+    "src/features/dashboard/screens/DashboardScreen.tsx": {
+      "modifiedRanges": [
+        {
+          "start": 1,
+          "end": 626
+        }
+      ],
+      "importsChanged": true,
+      "lastEdit": "2026-05-18T22:59:49.800Z"
+    }
+  },
+  "turnCycles": 0,
+  "maxCycles": 3,
+  "lastUpdated": "2026-05-18T22:59:50.416Z",
+  "sessionId": "lens-mpbsngeq-6a2c5539"
+}
