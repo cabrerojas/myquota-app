@@ -32,6 +32,7 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
   const [emoji, setEmoji] = useState("");
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [creating, setCreating] = useState(false);
+  const [selecting, setSelecting] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -45,12 +46,17 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
   useEffect(() => {
     if (!visible) return;
     setStep("pick"); setSearchText(""); setNewName(""); setEmoji(""); setColor(PRESET_COLORS[0]);
+    setSelecting(false);
     loadData();
   }, [visible, loadData]);
 
-  const handlePickCategory = (cat: Category) => onCategorySelected(cat);
+  const handlePickCategory = (cat: Category) => {
+    setSelecting(true);
+    onCategorySelected(cat);
+  };
 
   const handlePickFromHistory = (item: MerchantCategoryHistoryItem) => {
+    setSelecting(true);
     onCategorySelected({ id: item.categoryId, name: item.categoryName, icon: item.categoryIcon, color: item.categoryColor });
   };
 
@@ -183,6 +189,14 @@ export default function CategorySuggestModal({ visible, merchant, onClose, onCat
             </ScrollView>
           )}
         </View>
+
+        {/* Loading overlay during category assignment */}
+        {selecting && (
+          <View style={s.selectingOverlay}>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={s.selectingText}>Asignando categoría...</Text>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -233,4 +247,17 @@ const s = StyleSheet.create({
   btnCancelText: { fontWeight: "600", color: colors.textSecondary, fontSize: 15 },
   btnCreate: { backgroundColor: colors.accent },
   btnCreateText: { fontWeight: "700", color: colors.textPrimary, fontSize: 15 },
+  selectingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(15,23,42,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 14,
+    zIndex: 10,
+  },
+  selectingText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontWeight: "500",
+  },
 });
