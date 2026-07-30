@@ -366,28 +366,24 @@ export default function DashboardScreen() {
               params: { filter: "uncategorized" },
             })
           }
-          activeOpacity={0.82}
+          activeOpacity={0.85}
         >
-          <View style={styles.categorizeStrip} />
+          <View style={styles.categorizeAccent} />
           <View style={styles.categorizeIconWrap}>
-            <Ionicons name="pricetag" size={18} color={colors.warning} />
+            <Ionicons name="pricetag" size={17} color={colors.accent} />
           </View>
           <View style={styles.categorizeTextBlock}>
-            <View style={styles.categorizeTopRow}>
-              <Text style={styles.categorizeCount}>{uncategorizedCount}</Text>
-              <Text style={styles.categorizeLabel}>
-                {uncategorizedCount === 1
-                  ? " transacción pendiente"
-                  : " transacciones pendientes"}
-              </Text>
-            </View>
+            <Text style={styles.categorizeCount}>{uncategorizedCount}</Text>
+            <Text style={styles.categorizeLabel}>
+              {uncategorizedCount === 1
+                ? "transacción sin categorizar"
+                : "Transacciones sin categorizar"}
+            </Text>
             <Text style={styles.categorizeSubtitle}>
-              Toca para categorizar ahora
+              Toca para asignar categorías
             </Text>
           </View>
-          <View style={styles.categorizeArrow}>
-            <Ionicons name="chevron-forward" size={18} color={colors.warning} />
-          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
         </TouchableOpacity>
       )}
 
@@ -458,7 +454,7 @@ export default function DashboardScreen() {
                         <Ionicons
                           name="pricetag-outline"
                           size={10}
-                          color={colors.warning}
+                          color={colors.accent}
                         />
                         <Text style={styles.txUncategorizedText}>
                           Sin categoría
@@ -578,11 +574,10 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
     borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: colors.warning,
-    backgroundColor: "rgba(217,119,6,0.1)",
+    borderColor: "rgba(59,130,246,0.3)",
+    backgroundColor: "rgba(59,130,246,0.06)",
   },
-  txUncategorizedText: { fontSize: 10, fontWeight: "600", color: colors.warning },
+  txUncategorizedText: { fontSize: 10, fontWeight: "600", color: colors.accent },
   negative: { color: colors.destructive, fontSize: 15, fontWeight: "bold" },
   emptyTransactions: {
     alignItems: "center",
@@ -655,58 +650,52 @@ const styles = StyleSheet.create({
   categorizeBanner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(217,119,6,0.08)",
+    backgroundColor: "rgba(59,130,246,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(217,119,6,0.2)",
-    borderRadius: 16,
+    borderColor: "rgba(59,130,246,0.25)",
+    borderRadius: 14,
     marginTop: spacing.md,
+    padding: 16,
+    gap: 14,
     overflow: "hidden",
-    paddingRight: 14,
   },
-  categorizeStrip: {
-    width: 4,
-    alignSelf: "stretch",
-    backgroundColor: colors.warning,
+  categorizeAccent: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 3,
+    backgroundColor: colors.accent,
   },
   categorizeIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(217,119,6,0.15)",
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "rgba(59,130,246,0.14)",
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 14,
-    marginRight: 12,
     flexShrink: 0,
   },
   categorizeTextBlock: {
     flex: 1,
-    paddingVertical: 14,
-  },
-  categorizeTopRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
+    gap: 3,
   },
   categorizeCount: {
-    fontSize: 20,
+    fontSize: 26,
     fontWeight: "800",
-    color: colors.warning,
-    lineHeight: 24,
+    color: colors.accent,
+    lineHeight: 30,
+    letterSpacing: -0.5,
   },
   categorizeLabel: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: "600",
-    color: colors.warning,
+    color: colors.textPrimary,
   },
   categorizeSubtitle: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textMuted,
     fontWeight: "500",
-    marginTop: 2,
-    letterSpacing: 0.2,
-  },
-  categorizeArrow: {
-    marginLeft: 8,
   },
   topGradient: {
     position: "absolute",
