@@ -45,6 +45,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     const unsubscribe = onSessionExpired(() => {
+      queryClient.clear(); // Clear all cached query data
       router.replace("/login");
     });
     return unsubscribe;
