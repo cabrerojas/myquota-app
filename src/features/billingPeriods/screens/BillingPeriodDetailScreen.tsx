@@ -21,6 +21,21 @@ interface BillingPeriodDetailScreenProps {
   periodEndDate: string;
 }
 
+/** Converts YYYY-MM (DB format) to human-readable, e.g. "jul 2026". */
+const formatMonthDisplay = (month: string): string => {
+  if (/^\d{4}-\d{2}$/.test(month)) {
+    const [year, m] = month.split("-");
+    const date = new Date(Number(year), Number(m) - 1, 1);
+    const label = date.toLocaleDateString("es-CL", {
+      month: "short",
+      year: "numeric",
+      timeZone: "America/Santiago",
+    });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  return month;
+};
+
 const formatDisplayDate = (dateStr: string): string => {
   try {
     const date = new Date(dateStr);
@@ -156,7 +171,7 @@ export default function BillingPeriodDetailScreen({
       <View style={styles.periodCard}>
         <View style={styles.periodHeader}>
           <Ionicons name="calendar" size={20} color="#007BFF" />
-          <Text style={styles.periodMonth}>{periodMonth}</Text>
+          <Text style={styles.periodMonth}>{formatMonthDisplay(periodMonth)}</Text>
         </View>
         <Text style={styles.periodDates}>
           {formatDisplayDate(periodStartDate)} —{" "}
