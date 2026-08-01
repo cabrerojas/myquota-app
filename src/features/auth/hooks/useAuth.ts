@@ -101,7 +101,7 @@ async function authenticateWithBackend(
 export const useGoogleSignIn = (router: Router) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  // ── Web: useAuthRequest with Google OAuth (implicit PKCE) ──
+  // ── Web: useAuthRequest with Google OAuth (implicit, no PKCE) ──
   const [request, , promptAsync] = useAuthRequest(
     {
       clientId: webClientId ?? "",
@@ -113,6 +113,7 @@ export const useGoogleSignIn = (router: Router) => {
         "https://www.googleapis.com/auth/gmail.readonly",
       ],
       responseType: ResponseType.Token,
+      usePKCE: false,
     },
     discovery,
   );
