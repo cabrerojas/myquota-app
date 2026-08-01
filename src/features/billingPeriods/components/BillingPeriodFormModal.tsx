@@ -21,11 +21,12 @@ interface BillingPeriodFormModalProps {
   isFirstTime?: boolean;
 }
 
-const MONTH_NAMES = [
-  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
-];
-const getMonthLabel = (date: Date): string => `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+/** Formats a Date as YYYY-MM to fit the DB's VARCHAR(7) column. */
+const getMonthLabel = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  return `${y}-${m}`;
+};
 
 /** Parses an ISO date string as local time, avoiding UTC shift */
 function parseDateLocal(dateStr: string): Date {
@@ -144,7 +145,7 @@ export default function BillingPeriodFormModal({
                 {/* Period name */}
                 <Text style={s.label}>Nombre del período</Text>
                 <TextInput style={s.input} value={month} onChangeText={setMonth}
-                  placeholder="Ej: Febrero 2026" placeholderTextColor={colors.textSubtle} />
+                  placeholder="Ej: 2026-02" placeholderTextColor={colors.textSubtle} />
 
                 {/* Start date */}
                 <Text style={s.label}>Fecha de inicio</Text>

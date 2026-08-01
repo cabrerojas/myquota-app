@@ -39,8 +39,8 @@ import {
   setupAndroidChannel,
   scheduleCardNotifications,
 } from "@/features/notifications/services/notificationService";
-import { CreditCardWithLimits } from "@/shared/types/creditCard";
-import { formatShortDate } from "@/shared/utils/format";
+import { CreditCardWithLimits, CreditCard } from "@/shared/types/creditCard";
+import { formatShortDate, toISODateString } from "@/shared/utils/format";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import { colors } from "@/shared/theme/colors";
@@ -48,6 +48,85 @@ import { spacing, borderRadius } from "@/shared/theme/tokens";
 import Svg, { Circle } from "react-native-svg";
 
 const formatTransactionDate = formatShortDate;
+
+// ─── Suggested Billing Period from Credit Card ─────────────────────────
+
+/** Formats a Date as YYYY-MM to fit the DB's VARCHAR(7) column. */
+function formatMonthKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+/** Returns the last calendar day of a given month (1–31). */
+function lastDayOfMonth(year: number, month: number): number {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+/**
+ * Computes a suggested billing period based on the credit card's
+ * closingDay and dueDay. Uses the most recent closing date ≤ today.
+ * Falls back to endDate + 20 days when dueDay is not set.
+ * Returns null when closingDay is not configured.
+ */
+function computeSuggestedPeriod(card: CreditCard): {
+  month: string; startDate: string; endDate: string; dueDate: string;
+} | null {
+  if (!card.closingDay) return null;
+
+  const today = new Date();
+  const closingDay = card.closingDay;
+
+  // ---- endDate: most recent closing ≤ today ----
+  const thisMonthLast = lastDayOfMonth(today.getFullYear(), today.getMonth());
+  const thisClosing = Math.min(closingDay, thisMonthLast);
+
+  let endYear = today.getFullYear();
+  let endMonth = today.getMonth();
+  let endDay: number;
+
+  if (today.getDate() >= thisClosing) {
+    endDay = thisClosing;
+  } else {
+    endMonth -= 1;
+    if (endMonth < 0) { endMonth = 11; endYear -= 1; }
+    const prevLast = lastDayOfMonth(endYear, endMonth);
+    endDay = Math.min(closingDay, prevLast);
+  }
+
+  const endDate = new Date(endYear, endMonth, endDay);
+
+  // ---- startDate: day after previous closing ----
+  let startMonth = endMonth - 1;
+  let startYear = endYear;
+  if (startMonth < 0) { startMonth = 11; startYear -= 1; }
+  const startMonthLast = lastDayOfMonth(startYear, startMonth);
+  const startDay = Math.min(closingDay, startMonthLast);
+  const startDate = new Date(startYear, startMonth, startDay + 1);
+
+  // ---- dueDate ----
+  let dueDate: Date;
+  if (card.dueDay) {
+    let dueMonth = endMonth + 1;
+    let dueYear = endYear;
+    if (dueMonth > 11) { dueMonth = 0; dueYear += 1; }
+    const dueMonthLast = lastDayOfMonth(dueYear, dueMonth);
+    const dueDay = Math.min(card.dueDay, dueMonthLast);
+    dueDate = new Date(dueYear, dueMonth, dueDay);
+  } else {
+    dueDate = new Date(endDate);
+    dueDate.setDate(dueDate.getDate() + 20);
+  }
+
+  const monthLabel = formatMonthKey(endDate);
+
+  return {
+    month: monthLabel,
+    startDate: toISODateString(startDate),
+    endDate: toISODateString(endDate),
+    dueDate: toISODateString(dueDate),
+  };
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -326,13 +405,19 @@ export default function DashboardScreen() {
                     <Ionicons name="calendar-outline" size={20} color={colors.accent} />
                   </View>
                   <View style={styles.billingPromptContent}>
-                    <Text style={styles.billingPromptTitle}>Creá un período de facturación</Text>
+                    <Text style={styles.billingPromptTitle}>Crear período de facturación</Text>
                     <Text style={styles.billingPromptBody}>
                       Para ver estadísticas, proyecciones y organizar tus gastos por mes.
                     </Text>
                     <Pressable
                       onPress={() => {
-                        console.log("[Dashboard] Opening billing period modal, suggestion:", orphanSuggestion);
+                        const selectedCard = creditCards.find(c => c.id === selectedCardId);
+                        if (selectedCard) {
+                          const suggestion = computeSuggestedPeriod(selectedCard);
+                          if (suggestion) {
+                            setOrphanSuggestion(suggestion);
+                          }
+                        }
                         setShowOrphanModal(true);
                       }}
                       style={({ pressed }) => [styles.billingPromptBtn, pressed && { opacity: 0.8 }]}
