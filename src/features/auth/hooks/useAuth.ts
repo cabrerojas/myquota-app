@@ -6,7 +6,6 @@ import {
 } from "@react-native-google-signin/google-signin";
 import * as WebBrowser from "expo-web-browser";
 import {
-  exchangeCodeAsync,
   makeRedirectUri,
   useAuthRequest,
   ResponseType,
@@ -102,7 +101,7 @@ async function authenticateWithBackend(
 export const useGoogleSignIn = (router: Router) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  // ── Web: useAuthRequest with Google OAuth ──────────────
+  // ── Web: useAuthRequest with Google OAuth (implicit PKCE) ──
   const [request, , promptAsync] = useAuthRequest(
     {
       clientId: webClientId ?? "",
@@ -113,11 +112,7 @@ export const useGoogleSignIn = (router: Router) => {
         "email",
         "https://www.googleapis.com/auth/gmail.readonly",
       ],
-      responseType: ResponseType.Code,
-      extraParams: {
-        access_type: "offline",
-        prompt: "consent",
-      },
+      responseType: ResponseType.Token,
     },
     discovery,
   );
@@ -126,28 +121,21 @@ export const useGoogleSignIn = (router: Router) => {
     setIsLoading(true);
     try {
       if (Platform.OS === "web") {
-        // ── Web OAuth flow ──────────────────
+        // ── Web OAuth implicit flow ──────────
         console.log("Iniciando sesión con Google (web)...");
         const result = await promptAsync();
-        if (result?.type !== "success" || !result.params.code) {
+        if (result?.type !== "success") {
           console.log("Login cancelado o falló en web:", result?.type);
           return;
         }
 
-        // Exchange code for tokens
-        const tokenResponse = await exchangeCodeAsync(
-          {
-            clientId: webClientId ?? "",
-            code: result.params.code,
-            redirectUri,
-            extraParams: { code_verifier: request?.codeVerifier ?? "" },
-          },
-          discovery,
-        );
+        // In implicit flow, id_token comes directly in the params
+        const idToken =
+          result.params.id_token ??
+          (result.authentication as { idToken?: string } | null)?.idToken;
 
-        const idToken = tokenResponse.idToken;
         if (!idToken) {
-          console.error("No idToken in token response");
+          console.error("No idToken in auth response:", result.params);
           return;
         }
 
@@ -155,7 +143,7 @@ export const useGoogleSignIn = (router: Router) => {
         const payload = JSON.parse(atob(idToken.split(".")[1]));
         await authenticateWithBackend(
           idToken,
-          tokenResponse.refreshToken ?? undefined, // serverAuthCode equivalent
+          undefined, // serverAuthCode not available in implicit flow
           {
             givenName: payload.given_name,
             familyName: payload.family_name,
