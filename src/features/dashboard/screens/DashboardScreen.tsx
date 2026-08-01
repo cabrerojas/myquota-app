@@ -259,8 +259,11 @@ export default function DashboardScreen() {
       ...data,
       creditCardId: selectedCardId, // Override with actual card ID
     });
-    Alert.alert("Éxito", "Período de facturación creado correctamente.");
+    await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
+    await queryClient.invalidateQueries({ queryKey: ["creditCards"] });
+    await refreshCount();
     setRefreshKey((prev) => prev + 1);
+    Alert.alert("Éxito", "Período de facturación creado correctamente.");
   };
 
   // Set up notifications when creditCards loads
