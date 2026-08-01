@@ -1,6 +1,7 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
 import { PaginatedResponse } from "@/features/creditCards/services/creditCardsApi";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 export type { PaginatedResponse };
 
@@ -211,3 +212,29 @@ export const updateTransaction = async (
   }
   return response.json();
 };
+
+// ─── React Query infinite hook ────────────────────────────────────────
+
+const PAGE_SIZE = 50;
+
+export function useInfiniteTransactions(
+  creditCardId: string | null,
+  startDate?: string,
+  endDate?: string,
+) {
+  return useInfiniteQuery({
+    queryKey: ["transactions", creditCardId, startDate, endDate],
+    queryFn: ({ pageParam }) =>
+      getTransactionsByCreditCard(
+        creditCardId!,
+        PAGE_SIZE,
+        pageParam as string | undefined,
+        startDate,
+        endDate,
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.metadata.nextCursor ?? undefined,
+    enabled: !!creditCardId,
+    staleTime: 30_000,
+  });
+}

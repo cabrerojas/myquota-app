@@ -12,19 +12,18 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
-  getTransactionsByCreditCard,
+  useInfiniteTransactions,
   Transaction,
   updateTransaction,
-  PaginatedResponse as TransactionsResponse,
 } from "../services/transactionsApi";
 import { exportTransactionsToCSV } from "../services/exportTransactions";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
-import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/tokens";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
@@ -47,6 +46,29 @@ const MONTH_FILTERS = [
   "Diciembre",
 ];
 
+const MAX_ITEMS_IN_MEMORY = 200;
+
+/** Derive YYYY-MM-DD strings from month (1–12) and year filters for backend queries. */
+function dateRangeFromFilters(
+  monthFilter: number,
+  yearFilter: number | null,
+): { startDate?: string; endDate?: string } {
+  if (monthFilter <= 0 && yearFilter === null) return {};
+  const y = yearFilter ?? new Date().getFullYear();
+  if (monthFilter > 0) {
+    const m = monthFilter.toString().padStart(2, "0");
+    const lastDay = new Date(y, monthFilter, 0).getDate();
+    return {
+      startDate: `${y}-${m}-01`,
+      endDate: `${y}-${m}-${lastDay}`,
+    };
+  }
+  return {
+    startDate: `${y}-01-01`,
+    endDate: `${y}-12-31`,
+  };
+}
+
 interface GroupedTransactions {
   day: string;
   transactions: Transaction[];
@@ -59,41 +81,42 @@ export default function TransactionsScreen() {
   const { decrementCount } = useUncategorized();
   const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingTransactions, setLoadingTransactions] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loadingCards, setLoadingCards] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>("all");
-  const [monthFilter, setMonthFilter] = useState(0); // 0 = Todos
-  const [showFilters, setShowFilters] = useState(
-    params.filter === "uncategorized",
-  );
+  const [monthFilter, setMonthFilter] = useState(0);
   const [yearFilter, setYearFilter] = useState<number | null>(null);
   const [minAmount, setMinAmount] = useState("");
   const [maxAmount, setMaxAmount] = useState("");
   const [onlyUncategorized, setOnlyUncategorized] = useState(
     params.filter === "uncategorized",
   );
+  const [showFilters, setShowFilters] = useState(
+    params.filter === "uncategorized",
+  );
 
-  // Pagination state
-  const [hasMore, setHasMore] = useState(true);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
+  // Derive date range from month/year filters → pushed to backend SQL
+  const { startDate, endDate } = dateRangeFromFilters(monthFilter, yearFilter);
 
-  // Snapshot the filter param in a ref so useFocusEffect can read the
-  // latest value without being listed as a dependency (avoids loops).
+  // React Query infinite pagination (auto-cached, auto-refetched on filter change)
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetching,
+    refetch,
+  } = useInfiniteTransactions(selectedCardId, startDate, endDate);
+
+  // Flat list from all pages, capped at MAX_ITEMS_IN_MEMORY
+  const transactions = useMemo(() => {
+    const all = data?.pages.flatMap((p) => p.items) ?? [];
+    return all.slice(0, MAX_ITEMS_IN_MEMORY);
+  }, [data]);
+
   const filterParamRef = useRef(params.filter);
   filterParamRef.current = params.filter;
 
-  // Re-apply the filter EVERY TIME this screen comes into focus.
-  //
-  // Why useFocusEffect instead of useEffect([params.filter])?
-  // The drawer keeps this screen permanently mounted in memory.
-  // When the user navigates here with { filter: "uncategorized" } for the
-  // second time, params.filter doesn't *change* (it was already that value),
-  // so useEffect's dependency check sees no difference and skips the run.
-  // useFocusEffect fires on every focus event regardless of param diffs.
   useFocusEffect(
     useCallback(() => {
       if (filterParamRef.current === "uncategorized") {
@@ -104,6 +127,7 @@ export default function TransactionsScreen() {
   );
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categoryModalMerchant, setCategoryModalMerchant] = useState<
     string | null
@@ -115,7 +139,6 @@ export default function TransactionsScreen() {
     string | null
   >(null);
 
-  // Calcular años presentes en las transacciones
   const availableYears = useMemo(() => {
     const years = new Set<number>();
     transactions.forEach((t) => {
@@ -134,58 +157,18 @@ export default function TransactionsScreen() {
           setSelectedCardId(cardsResponse.items[0].id);
         }
       })
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingCards(false));
   }, []);
 
-  // Load transactions when card changes
-  const loadTransactions = useCallback(async (cursor?: string, isRefresh = false) => {
-    if (!selectedCardId) return;
-    setLoadingTransactions(true);
-    try {
-      const data = await getTransactionsByCreditCard(
-        selectedCardId,
-        50,
-        cursor,
-      );
-      
-      const sorted = [...data.items].sort(
-        (a, b) =>
-          new Date(b.transactionDate).getTime() -
-          new Date(a.transactionDate).getTime(),
-      );
-      
-      if (isRefresh || !cursor) {
-        setTransactions(sorted);
-      } else {
-        setTransactions(prev => [...prev, ...sorted]);
-      }
-      
-      setHasMore(data.metadata.hasMore);
-      setNextCursor(data.metadata.nextCursor);
-    } catch (error) {
-      if (!isSessionExpired())
-        console.error("Error loading transactions:", error);
-    } finally {
-      setLoadingTransactions(false);
-    }
-  }, [selectedCardId]);
-
-  useEffect(() => {
-    loadTransactions();
-  }, [loadTransactions]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    setNextCursor(null);
-    await loadTransactions(undefined, true);
-    setRefreshing(false);
-  }, [loadTransactions]);
+  const onRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore || !nextCursor) return;
-    setLoadingMore(true);
-    loadTransactions(nextCursor);
-  }, [loadingMore, hasMore, nextCursor, loadTransactions]);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   // Filter + search
   const filteredTransactions = useMemo(() => {
@@ -275,7 +258,7 @@ export default function TransactionsScreen() {
     (searchQuery ? 1 : 0) +
     (onlyUncategorized ? 1 : 0);
 
-  if (loading) {
+  if (loadingCards) {
     return <TransactionsSkeleton />;
   }
 
@@ -572,7 +555,7 @@ export default function TransactionsScreen() {
       </Text>
 
       {/* Transactions list */}
-      {loadingTransactions ? (
+      {isFetching && !data ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
@@ -589,7 +572,7 @@ export default function TransactionsScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={isFetching} onRefresh={onRefresh} />
           }
         >
           {groupedTransactions.map((group) => (
@@ -704,13 +687,13 @@ export default function TransactionsScreen() {
           ))}
           
           {/* Load More Button */}
-          {hasMore && (
+          {hasNextPage && (
             <TouchableOpacity
               style={styles.loadMoreButton}
               onPress={loadMore}
-              disabled={loadingMore}
+              disabled={isFetchingNextPage}
             >
-              {loadingMore ? (
+              {isFetchingNextPage ? (
                 <ActivityIndicator size="small" color={colors.accent} />
               ) : (
                 <View style={styles.loadMoreContent}>
@@ -746,22 +729,8 @@ export default function TransactionsScreen() {
                 categoryId: category.id,
               });
 
-              const updated: Partial<Transaction> = res?.data ?? {};
-
-              setTransactions((prev) =>
-                prev.map((t) =>
-                  t.id === transactionId
-                    ? {
-                        ...t,
-                        categoryId: updated.categoryId ?? category.id,
-                        categoryName: updated.categoryName ?? category.name,
-                        categoryIcon: updated.categoryIcon ?? category.icon,
-                        categoryColor: updated.categoryColor ?? category.color,
-                      }
-                    : t,
-                ),
-              );
-
+              // Invalidate to refresh the list (React Query re-fetches)
+              queryClient.invalidateQueries({ queryKey: ["transactions"] });
               if (wasMissingCategory) {
                 decrementCount();
               }
