@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import { glassSurface } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
+import { spacing } from "@/shared/theme/tokens";
 import type { DebtSummary } from "@/features/dashboard/services/statsApi";
 
 interface DebtIndicatorCardProps {
@@ -157,7 +158,8 @@ export default function DebtIndicatorCard({
 const styles = StyleSheet.create({
   card: {
     ...glassSurface(true),
-    marginTop: 16,
+    marginTop: spacing.md,
+    padding: spacing.md,
   } as any,
   header: {
     flexDirection: "row",

@@ -7,6 +7,7 @@
 
 import { ViewStyle, Platform } from "react-native";
 import { colors } from "./colors";
+import { borderRadius } from "./tokens";
 
 /**
  * Standard glass surface: solid dark base with glass border.
@@ -18,7 +19,7 @@ export function glassSurface(elevated: boolean = false): ViewStyle {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 16,
+    borderRadius: borderRadius.glass,
     overflow: "hidden",
   };
 
@@ -71,4 +72,31 @@ export const effects = {
   glassSubtle,
   accentGlow,
   insetShadow,
+};
+
+// ─── Shared icon containers ──────────────────────────────────────────
+
+/** Standard icon container (42×42, glass bg). */
+export const iconContainer: ViewStyle = {
+  width: 42,
+  height: 42,
+  borderRadius: 12,
+  backgroundColor: "rgba(59,130,246,0.1)",
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+/** Small variant (34×34). */
+export const iconContainerSm: ViewStyle = {
+  ...iconContainer,
+  width: 34,
+  height: 34,
+  borderRadius: 10,
+};
+
+/** Large variant (48×48). */
+export const iconContainerLg: ViewStyle = {
+  ...iconContainer,
+  width: 48,
+  height: 48,
 };

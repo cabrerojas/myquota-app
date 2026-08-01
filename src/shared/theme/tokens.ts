@@ -15,7 +15,9 @@ export { effects, glassSurface, glassSubtle, accentGlow } from "./effects";
 export const spacing = {
   xs: 4,
   sm: 8,
+  sm2: 12,
   md: 16,
+  md2: 20,
   lg: 24,
   xl: 32,
 } as const;
@@ -34,6 +36,8 @@ export const borderRadius = {
   md: 10,
   lg: 14,
   xl: 18,
+  pill: 20,
+  glass: 16,
   full: 999,
 } as const;
 
