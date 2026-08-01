@@ -34,6 +34,7 @@ import { isSessionExpired } from "@/shared/utils/authEvents";
 import DashboardSkeleton from "../components/DashboardSkeleton";
 import EmptyDashboardState from "../components/EmptyDashboardState";
 import FirstImportPrompt from "../components/FirstImportPrompt";
+import PressableScale from "@/shared/components/PressableScale";
 import {
   configureNotificationHandler,
   setupAndroidChannel,
@@ -383,7 +384,7 @@ export default function DashboardScreen() {
           ) : (
             <>
               {/* Normal dashboard — data exists */}
-              <TouchableOpacity
+              <PressableScale
                 style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
                 onPress={handleImportTransactions}
                 disabled={isRefreshing}
@@ -396,7 +397,7 @@ export default function DashboardScreen() {
                 <Text style={styles.importButtonText}>
                   {isRefreshing ? "Sincronizando..." : "Sincronizar movimientos"}
                 </Text>
-              </TouchableOpacity>
+              </PressableScale>
 
               {/*
                * Has transactions but no billing period yet:
@@ -414,7 +415,7 @@ export default function DashboardScreen() {
                     <Text style={styles.billingPromptBody}>
                       Para ver estadísticas, proyecciones y organizar tus gastos por mes.
                     </Text>
-                    <Pressable
+                    <PressableScale
                       onPress={() => {
                         const selectedCard = creditCards.find(c => c.id === selectedCardId);
                         if (selectedCard) {
@@ -425,13 +426,13 @@ export default function DashboardScreen() {
                         }
                         setShowOrphanModal(true);
                       }}
-                      style={({ pressed }) => [styles.billingPromptBtn, pressed && { opacity: 0.8 }]}
+                      style={styles.billingPromptBtn}
                       accessibilityLabel="Crear período de facturación"
                       accessibilityRole="button"
                     >
                       <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
                       <Text style={styles.billingPromptBtnText}>Crear período</Text>
-                    </Pressable>
+                    </PressableScale>
                   </View>
                 </View>
               ) : null}
