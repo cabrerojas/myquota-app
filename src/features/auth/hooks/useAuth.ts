@@ -113,7 +113,6 @@ export const useGoogleSignIn = (router: Router) => {
             "openid",
             "profile",
             "email",
-            "https://www.googleapis.com/auth/gmail.readonly",
           ],
           responseType: ResponseType.IdToken,
           usePKCE: false,
