@@ -1,16 +1,11 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { Platform } from "react-native";
 import {
   GoogleSignin,
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
 import * as WebBrowser from "expo-web-browser";
-import {
-  makeRedirectUri,
-  useAuthRequest,
-  ResponseType,
-  DiscoveryDocument,
-} from "expo-auth-session";
+import { makeRedirectUri } from "expo-auth-session";
 import { Router } from "expo-router";
 import { API_BASE_URL } from "@/config/api";
 import {
@@ -42,16 +37,7 @@ if (Platform.OS !== "web") {
 
 WebBrowser.maybeCompleteAuthSession();
 
-// Google OAuth discovery document (same for all platforms)
-const discovery: DiscoveryDocument = {
-  authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
-  tokenEndpoint: "https://oauth2.googleapis.com/token",
-  revocationEndpoint: "https://oauth2.googleapis.com/revoke",
-};
-
-const redirectUri = makeRedirectUri({
-  scheme: undefined,
-});
+const redirectUri = makeRedirectUri();
 
 /**
  * Sends the idToken (and optional serverAuthCode) to the backend,
@@ -101,49 +87,36 @@ async function authenticateWithBackend(
 export const useGoogleSignIn = (router: Router) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  // ── Web: Google OAuth with id_token response ───────────
-  // Stable nonce required by Google when using response_type=id_token
-  const nonce = useMemo(() => Math.random().toString(36).substring(2, 15), []);
-  const [request, , promptAsync] = useAuthRequest(
-    Platform.OS === "web"
-      ? {
-          clientId: webClientId ?? "",
-          redirectUri,
-          scopes: [
-            "openid",
-            "profile",
-            "email",
-          ],
-          responseType: ResponseType.IdToken,
-          usePKCE: false,
-          extraParams: { nonce },
-        }
-      : {
-          clientId: "",
-          redirectUri,
-          scopes: [],
-          responseType: ResponseType.IdToken,
-        },
-    discovery,
-  );
-
   const handleSignIn = useCallback(async () => {
     setIsLoading(true);
     try {
       if (Platform.OS === "web") {
-        // ── Web OAuth implicit flow ──────────
+        // ── Web OAuth via openAuthSessionAsync ──
         console.log("Iniciando sesión con Google (web)...");
-        const result = await promptAsync();
-        if (result?.type !== "success") {
-          console.log("Login cancelado o falló en web:", result?.type);
+
+        const authUrl =
+          "https://accounts.google.com/o/oauth2/v2/auth?" +
+          new URLSearchParams({
+            client_id: webClientId ?? "",
+            redirect_uri: redirectUri,
+            response_type: "id_token",
+            scope: "openid profile email",
+            nonce: Math.random().toString(36).substring(2, 15),
+          }).toString();
+
+        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
+
+        if (result.type !== "success") {
+          console.log("Login cancelado o falló en web:", result.type);
           return;
         }
 
-        // With response_type=id_token, id_token comes directly
-        const idToken = result.params.id_token;
+        // Parse id_token from redirect URL fragment
+        const params = new URLSearchParams(result.url.split("#")[1] || "");
+        const idToken = params.get("id_token");
 
         if (!idToken) {
-          console.error("No idToken in auth response:", result.params);
+          console.error("No idToken in redirect URL:", result.url);
           return;
         }
 
@@ -151,7 +124,7 @@ export const useGoogleSignIn = (router: Router) => {
         const payload = JSON.parse(atob(idToken.split(".")[1]));
         await authenticateWithBackend(
           idToken,
-          undefined, // serverAuthCode not available in implicit flow
+          undefined,
           {
             givenName: payload.given_name,
             familyName: payload.family_name,
@@ -182,7 +155,7 @@ export const useGoogleSignIn = (router: Router) => {
     } finally {
       setIsLoading(false);
     }
-  }, [router, promptAsync, request?.codeVerifier]);
+  }, [router]);
 
   return { signIn: handleSignIn, isLoading };
 };
