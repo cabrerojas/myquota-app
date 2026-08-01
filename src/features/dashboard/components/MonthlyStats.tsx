@@ -3,6 +3,7 @@ import { memo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { glassSurface } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
+import { spacing } from "@/shared/theme/tokens";
 import { useMonthlyStats } from "../services/statsApi";
 
 interface MonthlyStatsProps {
@@ -71,13 +72,14 @@ export default memo(MonthlyStatsComponent);
 const styles = StyleSheet.create({
   container: {
     ...glassSurface(false),
-    marginTop: 16,
+    marginTop: spacing.md,
+    padding: spacing.md,
   } as any,
   title: {
     fontSize: 14,
     fontWeight: "700",
     color: colors.textSecondary,
-    marginBottom: 12,
+    marginBottom: spacing.sm2,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
