@@ -101,7 +101,7 @@ async function authenticateWithBackend(
 export const useGoogleSignIn = (router: Router) => {
   const [isLoading, setIsLoading] = useState(false);
 
-  // ── Web: useAuthRequest with Google OAuth (implicit, no PKCE) ──
+  // ── Web: Google OAuth with id_token response ───────────
   const [request, , promptAsync] = useAuthRequest(
     {
       clientId: webClientId ?? "",
@@ -112,7 +112,7 @@ export const useGoogleSignIn = (router: Router) => {
         "email",
         "https://www.googleapis.com/auth/gmail.readonly",
       ],
-      responseType: ResponseType.Token,
+      responseType: ResponseType.IdToken,
       usePKCE: false,
     },
     discovery,
@@ -130,10 +130,8 @@ export const useGoogleSignIn = (router: Router) => {
           return;
         }
 
-        // In implicit flow, id_token comes directly in the params
-        const idToken =
-          result.params.id_token ??
-          (result.authentication as { idToken?: string } | null)?.idToken;
+        // With response_type=id_token, id_token comes directly
+        const idToken = result.params.id_token;
 
         if (!idToken) {
           console.error("No idToken in auth response:", result.params);
