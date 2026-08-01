@@ -1,15 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
 import { glassSurface } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
-import {
-  getDebtSummary,
-  DebtSummary,
-} from "@/features/dashboard/services/statsApi";
-import { isSessionExpired } from "@/shared/utils/authEvents";
+import type { DebtSummary } from "@/features/dashboard/services/statsApi";
 
 interface DebtIndicatorCardProps {
   refreshKey?: number;
@@ -34,37 +29,11 @@ const formatMonthLabel = (month: string): string => {
 };
 
 export default function DebtIndicatorCard({
-  refreshKey,
-  summary: summaryProp,
+  refreshKey: _refreshKey,
+  summary,
 }: DebtIndicatorCardProps) {
   const router = useRouter();
-  const [summary, setSummary] = useState<DebtSummary | null>(
-    summaryProp ?? null,
-  );
-  const [loading, setLoading] = useState(!summaryProp);
-
-  useEffect(() => {
-    if (summaryProp) {
-      setSummary(summaryProp);
-      setLoading(false);
-      return;
-    }
-    fetchData();
-  }, [refreshKey, summaryProp]);
-
-  const fetchData = async () => {
-    try {
-      const data = await getDebtSummary();
-      setSummary(data);
-    } catch (error) {
-      if (!isSessionExpired())
-        console.error("Error fetching debt summary:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const hasData = !loading && summary && (summary.totalCLP > 0 || summary.totalUSD > 0);
+  const hasData = !!summary && (summary.totalCLP > 0 || summary.totalUSD > 0);
   const next3 = hasData ? (summary!.monthlyBreakdown ?? []).slice(0, 3) : [];
   const maxCLP = next3.length > 0 ? Math.max(...next3.map((m) => m.CLP), 1) : 1;
   const extraMonths = hasData ? Math.max(0, summary!.monthsRemaining - next3.length) : 0;

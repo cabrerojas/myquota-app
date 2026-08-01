@@ -9,6 +9,20 @@ interface MonthlyStatsProps {
   creditCardId: string;
 }
 
+/** Spanish display name from YYYY-MM key, e.g. "2026-08" → "Agosto 2026". */
+function formatMonthDisplay(key: string): string {
+  if (/^\d{4}-\d{2}$/.test(key)) {
+    const [year, month] = key.split("-");
+    const date = new Date(Number(year), Number(month) - 1, 1);
+    const name = new Intl.DateTimeFormat("es-CL", {
+      month: "long",
+      timeZone: "America/Santiago",
+    }).format(date);
+    return `${name.charAt(0).toUpperCase() + name.slice(1)} ${year}`;
+  }
+  return key;
+}
+
 const MonthlyStatsComponent = ({ creditCardId }: MonthlyStatsProps) => {
   const { data: monthlyStats = [], isLoading } = useMonthlyStats(creditCardId);
 
@@ -29,7 +43,7 @@ const MonthlyStatsComponent = ({ creditCardId }: MonthlyStatsProps) => {
       {hasData ? (
         monthlyStats.map((item) => (
           <View key={item.month} style={styles.row}>
-            <Text style={styles.month}>{item.month}</Text>
+            <Text style={styles.month}>{formatMonthDisplay(item.month)}</Text>
             <Text style={styles.amountCLP}>
               CLP: ${item.totalCLP.toLocaleString("es-CL")}
             </Text>

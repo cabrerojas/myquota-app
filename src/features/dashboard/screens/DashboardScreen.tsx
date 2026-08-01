@@ -400,7 +400,9 @@ export default function DashboardScreen() {
 
               {/*
                * Has transactions but no billing period yet:
-               * show prompt to create one instead of broken stat cards.
+               * show prompt to create one. Stats cards still render
+               * below — they work even without explicit billing periods
+               * (fall back to calendar-month grouping in the backend).
                */}
               {!debtSummary || ((debtSummary.totalCLP ?? 0) === 0 && (debtSummary.totalUSD ?? 0) === 0 && !debtSummary.nextMonthCLP) ? (
                 <View style={styles.billingPromptCard}>
@@ -432,20 +434,21 @@ export default function DashboardScreen() {
                     </Pressable>
                   </View>
                 </View>
-              ) : (
-                <>
-                  <MonthSummaryCard
-                    creditCardId={selectedCardId}
-                    nextPeriodCLP={debtSummary?.nextMonthCLP}
-                    nextPeriodUSD={debtSummary?.nextMonthUSD}
-                  />
-                  <DebtIndicatorCard
-                    refreshKey={refreshKey}
-                    summary={debtSummary ?? undefined}
-                  />
-                  <MonthlyStats creditCardId={selectedCardId} />
-                </>
+              ) : null}
+
+              {/* Stats cards — always shown when transactions exist */}
+              <MonthSummaryCard
+                creditCardId={selectedCardId}
+                nextPeriodCLP={debtSummary?.nextMonthCLP}
+                nextPeriodUSD={debtSummary?.nextMonthUSD}
+              />
+              {debtSummary && ((debtSummary.totalCLP ?? 0) > 0 || (debtSummary.totalUSD ?? 0) > 0) && (
+                <DebtIndicatorCard
+                  refreshKey={refreshKey}
+                  summary={debtSummary}
+                />
               )}
+              <MonthlyStats creditCardId={selectedCardId} />
             </>
           )}
         </>

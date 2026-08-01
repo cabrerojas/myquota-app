@@ -12,36 +12,23 @@ interface MonthSummaryCardProps {
   nextPeriodUSD?: number;
 }
 
-const getCurrentMonthName = (): string => {
-  const date = new Date();
-  const monthFormatter = new Intl.DateTimeFormat("es-CL", {
-    month: "long",
-    timeZone: "America/Santiago",
-  });
-  const yearFormatter = new Intl.DateTimeFormat("es-CL", {
-    year: "numeric",
-    timeZone: "America/Santiago",
-  });
-  const month = monthFormatter.format(date);
-  const year = yearFormatter.format(date);
-  return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
-};
+/** YYYY-MM key for backend matching. */
+function toMonthKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  return `${y}-${m}`;
+}
 
-const getPreviousMonthName = (): string => {
-  const date = new Date();
-  date.setMonth(date.getMonth() - 1);
-  const monthFormatter = new Intl.DateTimeFormat("es-CL", {
+/** Spanish display name from YYYY-MM key, e.g. "2026-08" → "Agosto". */
+function monthDisplayName(key: string): string {
+  const [year, month] = key.split("-");
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  const name = new Intl.DateTimeFormat("es-CL", {
     month: "long",
     timeZone: "America/Santiago",
-  });
-  const yearFormatter = new Intl.DateTimeFormat("es-CL", {
-    year: "numeric",
-    timeZone: "America/Santiago",
-  });
-  const month = monthFormatter.format(date);
-  const year = yearFormatter.format(date);
-  return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
-};
+  }).format(date);
+  return name.charAt(0).toUpperCase() + name.slice(1);
+}
 
 const MonthSummaryCardComponent = ({
   creditCardId,
@@ -52,10 +39,12 @@ const MonthSummaryCardComponent = ({
   const { data: stats = [], isLoading } = useMonthlyStats(creditCardId);
 
   const { currentMonth, previousMonth } = useMemo(() => {
-    const currentName = getCurrentMonthName();
-    const previousName = getPreviousMonthName();
-    const current = stats.find((s) => s.month === currentName) || null;
-    const previous = stats.find((s) => s.month === previousName) || null;
+    const now = new Date();
+    const currentKey = toMonthKey(now);
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const prevKey = toMonthKey(prev);
+    const current = stats.find((s) => s.month === currentKey) || null;
+    const previous = stats.find((s) => s.month === prevKey) || null;
     return { currentMonth: current, previousMonth: previous };
   }, [stats]);
 
@@ -74,8 +63,8 @@ const MonthSummaryCardComponent = ({
       variationPercent > 0 ? "up" : variationPercent < 0 ? "down" : "same";
   }
 
-  const monthName = getCurrentMonthName();
-  const monthDisplayName = monthName.split(" ")[0];
+  const currentKey = toMonthKey(new Date());
+  const displayName = monthDisplayName(currentKey);
   const hasEstimatedBill = nextPeriodCLP !== undefined && nextPeriodCLP > 0;
 
   const handleViewTransactions = () => {
@@ -94,7 +83,7 @@ const MonthSummaryCardComponent = ({
       {hasData ? (
         <>
           <View style={styles.header}>
-            <Text style={styles.title}>{monthDisplayName}</Text>
+            <Text style={styles.title}>{displayName}</Text>
             <View style={styles.totalContainer}>
               <Text style={styles.totalCLP}>
                 ${totalCLP.toLocaleString("es-CL")}
@@ -182,7 +171,7 @@ const MonthSummaryCardComponent = ({
           </View>
           <View style={styles.emptyTextBlock}>
             <Text style={styles.emptyTitle}>
-              Sin gastos en {monthDisplayName}
+              Sin gastos en {displayName}
             </Text>
             <Text style={styles.emptySubtitle}>
               Importe sus movimientos para ver el resumen del mes aquí
