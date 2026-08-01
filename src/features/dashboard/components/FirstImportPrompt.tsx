@@ -24,10 +24,11 @@
  *   │   momento desde el botón "Sincronizar"    │
  *   └───────────────────────────────────────────┘
  */
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
 import { glassSurface } from "@/shared/theme/effects";
+import PressableScale from "@/shared/components/PressableScale";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -149,14 +150,10 @@ export default function FirstImportPrompt({
       </View>
 
       {/* ── Big CTA ─────────────────────────────────────────── */}
-      <Pressable
+      <PressableScale
         onPress={onImport}
         disabled={isImporting}
-        style={({ pressed }) => [
-          styles.ctaCard,
-          pressed && { opacity: 0.9 },
-          isImporting && { opacity: 0.7 },
-        ]}
+        style={[styles.ctaCard, isImporting && { opacity: 0.7 }]}
         accessibilityLabel="Importar movimientos"
         accessibilityRole="button"
       >
@@ -180,7 +177,7 @@ export default function FirstImportPrompt({
         {!isImporting && (
           <Ionicons name="arrow-forward" size={20} color={colors.accent} />
         )}
-      </Pressable>
+      </PressableScale>
 
       {/* ── Tip ────────────────────────────────────────────── */}
       <View style={styles.tipRow}>
