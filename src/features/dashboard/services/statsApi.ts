@@ -57,6 +57,7 @@ export const useDebtSummary = () => {
   return useQuery({
     queryKey: ["debtSummary"],
     queryFn: getDebtSummary,
+    staleTime: 5 * 60 * 1000,
   });
 };
 
@@ -65,5 +66,6 @@ export const useMonthlyStats = (creditCardId: string) => {
     queryKey: ["monthlyStats", creditCardId],
     queryFn: () => getMonthlyStats(creditCardId),
     enabled: !!creditCardId,
+    staleTime: 5 * 60 * 1000,
   });
 };
