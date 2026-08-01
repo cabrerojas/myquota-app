@@ -102,6 +102,8 @@ export const useGoogleSignIn = (router: Router) => {
   const [isLoading, setIsLoading] = useState(false);
 
   // ── Web: Google OAuth with id_token response ───────────
+  // Nonce is required by Google when using response_type=id_token
+  const nonce = Math.random().toString(36).substring(2, 15);
   const [request, , promptAsync] = useAuthRequest(
     {
       clientId: webClientId ?? "",
@@ -114,6 +116,7 @@ export const useGoogleSignIn = (router: Router) => {
       ],
       responseType: ResponseType.IdToken,
       usePKCE: false,
+      extraParams: { nonce },
     },
     discovery,
   );
