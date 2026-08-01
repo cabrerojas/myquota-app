@@ -33,6 +33,21 @@ const formatDisplayDate = (dateStr: string): string => {
   return `${day}/${month}/${year}`;
 };
 
+/** Converts YYYY-MM (DB format) to human-readable, e.g. "jul 2026". */
+const formatMonthDisplay = (month: string): string => {
+  if (/^\d{4}-\d{2}$/.test(month)) {
+    const [year, m] = month.split("-");
+    const date = new Date(Number(year), Number(m) - 1, 1);
+    const label = date.toLocaleDateString("es-CL", {
+      month: "short",
+      year: "numeric",
+      timeZone: "America/Santiago",
+    });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  return month;
+};
+
 export default function BillingPeriodsScreen({
   creditCardId,
   creditCardLabel,
@@ -100,7 +115,7 @@ export default function BillingPeriodsScreen({
   const handleDelete = (period: BillingPeriod) => {
     Alert.alert(
       "Eliminar período",
-      `¿Estás seguro de eliminar "${period.month}"?`,
+      `¿Estás seguro de eliminar "${formatMonthDisplay(period.month)}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -158,24 +173,9 @@ export default function BillingPeriodsScreen({
       nextEnd.setMonth(nextEnd.getMonth() + 1);
       nextEnd.setDate(nextEnd.getDate() - 1);
 
-      const monthNames = [
-        "Enero",
-        "Febrero",
-        "Marzo",
-        "Abril",
-        "Mayo",
-        "Junio",
-        "Julio",
-        "Agosto",
-        "Septiembre",
-        "Octubre",
-        "Noviembre",
-        "Diciembre",
-      ];
-
       return {
         creditCardId,
-        month: `${monthNames[nextEnd.getMonth()]} ${nextEnd.getFullYear()}`,
+        month: `${nextEnd.getFullYear()}-${(nextEnd.getMonth() + 1).toString().padStart(2, "0")}`,
         startDate: nextStart.toISOString(),
         endDate: nextEnd.toISOString(),
         dueDate: (() => {
@@ -205,7 +205,7 @@ export default function BillingPeriodsScreen({
       activeOpacity={0.7}
     >
       <View style={styles.periodInfo}>
-        <Text style={styles.periodMonth}>{item.month}</Text>
+        <Text style={styles.periodMonth}>{formatMonthDisplay(item.month)}</Text>
         <Text style={styles.periodDates}>
           {formatDisplayDate(item.startDate)} —{" "}
           {formatDisplayDate(item.endDate)}
