@@ -21,11 +21,26 @@ interface BillingPeriodFormModalProps {
   isFirstTime?: boolean;
 }
 
-/** Formats a Date as YYYY-MM to fit the DB's VARCHAR(7) column. */
-const getMonthLabel = (date: Date): string => {
+const MONTH_NAMES = [
+  "Enero","Febrero","Marzo","Abril","Mayo","Junio",
+  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre",
+];
+
+/** Internal key: YYYY-MM for the backend VARCHAR(7) column. */
+const toMonthKey = (date: Date): string => {
   const y = date.getFullYear();
   const m = (date.getMonth() + 1).toString().padStart(2, "0");
   return `${y}-${m}`;
+};
+
+/** Human-readable label derived from a YYYY-MM key, e.g. "2026-07" → "Julio 2026". */
+const toMonthDisplay = (key: string): string => {
+  if (/^\d{4}-\d{2}$/.test(key)) {
+    const [year, m] = key.split("-");
+    const idx = Number(m) - 1;
+    return `${MONTH_NAMES[idx] || m} ${year}`;
+  }
+  return key;
 };
 
 /** Parses an ISO date string as local time, avoiding UTC shift */
@@ -43,7 +58,8 @@ export default function BillingPeriodFormModal({
 }: BillingPeriodFormModalProps) {
   const [step, setStep] = useState<WizardStep>(isFirstTime ? "intro" : "form");
   const [creditCardId, setCreditCardId] = useState("");
-  const [month, setMonth] = useState("");
+  const [month, setMonth] = useState("");                 // YYYY-MM (backend key)
+  const [displayMonth, setDisplayMonth] = useState("");   // "Julio 2026" (user sees)
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [dueDate, setDueDate] = useState(new Date());
@@ -65,12 +81,15 @@ export default function BillingPeriodFormModal({
   useEffect(() => {
     if (initialData) {
       if (initialData.creditCardId) setCreditCardId(initialData.creditCardId);
-      if (initialData.month) setMonth(initialData.month);
+      if (initialData.month) {
+        setMonth(initialData.month);
+        setDisplayMonth(toMonthDisplay(initialData.month));
+      }
       if (initialData.startDate) setStartDate(parseDateLocal(initialData.startDate));
       if (initialData.endDate) setEndDate(parseDateLocal(initialData.endDate));
       if (initialData.dueDate) setDueDate(parseDateLocal(initialData.dueDate));
     } else {
-      setCreditCardId(""); setMonth("");
+      setCreditCardId(""); setMonth(""); setDisplayMonth("");
       setStartDate(new Date()); setEndDate(new Date()); setDueDate(new Date());
     }
   }, [initialData, visible]);
@@ -144,8 +163,8 @@ export default function BillingPeriodFormModal({
 
                 {/* Period name */}
                 <Text style={s.label}>Nombre del período</Text>
-                <TextInput style={s.input} value={month} onChangeText={setMonth}
-                  placeholder="Ej: 2026-02" placeholderTextColor={colors.textSubtle} />
+                <TextInput style={s.input} value={displayMonth} onChangeText={setDisplayMonth}
+                  placeholder="Ej: Julio 2026" placeholderTextColor={colors.textSubtle} />
 
                 {/* Start date */}
                 <Text style={s.label}>Fecha de inicio</Text>
@@ -162,7 +181,10 @@ export default function BillingPeriodFormModal({
                   onChange={(e, d) => {
                     setShowEndPicker(Platform.OS === "ios");
                     if (d) {
-                      setEndDate(d); setMonth(getMonthLabel(d));
+                      setEndDate(d);
+                      const key = toMonthKey(d);
+                      setMonth(key);
+                      setDisplayMonth(toMonthDisplay(key));
                       const suggested = new Date(d); suggested.setDate(suggested.getDate() + 20);
                       setDueDate(suggested);
                     }
