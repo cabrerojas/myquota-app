@@ -22,10 +22,6 @@ import {
   splitQuotas,
   Quota,
 } from "@/features/quotas/services/quotasApi";
-import {
-  getBillingPeriodsByCreditCard,
-  BillingPeriod,
-} from "@/features/billingPeriods/services/billingPeriodsApi";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 import { formatCurrency, formatDate } from "@/shared/utils/format";
 
@@ -40,7 +36,6 @@ export default function TransactionDetailScreen({
 }: Props) {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [quotas, setQuotas] = useState<Quota[]>([]);
-  const [periods, setPeriods] = useState<BillingPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,14 +51,11 @@ export default function TransactionDetailScreen({
   const fetchData = useCallback(async () => {
     try {
       setError(null);
-      const [tx, txQuotas, bpResponse] = await Promise.all([
+      const [tx, txQuotas] = await Promise.all([
         getTransactionById(creditCardId, transactionId),
         getQuotasByTransaction(creditCardId, transactionId),
-        getBillingPeriodsByCreditCard(creditCardId),
       ]);
       setTransaction(tx);
-      const billingPeriods = bpResponse.items || [];
-      setPeriods(billingPeriods);
       const sorted = [...txQuotas].sort(
         (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
       );
@@ -95,16 +87,6 @@ export default function TransactionDetailScreen({
 
   const isOverdue = (dateStr: string) => {
     return new Date(dateStr) < new Date();
-  };
-
-  /** Returns the billing period whose range contains the given date, or null. */
-  const findPeriodForDate = (dateStr: string): BillingPeriod | null => {
-    const d = new Date(dateStr).getTime();
-    return periods.find((p) => {
-      const start = new Date(p.startDate).getTime();
-      const end = new Date(p.endDate).getTime();
-      return d >= start && d <= end;
-    }) || null;
   };
 
   const handleSplitQuotas = async () => {
@@ -306,9 +288,7 @@ export default function TransactionDetailScreen({
 
           {/* Quota list */}
           {quotas.map((quota, index) => {
-            const period = findPeriodForDate(quota.dueDate);
-            // Use the billing period's due date as the real payment deadline
-            const effectiveDueDate = period?.dueDate || quota.dueDate;
+            const effectiveDueDate = quota.billingDueDate || quota.dueDate;
             const overdue =
               quota.status === "pending" && isOverdue(effectiveDueDate);
             const dueSoon =
