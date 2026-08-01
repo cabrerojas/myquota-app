@@ -46,6 +46,7 @@ import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import { colors } from "@/shared/theme/colors";
 import { spacing, borderRadius } from "@/shared/theme/tokens";
+import { iconContainer } from "@/shared/theme/effects";
 import Svg, { Circle } from "react-native-svg";
 
 const formatTransactionDate = formatShortDate;
@@ -713,9 +714,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginTop: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.pill,
     borderWidth: 1,
     borderColor: "rgba(59,130,246,0.3)",
     backgroundColor: "rgba(59,130,246,0.08)",
@@ -734,7 +735,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(59,130,246,0.1)",
     borderWidth: 1,
     borderColor: "rgba(59,130,246,0.3)",
-    paddingVertical: 9,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 16,
     borderRadius: 20,
     marginTop: spacing.md,
