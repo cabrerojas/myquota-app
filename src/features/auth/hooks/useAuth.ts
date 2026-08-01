@@ -1,8 +1,17 @@
 import { useState, useCallback } from "react";
+import { Platform } from "react-native";
 import {
   GoogleSignin,
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
+import * as WebBrowser from "expo-web-browser";
+import {
+  exchangeCodeAsync,
+  makeRedirectUri,
+  useAuthRequest,
+  ResponseType,
+  DiscoveryDocument,
+} from "expo-auth-session";
 import { Router } from "expo-router";
 import { API_BASE_URL } from "@/config/api";
 import {
@@ -21,77 +30,155 @@ const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
 
 const iosClientId = process.env.EXPO_PUBLIC_IOS_CLIENT_ID;
 
-GoogleSignin.configure({
-  webClientId: webClientId,
-  scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
-  offlineAccess: true, // Necesario para obtener serverAuthCode (refresh_token en el backend)
-  forceCodeForRefreshToken: true,
-  iosClientId: iosClientId,
+// Native-only configuration
+if (Platform.OS !== "web") {
+  GoogleSignin.configure({
+    webClientId: webClientId,
+    scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+    offlineAccess: true,
+    forceCodeForRefreshToken: true,
+    iosClientId: iosClientId,
+  });
+}
+
+WebBrowser.maybeCompleteAuthSession();
+
+// Google OAuth discovery document (same for all platforms)
+const discovery: DiscoveryDocument = {
+  authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+  tokenEndpoint: "https://oauth2.googleapis.com/token",
+  revocationEndpoint: "https://oauth2.googleapis.com/revoke",
+};
+
+const redirectUri = makeRedirectUri({
+  scheme: undefined,
 });
+
+/**
+ * Sends the idToken (and optional serverAuthCode) to the backend,
+ * persists the session, and redirects to the home screen.
+ */
+async function authenticateWithBackend(
+  idToken: string,
+  serverAuthCode: string | undefined,
+  user: { givenName?: string | null; familyName?: string | null; email?: string | null; photo?: string | null },
+  router: Router,
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/login/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: idToken, serverAuthCode }),
+      signal: controller.signal,
+    });
+
+    const data = await res.json();
+
+    if (data.accessToken) {
+      console.log("Access token recibido");
+      resetSessionExpired();
+      await persistSession({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        user: {
+          givenName: user.givenName ?? undefined,
+          familyName: user.familyName ?? undefined,
+          email: user.email ?? undefined,
+          photo: user.photo ?? undefined,
+        },
+      });
+      router.replace("/");
+    } else {
+      console.error("Error al autenticar con el backend:", data);
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export const useGoogleSignIn = (router: Router) => {
   const [isLoading, setIsLoading] = useState(false);
 
+  // ── Web: useAuthRequest with Google OAuth ──────────────
+  const [request, , promptAsync] = useAuthRequest(
+    {
+      clientId: webClientId ?? "",
+      redirectUri,
+      scopes: [
+        "openid",
+        "profile",
+        "email",
+        "https://www.googleapis.com/auth/gmail.readonly",
+      ],
+      responseType: ResponseType.Code,
+      extraParams: {
+        access_type: "offline",
+        prompt: "consent",
+      },
+    },
+    discovery,
+  );
+
   const handleSignIn = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log("Iniciando sesión con Google...");
-      await GoogleSignin.hasPlayServices();
-      const response = await GoogleSignin.signIn();
-
-      if (isSuccessResponse(response)) {
-        const { idToken, user, serverAuthCode } = response.data;
-
-        if (!idToken) {
-          console.error("Error: No se obtuvo el idToken de Google.");
+      if (Platform.OS === "web") {
+        // ── Web OAuth flow ──────────────────
+        console.log("Iniciando sesión con Google (web)...");
+        const result = await promptAsync();
+        if (result?.type !== "success" || !result.params.code) {
+          console.log("Login cancelado o falló en web:", result?.type);
           return;
         }
 
-        console.log("idToken obtenido:", idToken);
-        console.log("Usuario obtenido:", user);
-        console.log(
-          "serverAuthCode obtenido:",
-          serverAuthCode ? "✅" : "❌ no disponible",
+        // Exchange code for tokens
+        const tokenResponse = await exchangeCodeAsync(
+          {
+            clientId: webClientId ?? "",
+            code: result.params.code,
+            redirectUri,
+            extraParams: { code_verifier: request?.codeVerifier ?? "" },
+          },
+          discovery,
         );
 
-        // Enviar el idToken y serverAuthCode al backend
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60000);
+        const idToken = tokenResponse.idToken;
+        if (!idToken) {
+          console.error("No idToken in token response");
+          return;
+        }
 
-        const res = await fetch(`${API_BASE_URL}/login/google`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token: idToken, serverAuthCode }),
-          signal: controller.signal,
-        });
+        // Decode user info from idToken
+        const payload = JSON.parse(atob(idToken.split(".")[1]));
+        await authenticateWithBackend(
+          idToken,
+          tokenResponse.refreshToken ?? undefined, // serverAuthCode equivalent
+          {
+            givenName: payload.given_name,
+            familyName: payload.family_name,
+            email: payload.email,
+            photo: payload.picture,
+          },
+          router,
+        );
+      } else {
+        // ── Native flow (unchanged) ─────────
+        console.log("Iniciando sesión con Google...");
+        await GoogleSignin.hasPlayServices();
+        const response = await GoogleSignin.signIn();
 
-        clearTimeout(timeout);
-
-        const data = await res.json();
-        // backend ahora devuelve { accessToken, refreshToken }
-        if (data.accessToken) {
-          console.log("Access token recibido");
-          resetSessionExpired();
-          try {
-            const normalizedUser = {
-              givenName: user.givenName ?? undefined,
-              familyName: user.familyName ?? undefined,
-              email: user.email ?? undefined,
-              photo: user.photo ?? undefined,
-            };
-            await persistSession({
-              accessToken: data.accessToken,
-              refreshToken: data.refreshToken,
-              user: normalizedUser,
-            });
-          } catch (err) {
-            console.warn("Session storage error saving tokens:", err);
+        if (isSuccessResponse(response)) {
+          const { idToken, user, serverAuthCode } = response.data;
+          if (!idToken) {
+            console.error("Error: No se obtuvo el idToken de Google.");
+            return;
           }
-
-          // Redirigir al root para que index.tsx decida onboarding vs dashboard
-          router.replace("/");
-        } else {
-          console.error("Error al autenticar con el backend:", data);
+          console.log("idToken obtenido:", idToken);
+          console.log("serverAuthCode obtenido:", serverAuthCode ? "✅" : "❌ no disponible");
+          await authenticateWithBackend(idToken, serverAuthCode ?? undefined, user, router);
         }
       }
     } catch (error) {
@@ -99,7 +186,7 @@ export const useGoogleSignIn = (router: Router) => {
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, promptAsync, request?.codeVerifier]);
 
   return { signIn: handleSignIn, isLoading };
 };
@@ -120,7 +207,9 @@ export const signOut = async (router: Router) => {
       // Si falla la revocación, continuar con el logout local
     }
 
-    await GoogleSignin.signOut();
+    if (Platform.OS !== "web") {
+      await GoogleSignin.signOut();
+    }
     await clearSession();
 
     router.replace("/login");
