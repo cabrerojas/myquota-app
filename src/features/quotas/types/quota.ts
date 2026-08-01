@@ -6,6 +6,8 @@ export interface Quota {
   status: "pending" | "paid";
   currency: string;
   paymentDate?: string;
+  /** Vencimiento real del período de facturación (calculado en backend). */
+  billingDueDate?: string;
 }
 
 export interface QuotaWithTransaction extends Quota {
