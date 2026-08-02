@@ -108,9 +108,18 @@ export default function TransactionsScreen() {
     refetch,
   } = useInfiniteTransactions(selectedCardId, startDate, endDate);
 
-  // Flat list from all pages, capped at MAX_ITEMS_IN_MEMORY
+  // Flat list from all pages, deduplicated by id, capped at MAX_ITEMS_IN_MEMORY
   const transactions = useMemo(() => {
-    const all = data?.pages.flatMap((p) => p.items) ?? [];
+    const seen = new Set<string>();
+    const all: Transaction[] = [];
+    for (const page of data?.pages ?? []) {
+      for (const item of page.items) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          all.push(item);
+        }
+      }
+    }
     return all.slice(0, MAX_ITEMS_IN_MEMORY);
   }, [data]);
 
