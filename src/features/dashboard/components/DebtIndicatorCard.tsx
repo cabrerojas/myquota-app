@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle } from "react-native-svg";
-import { glassSurface } from "@/shared/theme/effects";
+import { glassSurface, iconContainerSm } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
 import { spacing } from "@/shared/theme/tokens";
 import type { DebtSummary } from "@/features/dashboard/services/statsApi";
@@ -167,12 +167,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   iconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
+    ...iconContainerSm,
   },
   headerText: { flex: 1 },
   title: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },

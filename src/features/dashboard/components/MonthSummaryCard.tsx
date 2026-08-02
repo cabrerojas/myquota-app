@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { memo, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { glassSurface } from "@/shared/theme/effects";
+import { glassSurface, iconContainer } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
 import { useMonthlyStats } from "../services/statsApi";
 
@@ -300,12 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   emptyIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
-    alignItems: "center",
-    justifyContent: "center",
+    ...iconContainer,
   },
   emptyTextBlock: {
     flex: 1,

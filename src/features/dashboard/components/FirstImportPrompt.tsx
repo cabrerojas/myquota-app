@@ -27,7 +27,7 @@
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
-import { glassSurface } from "@/shared/theme/effects";
+import { glassSurface, iconContainerSm, iconContainerLg } from "@/shared/theme/effects";
 import PressableScale from "@/shared/components/PressableScale";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -265,12 +265,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   successIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    ...iconContainerSm,
     backgroundColor: "rgba(5,150,105,0.12)",
-    justifyContent: "center",
-    alignItems: "center",
     marginTop: 2,
   },
   headerText: {
@@ -310,12 +306,8 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   ctaIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    ...iconContainerLg,
     backgroundColor: "rgba(59,130,246,0.12)",
-    justifyContent: "center",
-    alignItems: "center",
     flexShrink: 0,
   },
   ctaTextBlock: {
