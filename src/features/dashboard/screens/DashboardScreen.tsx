@@ -45,7 +45,7 @@ import { formatShortDate, toISODateString } from "@/shared/utils/format";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import { colors } from "@/shared/theme/colors";
-import { spacing, borderRadius } from "@/shared/theme/tokens";
+import { spacing, borderRadius, typography } from "@/shared/theme/tokens";
 import { iconContainer } from "@/shared/theme/effects";
 import Svg, { Circle } from "react-native-svg";
 
@@ -598,19 +598,15 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
+    ...typography.presets.cardTitle,
     marginBottom: 0,
-    color: colors.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: spacing.md,
-    marginBottom: 10,
+    marginBottom: spacing.sm2,
   },
   seeAllButton: {
     flexDirection: "row",
@@ -626,7 +622,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 12,
+    paddingVertical: spacing.sm2,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
@@ -635,7 +631,7 @@ const styles = StyleSheet.create({
     maxHeight: 240,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.sm2,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: colors.border,
@@ -809,7 +805,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 14,
     marginTop: 16,
-    padding: 18,
+    padding: spacing.md,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(59,130,246,0.2)",

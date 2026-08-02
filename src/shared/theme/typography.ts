@@ -2,6 +2,8 @@
  * Typography tokens — Inter font configuration and preset styles.
  */
 
+import { colors } from "./colors";
+
 export const fontFamily = "Inter";
 
 export const fontWeights = {
@@ -25,6 +27,7 @@ export const typography = {
     label: { fontSize: 14, fontWeight: fontWeights.semibold, fontFamily },
     amount: { fontSize: 20, fontWeight: fontWeights.bold, fontFamily },
     amountLarge: { fontSize: 28, fontWeight: fontWeights.bold, fontFamily },
+    cardTitle: { fontSize: 14, fontWeight: fontWeights.bold, fontFamily, textTransform: "uppercase", letterSpacing: 0.5, color: colors.textSecondary },
   } as const,
 } as const;
 

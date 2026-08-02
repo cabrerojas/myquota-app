@@ -1,9 +1,9 @@
 import { View, Text, StyleSheet } from "react-native";
 import { memo } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { glassSurface } from "@/shared/theme/effects";
+import { glassSurface, iconContainerSm } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
-import { spacing } from "@/shared/theme/tokens";
+import { spacing, typography } from "@/shared/theme/tokens";
 import { useMonthlyStats } from "../services/statsApi";
 
 interface MonthlyStatsProps {
@@ -76,12 +76,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   } as any,
   title: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.textSecondary,
+    ...typography.presets.cardTitle,
     marginBottom: spacing.sm2,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
   },
   loading: {
     fontSize: 13,
@@ -119,12 +115,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   emptyIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    ...iconContainerSm,
     backgroundColor: colors.borderLight,
-    alignItems: "center",
-    justifyContent: "center",
   },
   emptyText: {
     flex: 1,
