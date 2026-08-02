@@ -10,6 +10,7 @@ import { signOut } from "@/features/auth/hooks/useAuth";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { getMyProfile, updateMyProfile } from "@/features/profile/services/userApi";
 import Constants from "expo-constants";
+import { useQueryClient } from "@tanstack/react-query";
 import { UserInfo, User } from "@/shared/types/user";
 import { CreditCardSummary } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
@@ -48,6 +49,7 @@ const sRowStyles = StyleSheet.create({
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [cardsSummary, setCardsSummary] = useState<CreditCardSummary>({ total: 0, active: 0 });
   const [budgetCLP, setBudgetCLP] = useState("");
@@ -75,6 +77,7 @@ export default function ProfileScreen() {
       const clp = budgetCLP ? parseInt(budgetCLP.replace(/[^0-9]/g, ""), 10) : undefined;
       const usd = budgetUSD ? parseFloat(budgetUSD.replace(/[^0-9.]/g, "")) : undefined;
       await updateMyProfile({ monthlyBudgetCLP: clp, monthlyBudgetUSD: usd });
+      queryClient.invalidateQueries({ queryKey: ["myProfile"] });
       Alert.alert("Guardado", "Presupuestos actualizados");
     } catch (e) {
       if (!isSessionExpired()) Alert.alert("Error", e instanceof Error ? e.message : "No se pudieron guardar");
