@@ -1,0 +1,22 @@
+{
+  "name": "myQuota",
+  "short_name": "myQuota",
+  "description": "Controlá tus gastos, proyecciones y cuotas en un solo lugar.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0F172A",
+  "background_color": "#0F172A",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

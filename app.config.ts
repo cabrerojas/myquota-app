@@ -1,4 +1,25 @@
 import type { ExpoConfig, ConfigContext } from "expo-config";
+import { readFileSync } from "fs";
+import { resolve } from "path";
+
+// Load .env before anything else — Expo does NOT auto-load .env for app.config.ts
+try {
+  const envPath = resolve(__dirname, ".env");
+  const envContent = readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim();
+    if (key && !process.env[key]) {
+      process.env[key] = value;
+    }
+  }
+} catch {
+  // .env is optional — CI or EAS may inject vars directly
+}
 
 /**
  * Dynamic Expo app configuration (app.config.ts)
@@ -49,6 +70,8 @@ const defineConfig = (ctx: ConfigContext): ExpoConfig => {
       bundler: "metro",
       output: "static",
       favicon: "./assets/images/favicon.png",
+      shortName: "myQuota",
+      themeColor: "#0F172A",
     },
     plugins: [
       "expo-router",

@@ -9,7 +9,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "generate-icons": "bash scripts/generate-pwa-icons.sh",
+    "build:web": "npx expo export -p web",
+    "build:web:sw": "npm run build:web && npx workbox generateSW workbox-config.js"
   },
   "jest": {
     "preset": "jest-expo"
@@ -71,7 +74,9 @@
     "jest-expo": "~54.0.17",
     "prettier": "^3.5.3",
     "react-test-renderer": "19.1.0",
-    "typescript": "~5.9.2"
+    "sharp-cli": "^5.2.0",
+    "typescript": "~5.9.2",
+    "workbox-cli": "^7.4.0"
   },
   "private": true
 }
