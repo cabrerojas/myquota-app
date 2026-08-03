@@ -28,7 +28,23 @@ const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
 
 const iosClientId = process.env.EXPO_PUBLIC_IOS_CLIENT_ID;
 
-// Native-only configuration
+// ── PKCE helpers ───────────────────────────────────────────────────────────
+
+function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+async function generateCodeChallenge(verifier: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(verifier);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return arrayBufferToBase64Url(digest);
+}
+
+// ── Native-only configuration ──────────────────────────────────────────────
 if (Platform.OS !== "web") {
   GoogleSignin.configure({
     webClientId: webClientId,
@@ -44,23 +60,35 @@ WebBrowser.maybeCompleteAuthSession();
 const redirectUri = makeRedirectUri();
 
 /**
- * Sends the idToken (and optional serverAuthCode) to the backend,
- * persists the session, and redirects to the home screen.
+ * Authenticates with the backend. Supports two flows:
+ * - Native: sends idToken directly
+ * - Web (code flow): sends authorization code + code_verifier (PKCE)
  */
 async function authenticateWithBackend(
-  idToken: string,
+  idToken: string | null,
   serverAuthCode: string | undefined,
   user: { givenName?: string | null; familyName?: string | null; email?: string | null; photo?: string | null },
   router: Router,
   nonce?: string,
+  code?: string,
+  codeVerifier?: string,
+  redirectUri?: string,
 ) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000);
 
   try {
-    const body: Record<string, string> = { token: idToken };
-    if (serverAuthCode) body.serverAuthCode = serverAuthCode;
-    if (nonce) body.nonce = nonce;
+    const body: Record<string, string> = {};
+
+    if (code) {
+      body.code = code;
+      if (codeVerifier) body.codeVerifier = codeVerifier;
+      if (redirectUri) body.redirectUri = redirectUri;
+    } else if (idToken) {
+      body.token = idToken;
+      if (serverAuthCode) body.serverAuthCode = serverAuthCode;
+      if (nonce) body.nonce = nonce;
+    }
 
     const res = await fetch(`${API_BASE_URL}/login/google`, {
       method: "POST",
@@ -100,20 +128,27 @@ export const useGoogleSignIn = (router: Router) => {
     setIsLoading(true);
     try {
       if (Platform.OS === "web") {
-        // ── Web OAuth: full-page redirect (reliable across all browsers/PWAs) ──
+        // ── Web OAuth: Authorization Code + PKCE (OAuth 2.1, modern flow) ──
         console.log("Iniciando sesión con Google (web)...");
 
-        const nonce = Math.random().toString(36).substring(2, 15);
-        sessionStorage.setItem("oauth_nonce", nonce);
+        const redirectUri = window.location.origin + "/login";
+        const codeVerifier = Math.random().toString(36).substring(2, 15) +
+          Math.random().toString(36).substring(2, 15);
+        const codeChallenge = await generateCodeChallenge(codeVerifier);
+
+        sessionStorage.setItem("oauth_code_verifier", codeVerifier);
 
         const authUrl =
           "https://accounts.google.com/o/oauth2/v2/auth?" +
           new URLSearchParams({
             client_id: webClientId ?? "",
-            redirect_uri: window.location.origin + "/login",
-            response_type: "id_token",
-            scope: "openid profile email",
-            nonce,
+            redirect_uri: redirectUri,
+            response_type: "code",
+            scope: "openid profile email https://www.googleapis.com/auth/gmail.readonly",
+            code_challenge: codeChallenge,
+            code_challenge_method: "S256",
+            access_type: "offline",
+            prompt: "consent",
           }).toString();
 
         sessionStorage.setItem("oauth_return", "1");
@@ -147,39 +182,62 @@ export const useGoogleSignIn = (router: Router) => {
 };
 
 /**
- * Parses OAuth redirect return after popup-blocker fallback.
+ * Parses OAuth redirect return (authorization code flow).
  *
  * Called on LoginScreen mount when Platform.OS === "web".
- * Checks sessionStorage for "oauth_return" flag, extracts
- * id_token from URL hash, authenticates, and cleans the URL
- * to prevent token replay.
+ * Extracts authorization code from URL query params,
+ * reads code_verifier from sessionStorage, authenticates,
+ * and cleans the URL.
  */
 export async function parseOAuthReturn(router: Router): Promise<void> {
   const isReturn = sessionStorage.getItem("oauth_return") === "1";
   if (!isReturn) return;
 
-  const tokenResult = parseIdTokenFromFragment(window.location.href);
-  if (!tokenResult) return;
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
 
-  const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
-  // Extract nonce from the id_token itself (Google includes it) — more reliable than sessionStorage
-  const nonce: string | undefined = payload.nonce;
+  if (!code) {
+    // Fallback: try legacy id_token hash flow
+    const tokenResult = parseIdTokenFromFragment(window.location.href);
+    if (!tokenResult) return;
+
+    const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
+    const nonce: string | undefined = payload.nonce;
+    await authenticateWithBackend(
+      tokenResult.idToken,
+      undefined,
+      {
+        givenName: payload.given_name,
+        familyName: payload.family_name,
+        email: payload.email,
+        photo: payload.picture,
+      },
+      router,
+      nonce,
+    );
+
+    sessionStorage.removeItem("oauth_return");
+    window.history.replaceState(null, "", "/");
+    return;
+  }
+
+  const codeVerifier = sessionStorage.getItem("oauth_code_verifier") ?? undefined;
+  const redirectUri = window.location.origin + "/login";
+
   await authenticateWithBackend(
-    tokenResult.idToken,
+    null,
     undefined,
-    {
-      givenName: payload.given_name,
-      familyName: payload.family_name,
-      email: payload.email,
-      photo: payload.picture,
-    },
+    {},
     router,
-    nonce,
+    undefined,
+    code,
+    codeVerifier,
+    redirectUri,
   );
 
-  // Clean up to prevent token replay
+  // Clean up
   sessionStorage.removeItem("oauth_return");
-  sessionStorage.removeItem("oauth_nonce");
+  sessionStorage.removeItem("oauth_code_verifier");
   window.history.replaceState(null, "", "/");
 }
 
