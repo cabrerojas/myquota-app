@@ -19,6 +19,10 @@ import {
   isSessionExpired,
   resetSessionExpired,
 } from "@/shared/utils/authEvents";
+import {
+  parseIdTokenFromFragment,
+  shouldUseRedirectFallback,
+} from "./useAuth.utils";
 
 const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
 
@@ -91,7 +95,7 @@ export const useGoogleSignIn = (router: Router) => {
     setIsLoading(true);
     try {
       if (Platform.OS === "web") {
-        // ── Web OAuth via openAuthSessionAsync ──
+        // ── Web OAuth: popup-first → redirect fallback ──
         console.log("Iniciando sesión con Google (web)...");
 
         const authUrl =
@@ -106,24 +110,27 @@ export const useGoogleSignIn = (router: Router) => {
 
         const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
 
-        if (result.type !== "success") {
-          console.log("Login cancelado o falló en web:", result.type);
+        if (shouldUseRedirectFallback(result)) {
+          // Popup blocked or dismissed → fall back to full-page redirect
+          console.log("Login popup falló — intentando redirect:", result.type);
+          sessionStorage.setItem("oauth_return", "1");
+          // Replace redirect_uri with origin so Google returns to the app domain
+          const fallbackUrl = authUrl.replace(redirectUri, window.location.origin);
+          window.location.href = fallbackUrl;
           return;
         }
 
-        // Parse id_token from redirect URL fragment
-        const params = new URLSearchParams(result.url.split("#")[1] || "");
-        const idToken = params.get("id_token");
-
-        if (!idToken) {
+        // Popup success — parse id_token from redirect URL fragment
+        const tokenResult = parseIdTokenFromFragment(result.url);
+        if (!tokenResult) {
           console.error("No idToken in redirect URL:", result.url);
           return;
         }
 
         // Decode user info from idToken
-        const payload = JSON.parse(atob(idToken.split(".")[1]));
+        const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
         await authenticateWithBackend(
-          idToken,
+          tokenResult.idToken,
           undefined,
           {
             givenName: payload.given_name,
@@ -159,6 +166,39 @@ export const useGoogleSignIn = (router: Router) => {
 
   return { signIn: handleSignIn, isLoading };
 };
+
+/**
+ * Parses OAuth redirect return after popup-blocker fallback.
+ *
+ * Called on LoginScreen mount when Platform.OS === "web".
+ * Checks sessionStorage for "oauth_return" flag, extracts
+ * id_token from URL hash, authenticates, and cleans the URL
+ * to prevent token replay.
+ */
+export async function parseOAuthReturn(router: Router): Promise<void> {
+  const isReturn = sessionStorage.getItem("oauth_return") === "1";
+  if (!isReturn) return;
+
+  const tokenResult = parseIdTokenFromFragment(window.location.href);
+  if (!tokenResult) return;
+
+  const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
+  await authenticateWithBackend(
+    tokenResult.idToken,
+    undefined,
+    {
+      givenName: payload.given_name,
+      familyName: payload.family_name,
+      email: payload.email,
+      photo: payload.picture,
+    },
+    router,
+  );
+
+  // Clean up to prevent token replay
+  sessionStorage.removeItem("oauth_return");
+  window.history.replaceState(null, "", "/");
+}
 
 export const signOut = async (router: Router) => {
   try {
