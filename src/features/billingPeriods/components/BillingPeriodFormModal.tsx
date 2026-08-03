@@ -72,7 +72,7 @@ export default function BillingPeriodFormModal({
   useEffect(() => {
     if (visible) {
       setStep(isFirstTime ? "intro" : "form");
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: Platform.OS !== "web" }).start();
     } else {
       fadeAnim.setValue(0);
     }

@@ -10,6 +10,7 @@ import {
   Pressable,
   StyleSheet,
   Animated,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRef } from "react";
@@ -62,7 +63,7 @@ function ActionCard({ item }: { item: ActionItem }) {
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 0.97,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
       friction: 8,
     }).start();
   };
@@ -70,7 +71,7 @@ function ActionCard({ item }: { item: ActionItem }) {
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
       friction: 8,
     }).start();
   };

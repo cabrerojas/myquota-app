@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "expo-router";
@@ -268,9 +269,9 @@ export default function DashboardScreen() {
     Alert.alert("Éxito", "Período de facturación creado correctamente.");
   };
 
-  // Set up notifications when creditCards loads
+  // Set up notifications when creditCards loads (native only)
   useEffect(() => {
-    if (creditCards.length > 0) {
+    if (Platform.OS !== "web" && creditCards.length > 0) {
       configureNotificationHandler();
       setupAndroidChannel().then(() => {
         scheduleCardNotifications(creditCards).catch(console.warn);

@@ -4,6 +4,7 @@ import {
 	Animated,
 	SafeAreaView,
 	StyleSheet,
+	Platform,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import WelcomeStep from "@/features/onboarding/components/WelcomeStep";
@@ -94,12 +95,12 @@ export default function OnboardingScreen() {
 				Animated.timing(fadeAnims[currentStep], {
 					toValue: 0,
 					duration: STEP_ANIMATION_DURATION,
-					useNativeDriver: true,
+					useNativeDriver: Platform.OS !== "web",
 				}),
 				Animated.timing(slideAnims[currentStep], {
 					toValue: -20,
 					duration: STEP_ANIMATION_DURATION,
-					useNativeDriver: true,
+					useNativeDriver: Platform.OS !== "web",
 				}),
 			]).start(() => {
 				// Set current step after fade-out completes
@@ -110,13 +111,13 @@ export default function OnboardingScreen() {
 					Animated.timing(fadeAnims[toStep], {
 						toValue: 1,
 						duration: STEP_ANIMATION_DURATION,
-						useNativeDriver: true,
+						useNativeDriver: Platform.OS !== "web",
 					}),
 					Animated.spring(slideAnims[toStep], {
 						toValue: 0,
 						friction: 8,
 						tension: 60,
-						useNativeDriver: true,
+						useNativeDriver: Platform.OS !== "web",
 					}),
 				]).start();
 			});

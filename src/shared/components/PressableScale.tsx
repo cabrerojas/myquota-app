@@ -3,6 +3,7 @@ import {
   Animated,
   StyleProp,
   ViewStyle,
+  Platform,
 } from "react-native";
 import { useRef, useCallback } from "react";
 import * as Haptics from "expo-haptics";
@@ -35,14 +36,14 @@ export default function PressableScale({
   const anim = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = useCallback(() => {
-    if (haptic !== false) {
+    if (haptic !== false && Platform.OS !== "web") {
       Haptics.impactAsync(haptic);
     }
     Animated.spring(anim, {
       toValue: scale,
       damping: 20,
       stiffness: 90,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   }, [anim, scale, haptic]);
 
@@ -51,7 +52,7 @@ export default function PressableScale({
       toValue: 1,
       damping: 20,
       stiffness: 90,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
     }).start();
   }, [anim]);
 

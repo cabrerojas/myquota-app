@@ -71,12 +71,12 @@ export default function LoginScreen() {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 700,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== "web",
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 700,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== "web",
       }),
     ]).start();
   }, [fadeAnim, slideAnim]);

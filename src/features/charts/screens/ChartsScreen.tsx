@@ -7,10 +7,12 @@ import {
   ScrollView,
   Dimensions,
   RefreshControl,
+  Platform,
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { BarChart, PieChart } from "react-native-chart-kit";
+import { WebChart } from "@/shared/components/charts/WebChart";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
   getMonthlyStats,
@@ -449,19 +451,29 @@ export default function ChartsScreen() {
                 Últimos {Math.min(stats.length, 6)} períodos
               </Text>
               {getBarChartData().datasets[0].data.some((v) => v > 0) ? (
-                <BarChart
-                  data={getBarChartData()}
-                  width={screenWidth - 48}
-                  height={220}
-                  yAxisLabel="$"
-                  yAxisSuffix=""
-                  chartConfig={chartConfig}
-                  style={styles.chart}
-                  fromZero
-                  showValuesOnTopOfBars
-                  withVerticalLabels
-                  withHorizontalLabels
-                />
+                Platform.OS === "web" ? (
+                  <WebChart
+                    data={getBarChartData().labels.map((label: string, i: number) => ({
+                      label,
+                      value: getBarChartData().datasets[0].data[i],
+                    }))}
+                    type="bar"
+                  />
+                ) : (
+                  <BarChart
+                    data={getBarChartData()}
+                    width={screenWidth - 48}
+                    height={220}
+                    yAxisLabel="$"
+                    yAxisSuffix=""
+                    chartConfig={chartConfig}
+                    style={styles.chart}
+                    fromZero
+                    showValuesOnTopOfBars
+                    withVerticalLabels
+                    withHorizontalLabels
+                  />
+                )
               ) : (
                 <Text style={styles.noDataText}>
                   No hay gastos CLP en este período
@@ -522,19 +534,29 @@ export default function ChartsScreen() {
                 Últimos {Math.min(stats.length, 6)} períodos
               </Text>
               {getUsdBarChartData().datasets[0].data.some((v) => v > 0) ? (
-                <BarChart
-                  data={getUsdBarChartData()}
-                  width={screenWidth - 48}
-                  height={220}
-                  yAxisLabel="US$"
-                  yAxisSuffix=""
-                  chartConfig={usdChartConfig}
-                  style={styles.chart}
-                  fromZero
-                  showValuesOnTopOfBars
-                  withVerticalLabels
-                  withHorizontalLabels
-                />
+                Platform.OS === "web" ? (
+                  <WebChart
+                    data={getUsdBarChartData().labels.map((label: string, i: number) => ({
+                      label,
+                      value: getUsdBarChartData().datasets[0].data[i],
+                    }))}
+                    type="bar"
+                  />
+                ) : (
+                  <BarChart
+                    data={getUsdBarChartData()}
+                    width={screenWidth - 48}
+                    height={220}
+                    yAxisLabel="US$"
+                    yAxisSuffix=""
+                    chartConfig={usdChartConfig}
+                    style={styles.chart}
+                    fromZero
+                    showValuesOnTopOfBars
+                    withVerticalLabels
+                    withHorizontalLabels
+                  />
+                )
               ) : (
                 <Text style={styles.noDataText}>
                   No hay gastos USD en este período
@@ -597,16 +619,27 @@ export default function ChartsScreen() {
                   : `${selectedPeriodMonth} (CLP equiv.)`}
               </Text>
               {getPieChartData().length > 0 ? (
-                <PieChart
-                  data={getPieChartData()}
-                  width={screenWidth - 48}
-                  height={200}
-                  chartConfig={chartConfig}
-                  accessor="amount"
-                  backgroundColor="transparent"
-                  paddingLeft="0"
-                  absolute={false}
-                />
+                Platform.OS === "web" ? (
+                  <WebChart
+                    data={getPieChartData().map((d) => ({
+                      name: d.name,
+                      value: d.amount,
+                      color: d.color,
+                    }))}
+                    type="pie"
+                  />
+                ) : (
+                  <PieChart
+                    data={getPieChartData()}
+                    width={screenWidth - 48}
+                    height={200}
+                    chartConfig={chartConfig}
+                    accessor="amount"
+                    backgroundColor="transparent"
+                    paddingLeft="0"
+                    absolute={false}
+                  />
+                )
               ) : (
                 <Text style={styles.noDataText}>
                   Sin categorías en este período

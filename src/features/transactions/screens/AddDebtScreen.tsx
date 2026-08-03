@@ -558,7 +558,32 @@ export default function AddDebtScreen() {
             </TouchableOpacity>
           )}
         </TouchableOpacity>
-        {showDatePicker && (
+        {showDatePicker && Platform.OS === "web" ? (
+          <input
+            type="date"
+            value={purchaseDate ? purchaseDate.toISOString().split("T")[0] : ""}
+            max={new Date().toISOString().split("T")[0]}
+            onChange={(e) => {
+              const val = (e.target as HTMLInputElement).value;
+              if (val) {
+                setPurchaseDate(new Date(val + "T00:00:00"));
+              } else {
+                setPurchaseDate(null);
+              }
+              setShowDatePicker(false);
+            }}
+            style={{
+              padding: 10,
+              fontSize: 16,
+              borderRadius: 8,
+              border: "1px solid #DEE2E6",
+              backgroundColor: "#fff",
+              color: "#212529",
+              width: "100%",
+              marginTop: 8,
+            }}
+          />
+        ) : showDatePicker ? (
           <DateTimePicker
             value={purchaseDate || new Date()}
             mode="date"
@@ -571,7 +596,7 @@ export default function AddDebtScreen() {
               }
             }}
           />
-        )}
+        ) : null}
 
         {/* Submit */}
         <TouchableOpacity

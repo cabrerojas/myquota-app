@@ -93,12 +93,12 @@ export default function AddCardStep({ onCardCreated }: AddCardStepProps) {
 			Animated.timing(fadeAnim, {
 				toValue: 1,
 				duration: 400,
-				useNativeDriver: true,
+				useNativeDriver: Platform.OS !== "web",
 			}),
 			Animated.timing(slideAnim, {
 				toValue: 0,
 				duration: 400,
-				useNativeDriver: true,
+				useNativeDriver: Platform.OS !== "web",
 			}),
 		]).start();
 	}, [fadeAnim, slideAnim]);
@@ -116,7 +116,9 @@ export default function AddCardStep({ onCardCreated }: AddCardStepProps) {
 	);
 
 	const handleNetworkSelect = useCallback((network: CardNetwork) => {
-		Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+		if (Platform.OS !== "web") {
+			Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+		}
 		setForm((prev) => ({ ...prev, cardType: network }));
 	}, []);
 
@@ -465,7 +467,9 @@ export default function AddCardStep({ onCardCreated }: AddCardStepProps) {
 					<TouchableOpacity
 						style={styles.limitsHeader}
 						onPress={() => {
-							Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+							if (Platform.OS !== "web") {
+								Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+							}
 							setShowLimits(!showLimits);
 						}}
 						activeOpacity={0.7}

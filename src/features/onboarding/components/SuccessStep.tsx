@@ -6,6 +6,7 @@ import {
 	Animated,
 	StyleSheet,
 	Alert,
+	Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -25,13 +26,13 @@ export default function SuccessStep({ card }: SuccessStepProps) {
 			toValue: 1,
 			friction: 4,
 			tension: 80,
-			useNativeDriver: true,
+			useNativeDriver: Platform.OS !== "web",
 		}).start();
 
 		Animated.timing(fadeIn, {
 			toValue: 1,
 			duration: 600,
-			useNativeDriver: true,
+			useNativeDriver: Platform.OS !== "web",
 		}).start();
 	}, [checkScale, fadeIn]);
 

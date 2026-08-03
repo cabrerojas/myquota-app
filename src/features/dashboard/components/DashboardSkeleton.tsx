@@ -1,4 +1,4 @@
-import { View, StyleSheet, Animated } from "react-native";
+import { View, StyleSheet, Animated, Platform } from "react-native";
 import { useRef, useEffect } from "react";
 import { colors } from "@/shared/theme/colors";
 import { spacing, borderRadius } from "@/shared/theme/tokens";
@@ -20,7 +20,7 @@ function SkeletonBlock({
       Animated.timing(shimmer, {
         toValue: 1,
         duration: 1200,
-        useNativeDriver: true,
+        useNativeDriver: Platform.OS !== "web",
       }),
     );
     loop.start();

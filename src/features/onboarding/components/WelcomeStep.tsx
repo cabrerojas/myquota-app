@@ -5,6 +5,7 @@ import {
 	TouchableOpacity,
 	Animated,
 	StyleSheet,
+	Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -46,12 +47,12 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
 			Animated.timing(fadeAnim, {
 				toValue: 1,
 				duration: 500,
-				useNativeDriver: true,
+				useNativeDriver: Platform.OS !== "web",
 			}),
 			Animated.timing(slideAnim, {
 				toValue: 0,
 				duration: 500,
-				useNativeDriver: true,
+				useNativeDriver: Platform.OS !== "web",
 			}),
 		]).start();
 
@@ -61,7 +62,7 @@ export default function WelcomeStep({ onNext }: WelcomeStepProps) {
 				toValue: 1,
 				duration: 400,
 				delay: 300 + i * 150,
-				useNativeDriver: true,
+				useNativeDriver: Platform.OS !== "web",
 			}).start();
 		});
 	}, [fadeAnim, slideAnim, cardAnims]);

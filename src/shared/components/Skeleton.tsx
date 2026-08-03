@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, StyleSheet, View, ViewStyle } from "react-native";
+import { Animated, StyleSheet, View, ViewStyle, Platform } from "react-native";
 import { colors, borderRadius, spacing } from "@/shared/theme/tokens";
 
 interface SkeletonProps {
@@ -27,12 +27,12 @@ export default function Skeleton({
         Animated.timing(opacity, {
           toValue: 1,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(opacity, {
           toValue: 0.3,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]),
     );

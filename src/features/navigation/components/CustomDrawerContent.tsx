@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Image,
   Animated,
+  Platform,
 } from "react-native";
 import { BlurView } from "expo-blur";
 import {
@@ -79,7 +80,7 @@ function DrawerNavItem({
   const handlePressIn = () => {
     Animated.spring(scaleAnim, {
       toValue: 0.97,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
       friction: 8,
     }).start();
   };
@@ -87,7 +88,7 @@ function DrawerNavItem({
   const handlePressOut = () => {
     Animated.spring(scaleAnim, {
       toValue: 1,
-      useNativeDriver: true,
+      useNativeDriver: Platform.OS !== "web",
       friction: 8,
     }).start();
   };
@@ -187,7 +188,18 @@ export default function CustomDrawerContent(
     <View style={styles.container}>
       {/* ── User section ─────────────────────────────────────────── */}
       <View style={styles.userSection}>
-        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+        {Platform.OS !== "web" ? (
+          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+        ) : (
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: "rgba(15, 23, 42, 0.85)",
+              } as any,
+            ]}
+          />
+        )}
         {/* Accent glow overlay */}
         <View style={styles.userGlow} />
 
