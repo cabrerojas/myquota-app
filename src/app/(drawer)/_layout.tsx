@@ -2,19 +2,23 @@ import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
 import { useEffect, useRef, useState } from "react";
-import { Platform, View } from "react-native";
+import { Platform, View, Text, Pressable } from "react-native";
 import { useNavigation } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import {
   UncategorizedProvider,
   useUncategorized,
 } from "@/shared/contexts/UncategorizedContext";
 import { colors } from "@/shared/theme/colors";
-import { WebSidebar } from "@/shared/components/WebSidebar";
 import DashboardScreen from "@/features/dashboard/screens/DashboardScreen";
 
 export default function DrawerLayout() {
   if (Platform.OS === "web") {
-    return <WebDashboardLayout />;
+    return (
+      <UncategorizedProvider>
+        <WebLayout />
+      </UncategorizedProvider>
+    );
   }
 
   return (
@@ -24,30 +28,16 @@ export default function DrawerLayout() {
   );
 }
 
-// ── Web layout: sidebar + content ─────────────────────────────────────────
+// ── Web layout: app-style sidebar + content with header ───────────────────
 
-function WebDashboardLayout() {
-  const [screen, setScreen] = useState<"dashboard" | "creditCards" | "transactions" | "charts" | "debtForecast" | "manualDebts" | "profile">("dashboard");
+type WebScreen = "dashboard" | "creditCards" | "transactions" | "charts" | "debtForecast" | "manualDebts" | "profile";
 
-  const renderScreen = () => {
-    switch (screen) {
-      case "dashboard": return <DashboardScreen key="dashboard" />;
-      default: return <PlaceholderScreen name={screen} />;
-    }
-  };
+function WebLayout() {
+  const [screen, setScreen] = useState<WebScreen>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  return (
-    <View style={{ flex: 1, flexDirection: "row", backgroundColor: colors.bg }}>
-      <WebSidebar active={screen} onSelect={setScreen} />
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        {renderScreen()}
-      </View>
-    </View>
-  );
-}
-
-function PlaceholderScreen({ name }: { name: string }) {
-  const labels: Record<string, string> = {
+  const labels: Record<WebScreen, string> = {
+    dashboard: "Inicio",
     creditCards: "Mis Tarjetas",
     transactions: "Transacciones",
     charts: "Gráficos",
@@ -55,9 +45,60 @@ function PlaceholderScreen({ name }: { name: string }) {
     manualDebts: "Deudas Manuales",
     profile: "Mi Perfil",
   };
+
+  const renderScreen = () => {
+    switch (screen) {
+      case "dashboard": return <DashboardScreen />;
+      default: return (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
+          <Text style={{ color: colors.textMuted, fontSize: 16 }}>{labels[screen]}</Text>
+          <Text style={{ color: colors.textSubtle, fontSize: 13, marginTop: 8 }}>Próximamente en web</Text>
+        </View>
+      );
+    }
+  };
+
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
-      <View style={{ color: colors.textMuted, fontSize: 16 } as any}>{labels[name] ?? name}</View>
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: colors.bg }}>
+      {/* Sidebar — same design as native drawer */}
+      {sidebarOpen && (
+        <View style={{ width: 280, borderRightWidth: 1, borderRightColor: "rgba(255,255,255,0.06)" }}>
+          <CustomDrawerContent
+            state={{ routes: [], index: 0, history: [], routeNames: [], stale: false, type: "drawer", key: "web" } as any}
+            navigation={{ navigate: ((s: string) => { if (labels[s as WebScreen]) setScreen(s as WebScreen); }) as any } as any}
+            descriptors={{}}
+          />
+        </View>
+      )}
+
+      {/* Content area */}
+      <View style={{ flex: 1 }}>
+        {/* Header bar — same style as native */}
+        <View style={{
+          height: 56,
+          flexDirection: "row",
+          alignItems: "center",
+          paddingHorizontal: 12,
+          backgroundColor: colors.bg,
+          borderBottomWidth: 1,
+          borderBottomColor: "rgba(255,255,255,0.06)",
+        }}>
+          <Pressable
+            onPress={() => setSidebarOpen(!sidebarOpen)}
+            style={{ padding: 8, borderRadius: 8, marginRight: 8 }}
+          >
+            <Ionicons name="menu" size={22} color={colors.accent} />
+          </Pressable>
+          <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: "600" }}>
+            {labels[screen]}
+          </Text>
+        </View>
+
+        {/* Screen content */}
+        <View style={{ flex: 1 }}>
+          {renderScreen()}
+        </View>
+      </View>
     </View>
   );
 }
