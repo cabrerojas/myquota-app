@@ -104,7 +104,7 @@ export const useGoogleSignIn = (router: Router) => {
             client_id: webClientId ?? "",
             redirect_uri: window.location.origin + "/login",
             response_type: "id_token",
-            scope: "openid profile email",
+            scope: "openid profile email https://www.googleapis.com/auth/gmail.readonly",
           }).toString();
 
         sessionStorage.setItem("oauth_return", "1");
