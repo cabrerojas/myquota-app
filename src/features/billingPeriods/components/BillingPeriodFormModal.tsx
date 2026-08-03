@@ -4,9 +4,12 @@ import {
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { formatDateInput, toISODateString } from "@/shared/utils/format";
 import { colors } from "@/shared/theme/colors";
+
+// DateTimePicker crashes at module level on web — use dynamic require
+const DateTimePicker: any = Platform.OS === "web" ? null : require("@react-native-community/datetimepicker").default;
+type PickerEvent = { type: string; nativeEvent: { timestamp: number } };
 
 interface BillingPeriodFormModalProps {
   visible: boolean;
@@ -107,7 +110,7 @@ export default function BillingPeriodFormModal({
   };
 
   const onDateChange = (setter: (d: Date) => void, showSetter: (v: boolean) => void) =>
-    (_: DateTimePickerEvent, date?: Date) => {
+    (_: PickerEvent, date?: Date) => {
       showSetter(Platform.OS === "ios");
       if (date) setter(date);
     };
@@ -169,33 +172,47 @@ export default function BillingPeriodFormModal({
                 {/* Start date */}
                 <Text style={s.label}>Fecha de inicio</Text>
                 <DateField date={startDate} onPress={() => setShowStartPicker(true)} />
-                {showStartPicker && <DateTimePicker value={startDate} mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={onDateChange(setStartDate, setShowStartPicker)} />}
+                {showStartPicker && (
+                  Platform.OS === "web" ? (
+                    <input type="date" value={toISODateString(startDate)} style={s.webInput as any}
+                      onChange={e => { setShowStartPicker(false); if (e.target.value) setStartDate(new Date(e.target.value + "T00:00:00")); }} />
+                  ) : (
+                    <DateTimePicker value={startDate} mode="date"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={onDateChange(setStartDate, setShowStartPicker)} />
+                  )
+                )}
 
                 {/* End date */}
                 <Text style={s.label}>Fecha de cierre</Text>
                 <DateField date={endDate} onPress={() => setShowEndPicker(true)} />
-                {showEndPicker && <DateTimePicker value={endDate} mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(e, d) => {
-                    setShowEndPicker(Platform.OS === "ios");
-                    if (d) {
-                      setEndDate(d);
-                      const key = toMonthKey(d);
-                      setMonth(key);
-                      setDisplayMonth(toMonthDisplay(key));
-                      const suggested = new Date(d); suggested.setDate(suggested.getDate() + 20);
-                      setDueDate(suggested);
-                    }
-                  }} />}
+                {showEndPicker && (
+                  Platform.OS === "web" ? (
+                    <input type="date" value={toISODateString(endDate)} style={s.webInput as any}
+                      onChange={e => { setShowEndPicker(false); if (e.target.value) { const d = new Date(e.target.value + "T00:00:00"); setEndDate(d); const key = toMonthKey(d); setMonth(key); setDisplayMonth(toMonthDisplay(key)); const suggested = new Date(d); suggested.setDate(suggested.getDate() + 20); setDueDate(suggested); } }} />
+                  ) : (
+                    <DateTimePicker value={endDate} mode="date"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={(e: PickerEvent, d?: Date) => {
+                        setShowEndPicker(Platform.OS === "ios");
+                        if (d) { setEndDate(d); const key = toMonthKey(d); setMonth(key); setDisplayMonth(toMonthDisplay(key)); const suggested = new Date(d); suggested.setDate(suggested.getDate() + 20); setDueDate(suggested); }
+                      }} />
+                  )
+                )}
 
                 {/* Due date */}
                 <Text style={s.label}>Fecha de vencimiento</Text>
                 <DateField date={dueDate} onPress={() => setShowDuePicker(true)} />
-                {showDuePicker && <DateTimePicker value={dueDate} mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={onDateChange(setDueDate, setShowDuePicker)} />}
+                {showDuePicker && (
+                  Platform.OS === "web" ? (
+                    <input type="date" value={toISODateString(dueDate)} style={s.webInput as any}
+                      onChange={e => { setShowDuePicker(false); if (e.target.value) setDueDate(new Date(e.target.value + "T00:00:00")); }} />
+                  ) : (
+                    <DateTimePicker value={dueDate} mode="date"
+                      display={Platform.OS === "ios" ? "spinner" : "default"}
+                      onChange={onDateChange(setDueDate, setShowDuePicker)} />
+                  )
+                )}
 
                 {/* Buttons */}
                 <View style={s.buttonRow}>

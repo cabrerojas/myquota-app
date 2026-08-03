@@ -1,5 +1,4 @@
-import { File, Paths } from "expo-file-system";
-import * as Sharing from "expo-sharing";
+import { Platform } from "react-native";
 
 interface ExportTransaction {
   transactionDate: string;
@@ -33,7 +32,26 @@ export async function exportTransactionsToCSV(
     )
     .join("\n");
 
-  // Usar la nueva API de FileSystem
+  // Web: download via Blob
+  if (Platform.OS === "web") {
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transacciones_export_${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  // Native: expo-file-system + expo-sharing (dynamic imports avoid web module crash)
+  const [{ File, Paths }, Sharing] = await Promise.all([
+    import("expo-file-system"),
+    import("expo-sharing"),
+  ]);
+
   const file = new File(Paths.cache, `transacciones_export_${Date.now()}.csv`);
   await file.write(csv);
 
