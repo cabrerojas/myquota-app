@@ -37,6 +37,8 @@ function DrawerContent() {
           },
           headerStyle: { backgroundColor: colors.bg },
           headerShadowVisible: false,
+          drawerStyle: { backgroundColor: colors.bg },
+          sceneStyle: { backgroundColor: colors.bg },
         }}
       >
         <Drawer.Screen name="dashboard" options={{ title: "Inicio" }} />
