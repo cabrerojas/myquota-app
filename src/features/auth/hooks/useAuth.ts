@@ -95,51 +95,22 @@ export const useGoogleSignIn = (router: Router) => {
     setIsLoading(true);
     try {
       if (Platform.OS === "web") {
-        // ── Web OAuth: popup-first → redirect fallback ──
+        // ── Web OAuth: full-page redirect (reliable across all browsers/PWAs) ──
         console.log("Iniciando sesión con Google (web)...");
 
         const authUrl =
           "https://accounts.google.com/o/oauth2/v2/auth?" +
           new URLSearchParams({
             client_id: webClientId ?? "",
-            redirect_uri: redirectUri,
+            redirect_uri: window.location.origin + "/login",
             response_type: "id_token",
             scope: "openid profile email",
             nonce: Math.random().toString(36).substring(2, 15),
           }).toString();
 
-        const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-
-        if (shouldUseRedirectFallback(result)) {
-          // Popup blocked or dismissed → fall back to full-page redirect
-          console.log("Login popup falló — intentando redirect:", result.type);
-          sessionStorage.setItem("oauth_return", "1");
-          // Replace redirect_uri with origin so Google returns to the app domain
-          const fallbackUrl = authUrl.replace(redirectUri, window.location.origin);
-          window.location.href = fallbackUrl;
-          return;
-        }
-
-        // Popup success — parse id_token from redirect URL fragment
-        const tokenResult = parseIdTokenFromFragment(result.url);
-        if (!tokenResult) {
-          console.error("No idToken in redirect URL:", result.url);
-          return;
-        }
-
-        // Decode user info from idToken
-        const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
-        await authenticateWithBackend(
-          tokenResult.idToken,
-          undefined,
-          {
-            givenName: payload.given_name,
-            familyName: payload.family_name,
-            email: payload.email,
-            photo: payload.picture,
-          },
-          router,
-        );
+        sessionStorage.setItem("oauth_return", "1");
+        window.location.href = authUrl;
+        return;
       } else {
         // ── Native flow (unchanged) ─────────
         console.log("Iniciando sesión con Google...");
