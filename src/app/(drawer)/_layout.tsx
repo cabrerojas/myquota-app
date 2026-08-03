@@ -2,6 +2,7 @@ import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import {
   UncategorizedProvider,
   useUncategorized,
@@ -28,7 +29,7 @@ function DrawerContent() {
       <Drawer
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
-          drawerType: "front",
+          drawerType: Platform.OS === "web" ? "permanent" : "front",
           headerTintColor: colors.accent,
           headerTitleStyle: {
             fontWeight: "600",
