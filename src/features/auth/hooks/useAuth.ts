@@ -52,15 +52,20 @@ async function authenticateWithBackend(
   serverAuthCode: string | undefined,
   user: { givenName?: string | null; familyName?: string | null; email?: string | null; photo?: string | null },
   router: Router,
+  nonce?: string,
 ) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000);
 
   try {
+    const body: Record<string, string> = { token: idToken };
+    if (serverAuthCode) body.serverAuthCode = serverAuthCode;
+    if (nonce) body.nonce = nonce;
+
     const res = await fetch(`${API_BASE_URL}/login/google`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: idToken, serverAuthCode }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
 
@@ -98,6 +103,9 @@ export const useGoogleSignIn = (router: Router) => {
         // ── Web OAuth: full-page redirect (reliable across all browsers/PWAs) ──
         console.log("Iniciando sesión con Google (web)...");
 
+        const nonce = Math.random().toString(36).substring(2, 15);
+        sessionStorage.setItem("oauth_nonce", nonce);
+
         const authUrl =
           "https://accounts.google.com/o/oauth2/v2/auth?" +
           new URLSearchParams({
@@ -105,6 +113,7 @@ export const useGoogleSignIn = (router: Router) => {
             redirect_uri: window.location.origin + "/login",
             response_type: "id_token",
             scope: "openid profile email https://www.googleapis.com/auth/gmail.readonly",
+            nonce,
           }).toString();
 
         sessionStorage.setItem("oauth_return", "1");
@@ -153,6 +162,7 @@ export async function parseOAuthReturn(router: Router): Promise<void> {
   if (!tokenResult) return;
 
   const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
+  const nonce = sessionStorage.getItem("oauth_nonce") ?? undefined;
   await authenticateWithBackend(
     tokenResult.idToken,
     undefined,
@@ -163,10 +173,12 @@ export async function parseOAuthReturn(router: Router): Promise<void> {
       photo: payload.picture,
     },
     router,
+    nonce,
   );
 
   // Clean up to prevent token replay
   sessionStorage.removeItem("oauth_return");
+  sessionStorage.removeItem("oauth_nonce");
   window.history.replaceState(null, "", "/");
 }
 
