@@ -2,7 +2,7 @@ import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
 import { useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import { Platform, View, Text } from "react-native";
 import { useNavigation } from "expo-router";
 import {
   UncategorizedProvider,
@@ -12,12 +12,16 @@ import { colors } from "@/shared/theme/colors";
 import DashboardScreen from "@/features/dashboard/screens/DashboardScreen";
 
 export default function DrawerLayout() {
-  // On web, skip the drawer entirely — render dashboard directly
+  // TEMP: prove rendering works on web
   if (Platform.OS === "web") {
     return (
-      <UncategorizedProvider>
-        <DashboardScreen />
-      </UncategorizedProvider>
+      <View style={{ flex: 1, backgroundColor: "#0F172A", justifyContent: "center", alignItems: "center", padding: 40 }}>
+        <Text style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>myQuota Web</Text>
+        <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 16, textAlign: "center" }}>
+          La app está renderizando correctamente.{"\n"}
+          Platform.OS = "{Platform.OS}"
+        </Text>
+      </View>
     );
   }
 
