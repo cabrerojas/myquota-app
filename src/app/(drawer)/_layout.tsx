@@ -9,8 +9,18 @@ import {
   useUncategorized,
 } from "@/shared/contexts/UncategorizedContext";
 import { colors } from "@/shared/theme/colors";
+import DashboardScreen from "@/features/dashboard/screens/DashboardScreen";
 
 export default function DrawerLayout() {
+  // On web, skip the drawer entirely — render dashboard directly
+  if (Platform.OS === "web") {
+    return (
+      <UncategorizedProvider>
+        <DashboardScreen />
+      </UncategorizedProvider>
+    );
+  }
+
   return (
     <UncategorizedProvider>
       <DrawerContent />
@@ -27,7 +37,6 @@ function DrawerContent() {
     refreshCount();
   }, [refreshCount]);
 
-  // Open drawer on web mount so menu is immediately visible
   useEffect(() => {
     if (Platform.OS === "web" && !hasOpened.current) {
       hasOpened.current = true;
