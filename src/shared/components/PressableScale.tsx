@@ -6,11 +6,10 @@ import {
   Platform,
 } from "react-native";
 import { useRef, useCallback } from "react";
-import * as Haptics from "expo-haptics";
 
 interface PressableScaleProps {
   scale?: number;
-  haptic?: Haptics.ImpactFeedbackStyle | false;
+  haptic?: string | false;
   style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
   onPress?: () => void;
@@ -22,10 +21,12 @@ interface PressableScaleProps {
 /**
  * Pressable with spring scale animation and optional haptic feedback.
  * Follows Modern Dark design system: scale 0.97→1.0, spring damping:20 stiffness:90.
+ *
+ * On web, haptic feedback is a no-op (expo-haptics imports crash at module level).
  */
 export default function PressableScale({
   scale = 0.97,
-  haptic = Haptics.ImpactFeedbackStyle.Light,
+  haptic,
   onPress,
   style,
   children,
@@ -37,7 +38,14 @@ export default function PressableScale({
 
   const handlePressIn = useCallback(() => {
     if (haptic !== false && Platform.OS !== "web") {
-      Haptics.impactAsync(haptic);
+      // Dynamic import avoids module-level crash on web
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const Haptics = require("expo-haptics");
+        Haptics.impactAsync(haptic ?? Haptics.ImpactFeedbackStyle.Light);
+      } catch {
+        // expo-haptics not available — silent no-op
+      }
     }
     Animated.spring(anim, {
       toValue: scale,

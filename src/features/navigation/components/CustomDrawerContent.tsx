@@ -7,7 +7,6 @@ import {
   Animated,
   Platform,
 } from "react-native";
-import { BlurView } from "expo-blur";
 import {
   DrawerContentScrollView,
   DrawerContentComponentProps,
@@ -188,18 +187,12 @@ export default function CustomDrawerContent(
     <View style={styles.container}>
       {/* ── User section ─────────────────────────────────────────── */}
       <View style={styles.userSection}>
-        {Platform.OS !== "web" ? (
-          <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
-        ) : (
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: "rgba(15, 23, 42, 0.85)",
-              } as any,
-            ]}
-          />
-        )}
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: "rgba(15, 23, 42, 0.85)" },
+          ] as any}
+        />
         {/* Accent glow overlay */}
         <View style={styles.userGlow} />
 
