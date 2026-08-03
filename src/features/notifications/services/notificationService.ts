@@ -2,6 +2,8 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+
+const isWeb = Platform.OS === "web";
 import { getBillingPeriodsByCreditCard } from "@/features/billingPeriods/services/billingPeriodsApi";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -48,6 +50,7 @@ export async function saveNotificationSettings(
 // ─── Permission ──────────────────────────────────────────────────────────────
 
 export async function requestNotificationPermissions(): Promise<boolean> {
+  if (isWeb) return false;
   if (!Device.isDevice) {
     console.warn("Notifications only work on physical devices");
     return false;
@@ -63,6 +66,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 // ─── Configuration ───────────────────────────────────────────────────────────
 
 export function configureNotificationHandler() {
+  if (isWeb) return;
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -119,6 +123,7 @@ function getTriggerDate(
 export async function scheduleCardNotifications(
   cards: CreditCardForNotification[],
 ): Promise<number> {
+  if (isWeb) return 0;
   const settings = await getNotificationSettings();
 
   if (!settings.enabled) {
@@ -248,6 +253,7 @@ export async function scheduleCardNotifications(
 // ─── Cancel All ──────────────────────────────────────────────────────────────
 
 export async function cancelAllScheduledNotifications(): Promise<void> {
+  if (isWeb) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
   await AsyncStorage.removeItem(SCHEDULED_KEY);
 }
@@ -255,5 +261,6 @@ export async function cancelAllScheduledNotifications(): Promise<void> {
 // ─── Debug: List Scheduled ───────────────────────────────────────────────────
 
 export async function getScheduledNotifications() {
+  if (isWeb) return [];
   return Notifications.getAllScheduledNotificationsAsync();
 }
