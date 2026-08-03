@@ -1,8 +1,9 @@
 import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
+import { useNavigation } from "expo-router";
 import {
   UncategorizedProvider,
   useUncategorized,
@@ -19,17 +20,29 @@ export default function DrawerLayout() {
 
 function DrawerContent() {
   const { refreshCount } = useUncategorized();
+  const navigation = useNavigation();
+  const hasOpened = useRef(false);
 
   useEffect(() => {
     refreshCount();
   }, [refreshCount]);
+
+  // Open drawer on web mount so menu is immediately visible
+  useEffect(() => {
+    if (Platform.OS === "web" && !hasOpened.current) {
+      hasOpened.current = true;
+      setTimeout(() => {
+        (navigation as any).openDrawer?.();
+      }, 300);
+    }
+  }, [navigation]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer
         drawerContent={(props) => <CustomDrawerContent {...props} />}
         screenOptions={{
-          drawerType: Platform.OS === "web" ? "permanent" : "front",
+          drawerType: "front",
           headerTintColor: colors.accent,
           headerTitleStyle: {
             fontWeight: "600",
