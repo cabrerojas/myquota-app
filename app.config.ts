@@ -54,6 +54,7 @@ const defineConfig = (ctx: ConfigContext): ExpoConfig => {
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
+      bundleIdentifier: "cl.cabrerojas.myquota",
       runtimeVersion: {
         policy: "appVersion",
       },
