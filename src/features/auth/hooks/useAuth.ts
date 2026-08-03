@@ -162,7 +162,8 @@ export async function parseOAuthReturn(router: Router): Promise<void> {
   if (!tokenResult) return;
 
   const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
-  const nonce = sessionStorage.getItem("oauth_nonce") ?? undefined;
+  // Extract nonce from the id_token itself (Google includes it) — more reliable than sessionStorage
+  const nonce: string | undefined = payload.nonce;
   await authenticateWithBackend(
     tokenResult.idToken,
     undefined,
