@@ -1,28 +1,20 @@
 import { Drawer } from "expo-router/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import CustomDrawerContent from "@/features/navigation/components/CustomDrawerContent";
-import { useEffect, useRef } from "react";
-import { Platform, View, Text } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Platform, View } from "react-native";
 import { useNavigation } from "expo-router";
 import {
   UncategorizedProvider,
   useUncategorized,
 } from "@/shared/contexts/UncategorizedContext";
 import { colors } from "@/shared/theme/colors";
+import { WebSidebar } from "@/shared/components/WebSidebar";
 import DashboardScreen from "@/features/dashboard/screens/DashboardScreen";
 
 export default function DrawerLayout() {
-  // TEMP: prove rendering works on web
   if (Platform.OS === "web") {
-    return (
-      <View style={{ flex: 1, backgroundColor: "#0F172A", justifyContent: "center", alignItems: "center", padding: 40 }}>
-        <Text style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>myQuota Web</Text>
-        <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 16, textAlign: "center" }}>
-          La app está renderizando correctamente.{"\n"}
-          Platform.OS = "{Platform.OS}"
-        </Text>
-      </View>
-    );
+    return <WebDashboardLayout />;
   }
 
   return (
@@ -31,6 +23,46 @@ export default function DrawerLayout() {
     </UncategorizedProvider>
   );
 }
+
+// ── Web layout: sidebar + content ─────────────────────────────────────────
+
+function WebDashboardLayout() {
+  const [screen, setScreen] = useState<"dashboard" | "creditCards" | "transactions" | "charts" | "debtForecast" | "manualDebts" | "profile">("dashboard");
+
+  const renderScreen = () => {
+    switch (screen) {
+      case "dashboard": return <DashboardScreen key="dashboard" />;
+      default: return <PlaceholderScreen name={screen} />;
+    }
+  };
+
+  return (
+    <View style={{ flex: 1, flexDirection: "row", backgroundColor: colors.bg }}>
+      <WebSidebar active={screen} onSelect={setScreen} />
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {renderScreen()}
+      </View>
+    </View>
+  );
+}
+
+function PlaceholderScreen({ name }: { name: string }) {
+  const labels: Record<string, string> = {
+    creditCards: "Mis Tarjetas",
+    transactions: "Transacciones",
+    charts: "Gráficos",
+    debtForecast: "Proyección de Deuda",
+    manualDebts: "Deudas Manuales",
+    profile: "Mi Perfil",
+  };
+  return (
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg }}>
+      <View style={{ color: colors.textMuted, fontSize: 16 } as any}>{labels[name] ?? name}</View>
+    </View>
+  );
+}
+
+// ── Native drawer (unchanged) ──────────────────────────────────────────────
 
 function DrawerContent() {
   const { refreshCount } = useUncategorized();
