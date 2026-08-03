@@ -13,6 +13,18 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon-512.png" />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              html, body, #root {
+                background-color: #0F172A;
+                margin: 0;
+                padding: 0;
+                min-height: 100vh;
+              }
+            `,
+          }}
+        />
       </head>
       <body>
         {children}
