@@ -105,7 +105,6 @@ export const useGoogleSignIn = (router: Router) => {
             redirect_uri: window.location.origin + "/login",
             response_type: "id_token",
             scope: "openid profile email",
-            nonce: Math.random().toString(36).substring(2, 15),
           }).toString();
 
         sessionStorage.setItem("oauth_return", "1");
