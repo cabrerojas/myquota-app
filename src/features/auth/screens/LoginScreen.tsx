@@ -8,11 +8,12 @@ import {
   Animated,
   Linking,
   Dimensions,
+  Platform,
 } from "react-native";
 import { useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, Defs, LinearGradient, Stop, Rect, Line } from "react-native-svg";
-import { useGoogleSignIn } from "../hooks/useAuth";
+import { useGoogleSignIn, parseOAuthReturn } from "../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { colors } from "@/shared/theme/colors";
 
@@ -79,6 +80,13 @@ export default function LoginScreen() {
       }),
     ]).start();
   }, [fadeAnim, slideAnim]);
+
+  // Detect OAuth redirect return (popup-blocker fallback)
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      parseOAuthReturn(router);
+    }
+  }, [router]);
 
   return (
     <View style={styles.container}>
