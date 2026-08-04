@@ -144,11 +144,18 @@ export default function TransactionsScreen() {
   const filterParamRef = useRef(params.filter);
   filterParamRef.current = params.filter;
 
+  const categoryParamRef = useRef({ categoryId: params.categoryId, categoryName: params.categoryName });
+  categoryParamRef.current = { categoryId: params.categoryId, categoryName: params.categoryName };
+
   useFocusEffect(
     useCallback(() => {
       if (filterParamRef.current === "uncategorized") {
         setOnlyUncategorized(true);
         setShowFilters(true);
+      }
+      const { categoryId, categoryName } = categoryParamRef.current;
+      if (categoryId && categoryName) {
+        setCategoryFilter({ id: categoryId, name: categoryName });
       }
     }, []),
   );
