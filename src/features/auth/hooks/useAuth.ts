@@ -46,22 +46,13 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 
 // ── Native-only configuration ──────────────────────────────────────────────
 if (Platform.OS !== "web") {
-  // Generate a nonce that we control — GoogleSignin uses it and
-  // we pass it to the backend so Supabase can verify it.
-  const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   GoogleSignin.configure({
     webClientId: webClientId,
     scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
     offlineAccess: true,
     forceCodeForRefreshToken: true,
     iosClientId: iosClientId,
-    // @ts-expect-error — nonce is supported at runtime but not in TS types
-    nonce,
   });
-
-  // Store for use during sign-in (module-level is fine since configure runs once)
-  (globalThis as any).__googleSignInNonce = nonce;
-}
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -176,8 +167,7 @@ export const useGoogleSignIn = (router: Router) => {
           }
           console.log("idToken obtenido:", idToken);
           console.log("serverAuthCode obtenido:", serverAuthCode ? "✅" : "❌ no disponible");
-          const nonce = (globalThis as any).__googleSignInNonce;
-          await authenticateWithBackend(idToken, serverAuthCode ?? undefined, user, router, nonce);
+          await authenticateWithBackend(idToken, serverAuthCode ?? undefined, user, router);
         }
       }
     } catch (error) {
