@@ -18,6 +18,7 @@ import {
   deleteManualTransaction,
   ManualTransaction,
 } from "@/features/transactions/services/transactionsApi";
+import { getQuotasByTransaction } from "@/features/quotas/services/quotasApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
@@ -27,6 +28,8 @@ import ErrorState from "@/shared/components/ErrorState";
 
 interface ManualDebtItem extends ManualTransaction {
   cardLabel: string;
+  lastPaidMonth: number; // 0-11, derived from last paid quota
+  lastPaidYear: number;
 }
 
 export default function ManualDebtsScreen() {
@@ -47,12 +50,30 @@ export default function ManualDebtsScreen() {
       const allDebts: ManualDebtItem[] = [];
       for (const card of cardList) {
         const txs = await getManualTransactions(card.id);
-        allDebts.push(
-          ...txs.map((tx) => ({
+        for (const tx of txs) {
+          // Derive lastPaidMonth from quotas
+          let lastPaidMonth = new Date().getMonth();
+          let lastPaidYear = new Date().getFullYear();
+          if (tx.paidInstallments > 0) {
+            try {
+              const quotas = await getQuotasByTransaction(card.id, tx.id);
+              const paidQuotas = quotas
+                .filter((q) => q.status === "paid")
+                .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+              if (paidQuotas.length > 0) {
+                const lastPaidDate = new Date(paidQuotas[0].dueDate);
+                lastPaidMonth = lastPaidDate.getMonth();
+                lastPaidYear = lastPaidDate.getFullYear();
+              }
+            } catch { /* keep defaults */ }
+          }
+          allDebts.push({
             ...tx,
             cardLabel: `${card.cardType} •${card.cardLastDigits}`,
-          })),
-        );
+            lastPaidMonth,
+            lastPaidYear,
+          });
+        }
       }
       allDebts.sort((a, b) => a.merchant.localeCompare(b.merchant));
       setDebts(allDebts);
@@ -110,6 +131,8 @@ export default function ManualDebtsScreen() {
         quotaAmount: String(debt.amount),
         totalInstallments: String(debt.totalInstallments),
         paidInstallments: String(debt.paidInstallments),
+        lastPaidMonth: String(debt.lastPaidMonth),
+        lastPaidYear: String(debt.lastPaidYear),
         currency: debt.currency,
         purchaseDate: debt.transactionDate,
       },
