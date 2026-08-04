@@ -15,22 +15,22 @@ export const colors = {
   primary:         "#1E40AF",   // Azul confianza — navegación, identidad
   primaryDark:     "#1E3A8A",   // Estados pressed/hover de primary
   secondary:       "#3B82F6",   // Azul acción — links, chips activos, selecciones
-  accent:          "#059669",   // Verde profit — CTAs positivos: Pagar, Crear, Guardar
-  accentDark:      "#047857",   // Estados pressed/hover de accent
+  accent:          "#10B981",   // Verde profit — CTAs positivos (emerald-500, WCAG AA)
+  accentDark:      "#059669",   // Estados pressed/hover de accent
 
   // ── Texto ───────────────────────────────────────
   textPrimary:     "#FFFFFF",
   textSecondary:   "rgba(255,255,255,0.8)",
-  textMuted:       "rgba(255,255,255,0.5)",
-  textSubtle:      "rgba(255,255,255,0.3)",
+  textMuted:       "rgba(255,255,255,0.65)",  // WCAG AA on dark bg
+  textSubtle:      "rgba(255,255,255,0.45)",  // WCAG AA for large text
 
   // ── Feedback ────────────────────────────────────
   destructive:     "#DC2626",
   destructiveBg:   "rgba(220,38,38,0.1)",
-  success:         "#059669",
-  successBg:       "rgba(5,150,105,0.1)",
-  warning:         "#F59E0B",
-  warningBg:       "rgba(245,158,11,0.1)",
+  success:         "#34D399",   // Éxito (emerald-400, distinguible de accent)
+  successBg:       "rgba(52,211,153,0.1)",
+  warning:         "#FBBF24",   // Amber-400, WCAG AA on dark bg
+  warningBg:       "rgba(251,191,36,0.1)",
 
   // ── Bordes ──────────────────────────────────────
   border:          "rgba(255,255,255,0.08)",
@@ -51,9 +51,9 @@ export const colors = {
 
   // ── Gráficos ────────────────────────────────────
   chartPalette: [
-    "#3B82F6", "#059669", "#F59E0B", "#DC2626",
+    "#3B82F6", "#10B981", "#FBBF24", "#DC2626",
     "#8B5CF6", "#F97316", "#14B8A6", "#EC4899",
-    "#1E40AF", "#047857", "#D97706", "#6B7280",
+    "#1E40AF", "#34D399", "#D97706", "#6B7280",
   ] as const,
 } as const;
 
