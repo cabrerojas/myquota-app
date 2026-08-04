@@ -82,7 +82,10 @@ export function MonthlyStatsSkeleton() {
       <SkeletonBlock width={140} height={18} />
       <View style={{ gap: spacing.sm, marginTop: spacing.md }}>
         {[1, 2, 3].map((i) => (
-          <View key={i} style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View
+            key={i}
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
             <SkeletonBlock width={100} height={16} />
             <View style={{ flexDirection: "row", gap: spacing.sm }}>
               <SkeletonBlock width={80} height={16} />
@@ -131,7 +134,7 @@ export default function DashboardSkeleton() {
       <SkeletonBlock width="100%" height={44} radius={12} />
       <View style={{ height: spacing.lg }} />
       {/* Import button */}
-      <SkeletonBlock width="60%" height={44} radius={12} />
+      <SkeletonBlock width="100%" height={48} radius={12} />
       <View style={{ height: spacing.lg }} />
       {/* Stat cards */}
       <MonthSummarySkeleton />

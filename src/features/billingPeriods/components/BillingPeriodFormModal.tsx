@@ -377,6 +377,9 @@ const s = StyleSheet.create({
     textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6, marginTop: 12 },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12,
     fontSize: 15, backgroundColor: "rgba(255,255,255,0.04)", color: colors.textPrimary },
+  webInput: { width: "100%", height: 44, borderWidth: 1, borderColor: colors.border,
+    borderRadius: 10, paddingHorizontal: 12, backgroundColor: "rgba(255,255,255,0.04)",
+    color: colors.textPrimary, fontSize: 15 },
 
   dateBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1,
     borderColor: colors.border, borderRadius: 10, padding: 12, backgroundColor: "rgba(255,255,255,0.04)" },

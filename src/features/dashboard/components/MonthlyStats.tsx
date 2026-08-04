@@ -30,7 +30,7 @@ const MonthlyStatsComponent = ({ creditCardId }: MonthlyStatsProps) => {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Gastos Mensuales</Text>
+        <Text style={styles.title}>Tendencia mensual</Text>
         <Text style={styles.loading}>Cargando...</Text>
       </View>
     );
@@ -40,23 +40,25 @@ const MonthlyStatsComponent = ({ creditCardId }: MonthlyStatsProps) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Gastos Mensuales</Text>
+      <Text style={styles.title}>Tendencia mensual</Text>
       {hasData ? (
-        monthlyStats.map((item) => (
+        monthlyStats.slice(0, 4).map((item) => (
           <View key={item.month} style={styles.row}>
             <Text style={styles.month}>{formatMonthDisplay(item.month)}</Text>
             <Text style={styles.amountCLP}>
-              CLP: ${item.totalCLP.toLocaleString("es-CL")}
+              ${item.totalCLP.toLocaleString("es-CL")}
             </Text>
-            <Text style={styles.amountUSD}>
-              USD: ${item.totalUSD.toFixed(2)}
-            </Text>
+            <Text style={styles.amountUSD}>US$ {item.totalUSD.toFixed(2)}</Text>
           </View>
         ))
       ) : (
         <View style={styles.emptyState}>
           <View style={styles.emptyIconWrap}>
-            <Ionicons name="bar-chart-outline" size={20} color={colors.textMuted} />
+            <Ionicons
+              name="bar-chart-outline"
+              size={20}
+              color={colors.textMuted}
+            />
           </View>
           <Text style={styles.emptyText}>
             Los gastos mensuales aparecerán cuando importe movimientos
@@ -99,9 +101,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   amountCLP: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.textMuted,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.textPrimary,
   },
   amountUSD: {
     fontSize: 14,

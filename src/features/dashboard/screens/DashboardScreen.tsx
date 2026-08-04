@@ -75,7 +75,10 @@ function lastDayOfMonth(year: number, month: number): number {
  * Returns null when closingDay is not configured.
  */
 function computeSuggestedPeriod(card: CreditCard): {
-  month: string; startDate: string; endDate: string; dueDate: string;
+  month: string;
+  startDate: string;
+  endDate: string;
+  dueDate: string;
 } | null {
   if (!card.closingDay) return null;
 
@@ -94,7 +97,10 @@ function computeSuggestedPeriod(card: CreditCard): {
     endDay = thisClosing;
   } else {
     endMonth -= 1;
-    if (endMonth < 0) { endMonth = 11; endYear -= 1; }
+    if (endMonth < 0) {
+      endMonth = 11;
+      endYear -= 1;
+    }
     const prevLast = lastDayOfMonth(endYear, endMonth);
     endDay = Math.min(closingDay, prevLast);
   }
@@ -104,7 +110,10 @@ function computeSuggestedPeriod(card: CreditCard): {
   // ---- startDate: day after previous closing ----
   let startMonth = endMonth - 1;
   let startYear = endYear;
-  if (startMonth < 0) { startMonth = 11; startYear -= 1; }
+  if (startMonth < 0) {
+    startMonth = 11;
+    startYear -= 1;
+  }
   const startMonthLast = lastDayOfMonth(startYear, startMonth);
   const startDay = Math.min(closingDay, startMonthLast);
   const startDate = new Date(startYear, startMonth, startDay + 1);
@@ -114,7 +123,10 @@ function computeSuggestedPeriod(card: CreditCard): {
   if (card.dueDay) {
     let dueMonth = endMonth + 1;
     let dueYear = endYear;
-    if (dueMonth > 11) { dueMonth = 0; dueYear += 1; }
+    if (dueMonth > 11) {
+      dueMonth = 0;
+      dueYear += 1;
+    }
     const dueMonthLast = lastDayOfMonth(dueYear, dueMonth);
     const dueDay = Math.min(card.dueDay, dueMonthLast);
     dueDate = new Date(dueYear, dueMonth, dueDay);
@@ -145,7 +157,11 @@ export default function DashboardScreen() {
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
-  const { data: creditCardsData, isLoading: isLoadingCards, isError: cardsError } = useCreditCards();
+  const {
+    data: creditCardsData,
+    isLoading: isLoadingCards,
+    isError: cardsError,
+  } = useCreditCards();
   const creditCards = creditCardsData || [];
   const { data: debtSummary, isError: debtError } = useDebtSummary();
   const { data: profile } = useMyProfile();
@@ -367,8 +383,20 @@ export default function DashboardScreen() {
       {/* Decorative top gradient */}
       <View style={styles.topGradient} pointerEvents="none">
         <Svg width="100%" height={160} style={StyleSheet.absoluteFill}>
-          <Circle cx={60} cy={-20} r={100} fill={colors.accent} opacity={0.04} />
-          <Circle cx={300} cy={40} r={120} fill={colors.accent} opacity={0.03} />
+          <Circle
+            cx={60}
+            cy={-20}
+            r={100}
+            fill={colors.accent}
+            opacity={0.04}
+          />
+          <Circle
+            cx={300}
+            cy={40}
+            r={120}
+            fill={colors.accent}
+            opacity={0.03}
+          />
         </Svg>
       </View>
 
@@ -411,17 +439,28 @@ export default function DashboardScreen() {
             <>
               {/* Normal dashboard — data exists */}
               <PressableScale
-                style={[styles.importButton, isRefreshing && styles.buttonDisabled]}
+                style={[
+                  styles.importButton,
+                  isRefreshing && styles.buttonDisabled,
+                ]}
                 onPress={handleImportTransactions}
                 disabled={isRefreshing}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isRefreshing
+                    ? "Sincronizando movimientos"
+                    : "Sincronizar movimientos"
+                }
               >
                 {isRefreshing ? (
-                  <ActivityIndicator size="small" color={colors.accent} />
+                  <ActivityIndicator size="small" color={colors.bg} />
                 ) : (
-                  <Ionicons name="sync-outline" size={16} color={colors.accent} />
+                  <Ionicons name="sync-outline" size={16} color={colors.bg} />
                 )}
                 <Text style={styles.importButtonText}>
-                  {isRefreshing ? "Sincronizando..." : "Sincronizar movimientos"}
+                  {isRefreshing
+                    ? "Sincronizando..."
+                    : "Sincronizar movimientos"}
                 </Text>
               </PressableScale>
 
@@ -431,21 +470,34 @@ export default function DashboardScreen() {
                * below — they work even without explicit billing periods
                * (fall back to calendar-month grouping in the backend).
                */}
-              {!debtSummary || ((debtSummary.totalCLP ?? 0) === 0 && (debtSummary.totalUSD ?? 0) === 0 && !debtSummary.nextMonthCLP) ? (
+              {!debtSummary ||
+              ((debtSummary.totalCLP ?? 0) === 0 &&
+                (debtSummary.totalUSD ?? 0) === 0 &&
+                !debtSummary.nextMonthCLP) ? (
                 <View style={styles.billingPromptCard}>
                   <View style={styles.billingPromptIcon}>
-                    <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={colors.accent}
+                    />
                   </View>
                   <View style={styles.billingPromptContent}>
-                    <Text style={styles.billingPromptTitle}>Crear período de facturación</Text>
+                    <Text style={styles.billingPromptTitle}>
+                      Crear período de facturación
+                    </Text>
                     <Text style={styles.billingPromptBody}>
-                      Para ver estadísticas, proyecciones y organizar tus gastos por mes.
+                      Para ver estadísticas, proyecciones y organizar tus gastos
+                      por mes.
                     </Text>
                     <PressableScale
                       onPress={() => {
-                        const selectedCard = creditCards.find(c => c.id === selectedCardId);
+                        const selectedCard = creditCards.find(
+                          (c) => c.id === selectedCardId,
+                        );
                         if (selectedCard) {
-                          const suggestion = computeSuggestedPeriod(selectedCard);
+                          const suggestion =
+                            computeSuggestedPeriod(selectedCard);
                           if (suggestion) {
                             setOrphanSuggestion(suggestion);
                           }
@@ -456,8 +508,14 @@ export default function DashboardScreen() {
                       accessibilityLabel="Crear período de facturación"
                       accessibilityRole="button"
                     >
-                      <Ionicons name="add-circle-outline" size={16} color={colors.accent} />
-                      <Text style={styles.billingPromptBtnText}>Crear período</Text>
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={16}
+                        color={colors.accent}
+                      />
+                      <Text style={styles.billingPromptBtnText}>
+                        Crear período
+                      </Text>
                     </PressableScale>
                   </View>
                 </View>
@@ -469,12 +527,14 @@ export default function DashboardScreen() {
                 nextPeriodCLP={debtSummary?.nextMonthCLP}
                 nextPeriodUSD={debtSummary?.nextMonthUSD}
               />
-              {debtSummary && ((debtSummary.totalCLP ?? 0) > 0 || (debtSummary.totalUSD ?? 0) > 0) && (
-                <DebtIndicatorCard
-                  refreshKey={refreshKey}
-                  summary={debtSummary}
-                />
-              )}
+              {debtSummary &&
+                ((debtSummary.totalCLP ?? 0) > 0 ||
+                  (debtSummary.totalUSD ?? 0) > 0) && (
+                  <DebtIndicatorCard
+                    refreshKey={refreshKey}
+                    summary={debtSummary}
+                  />
+                )}
               <MonthlyStats creditCardId={selectedCardId} />
             </>
           )}
@@ -515,7 +575,7 @@ export default function DashboardScreen() {
         style={styles.sectionHeader}
         onPress={() => router.push("/(drawer)/transactions")}
       >
-        <Text style={styles.sectionTitle}>Últimas Transacciones</Text>
+        <Text style={styles.sectionTitle}>Movimientos recientes</Text>
         <View style={styles.seeAllButton}>
           <Text style={styles.seeAllText}>Ver todas</Text>
           <Ionicons name="chevron-forward" size={14} color={colors.accent} />
@@ -530,7 +590,11 @@ export default function DashboardScreen() {
       ) : transactions.length === 0 ? (
         <View style={styles.emptyTransactions}>
           <View style={styles.emptyTxIconWrap}>
-            <Ionicons name="receipt-outline" size={28} color={colors.textMuted} />
+            <Ionicons
+              name="receipt-outline"
+              size={28}
+              color={colors.textMuted}
+            />
           </View>
           <Text style={styles.emptyTxTitle}>Sin movimientos recientes</Text>
           <Text style={styles.emptyTxBody}>
@@ -562,7 +626,8 @@ export default function DashboardScreen() {
                         style={[
                           styles.txCategoryPill,
                           {
-                            backgroundColor: item.categoryColor || colors.surface,
+                            backgroundColor:
+                              item.categoryColor || colors.surface,
                           },
                         ]}
                       >
@@ -687,7 +752,11 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   txCategoryEmoji: { fontSize: 10 },
-  txCategoryName: { fontSize: 11, fontWeight: "600", color: colors.textPrimary },
+  txCategoryName: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
   txUncategorized: {
     flexDirection: "row",
     alignItems: "center",
@@ -699,7 +768,11 @@ const styles = StyleSheet.create({
     borderColor: "rgba(59,130,246,0.3)",
     backgroundColor: "rgba(59,130,246,0.06)",
   },
-  txUncategorizedText: { fontSize: 11, fontWeight: "600", color: colors.accent },
+  txUncategorizedText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.accent,
+  },
   amount: { color: colors.textPrimary, fontSize: 15, fontWeight: "600" },
   emptyTransactions: {
     alignItems: "center",
@@ -753,19 +826,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(59,130,246,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(59,130,246,0.3)",
-    paddingVertical: spacing.sm2,
-    paddingHorizontal: 16,
-    borderRadius: 20,
+    alignSelf: "stretch",
+    backgroundColor: colors.accent,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
     marginTop: spacing.md,
     gap: 6,
   },
   importButtonText: {
     ...typography.presets.label,
-    color: colors.accent,
+    color: colors.bg,
+    fontWeight: "700",
   },
   categorizeBanner: {
     flexDirection: "row",

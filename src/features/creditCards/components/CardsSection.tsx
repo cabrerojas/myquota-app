@@ -16,7 +16,7 @@
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import Svg, { Circle, Rect, Line } from "react-native-svg";
 import CreditCardItem from "@/features/creditCards/components/CreditCardItem";
-import { colors } from "@/shared/theme/tokens";
+import { colors, spacing } from "@/shared/theme/tokens";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import type { CreditCardWithLimits } from "@/shared/types/creditCard";
 
@@ -51,11 +51,32 @@ function EmptyCards() {
       <View style={emptyStyles.illustrationWrapper}>
         <Svg width={72} height={52} viewBox="0 0 72 52">
           {/* Card shadow */}
-          <Rect x={8} y={10} width={56} height={36} rx={8} fill={colors.surface} />
+          <Rect
+            x={8}
+            y={10}
+            width={56}
+            height={36}
+            rx={8}
+            fill={colors.surface}
+          />
           {/* Card body */}
-          <Rect x={4} y={6} width={56} height={36} rx={8} fill="rgba(255,255,255,0.08)" />
+          <Rect
+            x={4}
+            y={6}
+            width={56}
+            height={36}
+            rx={8}
+            fill="rgba(255,255,255,0.08)"
+          />
           {/* Chip */}
-          <Rect x={12} y={16} width={14} height={10} rx={2} fill="rgba(255,255,255,0.15)" />
+          <Rect
+            x={12}
+            y={16}
+            width={14}
+            height={10}
+            rx={2}
+            fill="rgba(255,255,255,0.15)"
+          />
           {/* Stripe lines */}
           <Line
             x1={12}
@@ -135,27 +156,55 @@ export default function CardsSection({
       {cardCount === 0 ? (
         <EmptyCards />
       ) : (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          decelerationRate="fast"
-          snapToInterval={228 + 14} // CARD_WIDTH + gap
-          snapToAlignment="start"
-        >
-          {creditCards.map((card) => {
-            const usagePct = calcUsagePercent(card);
-            return (
-              <CreditCardItem
-                key={card.id}
-                card={card}
-                selected={selectedCardId === card.id}
-                onPress={() => onSelectCard(card.id)}
-                usagePercent={usagePct}
-              />
-            );
-          })}
-        </ScrollView>
+        <>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            decelerationRate="fast"
+            snapToInterval={228 + 14}
+            snapToAlignment="start"
+            accessibilityLabel="Selector de tarjetas"
+          >
+            {creditCards.map((card) => {
+              const usagePct = calcUsagePercent(card);
+              return (
+                <CreditCardItem
+                  key={card.id}
+                  card={card}
+                  selected={selectedCardId === card.id}
+                  onPress={() => onSelectCard(card.id)}
+                  usagePercent={usagePct}
+                />
+              );
+            })}
+          </ScrollView>
+          {selectedCardId && (
+            <Text
+              style={styles.selectedCaption}
+              accessibilityLiveRegion="polite"
+            >
+              {creditCards.find((card) => card.id === selectedCardId)
+                ?.cardType ?? "Tarjeta seleccionada"}
+            </Text>
+          )}
+          {cardCount > 1 && (
+            <View
+              style={styles.pagination}
+              accessibilityLabel={`Tarjeta ${Math.max(creditCards.findIndex((card) => card.id === selectedCardId) + 1, 1)} de ${cardCount}`}
+            >
+              {creditCards.map((card) => (
+                <View
+                  key={card.id}
+                  style={[
+                    styles.dot,
+                    card.id === selectedCardId && styles.dotActive,
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </>
       )}
     </View>
   );
@@ -198,9 +247,33 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   scrollContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.lg,
     paddingBottom: 6,
     paddingTop: 3, // room for the selected ring overhang
+  },
+  selectedCaption: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: spacing.xs,
+    marginLeft: spacing.lg,
+  },
+  pagination: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: spacing.xs,
+    minHeight: 44,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.textSubtle,
+  },
+  dotActive: {
+    width: 18,
+    backgroundColor: colors.accent,
   },
 });
 

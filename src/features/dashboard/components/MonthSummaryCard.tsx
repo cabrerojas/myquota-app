@@ -80,11 +80,14 @@ const MonthSummaryCardComponent = ({
       style={styles.container}
       onPress={handleViewTransactions}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={`Resumen de ${displayName}. Ver detalle de movimientos`}
+      hitSlop={4}
     >
       {hasData ? (
         <>
           <View style={styles.header}>
-            <Text style={styles.title}>{displayName}</Text>
+            <Text style={styles.title}>Resumen de {displayName}</Text>
             <View style={styles.totalContainer}>
               <Text style={styles.totalCLP}>
                 ${totalCLP.toLocaleString("es-CL")}
@@ -137,7 +140,11 @@ const MonthSummaryCardComponent = ({
 
           {hasEstimatedBill && (
             <View style={styles.estimatedContainer}>
-              <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+              <Ionicons
+                name="calendar-outline"
+                size={14}
+                color={colors.textMuted}
+              />
               <Text style={styles.estimatedLabel}>
                 Proyección próximo período:{" "}
                 <Text style={styles.estimatedAmount}>
@@ -171,9 +178,7 @@ const MonthSummaryCardComponent = ({
             <Ionicons name="card-outline" size={24} color={colors.accent} />
           </View>
           <View style={styles.emptyTextBlock}>
-            <Text style={styles.emptyTitle}>
-              Sin gastos en {displayName}
-            </Text>
+            <Text style={styles.emptyTitle}>Sin gastos en {displayName}</Text>
             <Text style={styles.emptySubtitle}>
               Importe sus movimientos para ver el resumen del mes aquí
             </Text>
@@ -204,8 +209,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "600",
-    color: colors.textSecondary,
+    fontWeight: "700",
+    color: colors.textPrimary,
   },
   totalContainer: {
     alignItems: "flex-end",
