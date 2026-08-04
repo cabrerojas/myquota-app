@@ -4,7 +4,9 @@
 
 import { ViewStyle } from "react-native";
 import { colors } from "./colors";
-import { borderRadius } from "./tokens";
+
+// Local — avoids circular dependency with tokens.ts
+const GLASS_RADIUS = 16;
 
 // ─── Glassmorphism ──────────────────────────────────────────────
 
@@ -13,7 +15,7 @@ export function glassSurface(elevated: boolean = false): ViewStyle {
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.glass,
+    borderRadius: GLASS_RADIUS,
     overflow: "hidden",
   };
 
