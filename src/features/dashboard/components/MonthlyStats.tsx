@@ -77,6 +77,7 @@ const styles = StyleSheet.create({
   } as any,
   title: {
     ...typography.presets.cardTitle,
+    color: colors.textPrimary,
     marginBottom: spacing.sm2,
   },
   loading: {
