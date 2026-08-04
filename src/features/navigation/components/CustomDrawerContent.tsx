@@ -52,7 +52,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Gráficos", icon: "bar-chart-outline", routeName: "charts" },
       { label: "Proyección Deuda", icon: "trending-up-outline", routeName: "debtForecast" },
-      { label: "Deudas Manuales", icon: "create-outline", routeName: "manualDebts" },
+      { label: "Compras en Cuotas", icon: "create-outline", routeName: "manualDebts" },
     ],
   },
   {
