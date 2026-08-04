@@ -396,13 +396,7 @@ export default function TransactionsScreen() {
             style={[
               styles.filterChip,
               onlyUncategorized && styles.filterChipActive,
-              {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 4,
-                alignSelf: "flex-start",
-                marginBottom: 12,
-              },
+              { alignSelf: "flex-start", marginBottom: 12 },
             ]}
             onPress={() => setOnlyUncategorized(!onlyUncategorized)}
           >
@@ -428,7 +422,8 @@ export default function TransactionsScreen() {
             <TouchableOpacity
               style={[
                 styles.filterChip,
-                { backgroundColor: colors.secondary, flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", marginBottom: 12 },
+                styles.filterChipActive,
+                { alignSelf: "flex-start", marginBottom: 12 },
               ]}
               onPress={() => setCategoryFilter(null)}
               accessibilityLabel={`Quitar filtro de categoría ${categoryFilter.name}`}
@@ -847,8 +842,9 @@ const styles = StyleSheet.create({
   cardChip: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 44,
     borderRadius: borderRadius.pill,
     backgroundColor: "rgba(255,255,255,0.06)",
     marginRight: spacing.sm,
@@ -945,26 +941,30 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginTop: 10,
-    marginBottom: 6,
+    marginTop: spacing.sm2,
+    marginBottom: spacing.sm,
   },
   filterRow: {
     flexDirection: "row",
-    gap: 8,
+    flexWrap: "wrap",
+    gap: spacing.sm,
   },
   monthFilterScroll: {
     marginBottom: 4,
   },
   filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.sm,
     minHeight: 44,
     borderRadius: borderRadius.pill,
     backgroundColor: "rgba(255,255,255,0.06)",
-    marginRight: 6,
+    gap: spacing.xs,
   },
   filterChipActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.secondary,
   },
   filterChipText: {
     ...typography.presets.tab,
