@@ -108,14 +108,14 @@ export default function DebtForecastScreen() {
     let quotaIdx = 0;
 
     cardsData.forEach((card, i) => {
-      const bpData = bpQueries[i]?.data ?? [];
+      const bpData = Array.isArray(bpQueries[i]?.data) ? bpQueries[i].data : [];
       allBillingPeriods.push(
         ...bpData.map((p) => ({ ...p, creditCardId: card.id })),
       );
 
-      const txs = txQueries[i]?.data ?? [];
+      const txs = Array.isArray(txQueries[i]?.data) ? txQueries[i].data : [];
       txs.forEach((tx) => {
-        const quotas = quotaQueries[quotaIdx]?.data ?? [];
+        const quotas = Array.isArray(quotaQueries[quotaIdx]?.data) ? quotaQueries[quotaIdx].data : [];
         const sorted = [...quotas].sort(
           (a, b) =>
             new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
