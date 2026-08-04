@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
@@ -62,10 +63,12 @@ export default function ManualDebtsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchDebts().finally(() => setLoading(false));
-  }, [fetchDebts]);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchDebts().finally(() => setLoading(false));
+    }, [fetchDebts]),
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
