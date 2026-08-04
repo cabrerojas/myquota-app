@@ -11,6 +11,7 @@ import {
   Platform,
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
@@ -164,6 +165,7 @@ export default function DashboardScreen() {
     try {
       await queryClient.invalidateQueries({ queryKey: ["creditCards"] });
       await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
+      await queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
       await refreshCount();
       setRefreshKey((prev) => prev + 1);
       setAlertsDismissed(false);
@@ -216,6 +218,8 @@ export default function DashboardScreen() {
       const result = await importBankTransactions(selectedCardId);
       setRefreshKey((prev) => prev + 1);
       await refreshCount();
+      await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
+      await queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
 
       if (result.orphanedCount > 0 && result.suggestedPeriod) {
         setOrphanSuggestion(result.suggestedPeriod);
@@ -264,6 +268,7 @@ export default function DashboardScreen() {
     });
     await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
     await queryClient.invalidateQueries({ queryKey: ["creditCards"] });
+    await queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
     await refreshCount();
     setRefreshKey((prev) => prev + 1);
     Alert.alert("Éxito", "Período de facturación creado correctamente.");
@@ -287,6 +292,15 @@ export default function DashboardScreen() {
       }
     });
   }, []);
+
+  // Refresh dashboard data when screen regains focus (e.g., returning from transactions)
+  useFocusEffect(
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
+      queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
+      refreshCount();
+    }, [queryClient, refreshCount]),
+  );
 
   if (isLoadingCards) {
     return (
