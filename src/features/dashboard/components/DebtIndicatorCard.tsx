@@ -11,16 +11,13 @@ interface DebtIndicatorCardProps {
   summary?: DebtSummary;
 }
 
+const MONTH_NAMES = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
 const formatMonthLabel = (month: string): string => {
   if (/^\d{4}-\d{2}$/.test(month)) {
-    const [year, m] = month.split("-");
-    const date = new Date(Number(year), Number(m) - 1, 1);
-    const label = date.toLocaleDateString("es-CL", {
-      month: "short",
-      year: "numeric",
-      timeZone: "America/Santiago",
-    });
-    return label.charAt(0).toUpperCase() + label.slice(1);
+    const [, m] = month.split("-");
+    const idx = parseInt(m, 10);
+    return `${MONTH_NAMES[idx]} ${month.slice(0, 4)}`;
   }
   return month.replace(
     /^(Enero|Febrero|Marzo|Abril|Mayo|Junio|Julio|Agosto|Septiembre|Octubre|Noviembre|Diciembre)/,
