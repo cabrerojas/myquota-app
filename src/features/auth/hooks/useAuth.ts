@@ -62,7 +62,6 @@ if (Platform.OS !== "web") {
   // Store for use during sign-in (module-level is fine since configure runs once)
   (globalThis as any).__googleSignInNonce = nonce;
 }
-}
 
 WebBrowser.maybeCompleteAuthSession();
 
