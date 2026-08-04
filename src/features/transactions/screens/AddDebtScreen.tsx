@@ -101,14 +101,31 @@ export default function AddDebtScreen() {
   const [paidInstallments, setPaidInstallments] = useState(
     params.paidInstallments || "",
   );
+  // UX: user enters the quota number from their statement (e.g. 9 from "09/24")
+  // paidInstallments = that number - 1 (the 8 already paid)
+  const [statementQuota, setStatementQuota] = useState(
+    params.paidInstallments ? String(Number(params.paidInstallments) + 1) : "1",
+  );
   const [lastPaidMonth, setLastPaidMonth] = useState<number>(
     Number.isFinite(Number(params.lastPaidMonth))
       ? Number(params.lastPaidMonth)
       : new Date().getMonth(),
-  ); // 0-11
+  ); // 0-11 — internal: month of LAST PAID installment
   const [lastPaidYear, setLastPaidYear] = useState<number>(
     Number.isFinite(Number(params.lastPaidYear))
       ? Number(params.lastPaidYear)
+      : new Date().getFullYear(),
+  );
+  // UX: user selects the STATEMENT period in the picker
+  // lastPaidMonth = statementMonth - 1 (the previous month's billing cycle)
+  const [statementMonth, setStatementMonth] = useState<number>(
+    Number.isFinite(Number(params.lastPaidMonth))
+      ? (Number(params.lastPaidMonth) + 1) % 12
+      : new Date().getMonth(),
+  );
+  const [statementYear, setStatementYear] = useState<number>(
+    Number.isFinite(Number(params.lastPaidYear))
+      ? (Number(params.lastPaidMonth) === 11 ? Number(params.lastPaidYear) + 1 : Number(params.lastPaidYear))
       : new Date().getFullYear(),
   );
   const [currency, setCurrency] = useState<"CLP" | "USD">(
@@ -118,6 +135,23 @@ export default function AddDebtScreen() {
   useEffect(() => {
     loadCards();
   }, []);
+
+  // Sync: statement quota → paid installments (cuota 9 → 8 pagadas)
+  useEffect(() => {
+    const q = Number(statementQuota);
+    if (q > 0) setPaidInstallments(String(q - 1));
+  }, [statementQuota]);
+
+  // Sync: statement month → last paid month (Julio → Junio)
+  useEffect(() => {
+    if (statementMonth === 0) {
+      setLastPaidMonth(11);
+      setLastPaidYear(statementYear - 1);
+    } else {
+      setLastPaidMonth(statementMonth - 1);
+      setLastPaidYear(statementYear);
+    }
+  }, [statementMonth, statementYear]);
 
   useEffect(() => {
     if (params.selectedCategoryId) {
@@ -168,15 +202,15 @@ export default function AddDebtScreen() {
       return;
     }
     if (
-      paidInstallments === "" ||
-      isNaN(Number(paidInstallments)) ||
-      Number(paidInstallments) < 0
+      statementQuota === "" ||
+      isNaN(Number(statementQuota)) ||
+      Number(statementQuota) < 1
     ) {
-      Alert.alert("Error", "Ingresa las cuotas ya pagadas");
+      Alert.alert("Error", "Ingresa el número de cuota de tu estado de cuenta");
       return;
     }
-    if (Number(paidInstallments) >= Number(totalInstallments)) {
-      Alert.alert("Error", "Las cuotas pagadas deben ser menor al total");
+    if (Number(statementQuota) > Number(totalInstallments)) {
+      Alert.alert("Error", "La cuota no puede ser mayor al total de cuotas");
       return;
     }
 
@@ -451,12 +485,17 @@ export default function AddDebtScreen() {
             />
           </View>
           <View style={{ flex: 1, marginLeft: 8 }}>
-            <Text style={styles.label}>Cuotas pagadas</Text>
+            <Text style={styles.label}>Cuota en estado de cuenta</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ej: 9"
-              value={paidInstallments}
-              onChangeText={setPaidInstallments}
+              placeholder="Ej: 9 (la X en X/24)"
+              value={statementQuota}
+              onChangeText={(t) => {
+                // Only allow valid numbers, default to 1 if empty
+                if (t === "") { setStatementQuota(""); return; }
+                const n = parseInt(t, 10);
+                if (!isNaN(n) && n >= 1) setStatementQuota(String(n));
+              }}
               keyboardType="numeric"
               placeholderTextColor={colors.textMuted}
             />
@@ -465,22 +504,23 @@ export default function AddDebtScreen() {
 
         {/* Remaining info */}
         {totalInstallments &&
-          paidInstallments !== "" &&
-          Number(totalInstallments) > Number(paidInstallments) && (
+          statementQuota !== "" &&
+          Number(totalInstallments) >= Number(statementQuota) && (
             <View style={styles.infoBox}>
               <Ionicons name="information-circle" size={16} color={colors.secondary} />
               <Text style={styles.infoText}>
-                Te quedan {Number(totalInstallments) - Number(paidInstallments)}{" "}
-                cuotas pendientes
+                Cuota {statementQuota}/{totalInstallments} es la actual. Quedan{" "}
+                {Number(totalInstallments) - Number(statementQuota)}{" "}
+                pendientes
                 {quotaAmount
-                  ? ` = $${((Number(totalInstallments) - Number(paidInstallments)) * Number(quotaAmount)).toLocaleString("es-CL")} total`
+                  ? ` = $${((Number(totalInstallments) - Number(statementQuota)) * Number(quotaAmount)).toLocaleString("es-CL")} total`
                   : ""}
               </Text>
             </View>
           )}
 
-        {/* Last Paid Month */}
-        <Text style={styles.label}>Mes del último pago realizado</Text>
+        {/* Statement Month */}
+        <Text style={styles.label}>Mes de este estado de cuenta</Text>
         <View style={styles.monthPicker}>
           <ScrollView
             horizontal
@@ -492,14 +532,14 @@ export default function AddDebtScreen() {
                 key={idx}
                 style={[
                   styles.monthChip,
-                  lastPaidMonth === idx && styles.monthChipSelected,
+                  statementMonth === idx && styles.monthChipSelected,
                 ]}
-                onPress={() => setLastPaidMonth(idx)}
+                onPress={() => setStatementMonth(idx)}
               >
                 <Text
                   style={[
                     styles.monthChipText,
-                    lastPaidMonth === idx && styles.monthChipTextSelected,
+                    statementMonth === idx && styles.monthChipTextSelected,
                   ]}
                 >
                   {m.substring(0, 3)}
@@ -513,14 +553,14 @@ export default function AddDebtScreen() {
                 key={y}
                 style={[
                   styles.yearChip,
-                  lastPaidYear === y && styles.yearChipSelected,
+                  statementYear === y && styles.yearChipSelected,
                 ]}
-                onPress={() => setLastPaidYear(y)}
+                onPress={() => setStatementYear(y)}
               >
                 <Text
                   style={[
                     styles.yearChipText,
-                    lastPaidYear === y && styles.yearChipTextSelected,
+                    statementYear === y && styles.yearChipTextSelected,
                   ]}
                 >
                   {y}
@@ -529,6 +569,18 @@ export default function AddDebtScreen() {
             ))}
           </View>
         </View>
+
+        {/* Explanation card */}
+        {statementQuota && totalInstallments && Number(statementQuota) > 0 && (
+          <View style={styles.explanationCard}>
+            <Ionicons name="bulb-outline" size={18} color={colors.warning} />
+            <Text style={styles.explanationText}>
+              La cuota {statementQuota}/{totalInstallments} es la que pagarás ahora.{" "}
+              Ya pagaste {Math.max(0, Number(statementQuota) - 1)} cuota
+              {Number(statementQuota) - 1 !== 1 ? "s" : ""}.
+            </Text>
+          </View>
+        )}
 
         {/* Purchase Date (optional) */}
         <Text style={styles.label}>Fecha de compra (opcional)</Text>
@@ -834,6 +886,21 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   infoText: { fontSize: 13, color: colors.secondary, flex: 1 },
+  explanationCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    backgroundColor: "rgba(251,191,36,0.08)",
+    padding: spacing.sm2,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.sm2,
+  },
+  explanationText: {
+    fontSize: 12,
+    color: colors.warning,
+    flex: 1,
+    lineHeight: 18,
+  },
   monthPicker: { marginTop: 4 },
   monthScroll: { marginBottom: 8 },
   monthChip: {
