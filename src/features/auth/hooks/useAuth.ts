@@ -168,10 +168,7 @@ export const useGoogleSignIn = (router: Router) => {
           }
           console.log("idToken obtenido:", idToken);
           console.log("serverAuthCode obtenido:", serverAuthCode ? "✅" : "❌ no disponible");
-          // Extract nonce from idToken JWT — required by Supabase verification
-          const payload = JSON.parse(atob(idToken.split(".")[1]));
-          const nonce: string | undefined = payload.nonce;
-          await authenticateWithBackend(idToken, serverAuthCode ?? undefined, user, router, nonce);
+          await authenticateWithBackend(idToken, serverAuthCode ?? undefined, user, router);
         }
       }
     } catch (error) {
