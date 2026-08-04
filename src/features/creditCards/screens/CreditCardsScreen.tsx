@@ -14,6 +14,7 @@ import { getCreditCards, PaginatedResponse } from "../services/creditCardsApi";
 import { CreditCard } from "@/shared/types/creditCard";
 import { formatCLP } from "@/shared/utils/format";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/tokens";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 
@@ -25,9 +26,11 @@ export default function CreditCardsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [cardsError, setCardsError] = useState<string | null>(null);
 
   const fetchCards = useCallback(async (cursor?: string, isRefresh = false) => {
     try {
+      setCardsError(null);
       const data: PaginatedResponse<CreditCard> = await getCreditCards(50, cursor);
       
       if (isRefresh || !cursor) {
@@ -39,6 +42,7 @@ export default function CreditCardsScreen() {
       setHasMore(data.metadata.hasMore);
       setNextCursor(data.metadata.nextCursor);
     } catch (error) {
+      setCardsError(error instanceof Error ? error.message : "Error al cargar las tarjetas");
       if (!isSessionExpired()) {
         console.error("Error fetching credit cards:", error);
       }
@@ -93,6 +97,10 @@ export default function CreditCardsScreen() {
         <Text style={styles.loadingText}>Cargando tarjetas...</Text>
       </View>
     );
+  }
+
+  if (cardsError) {
+    return <ErrorState message="No se pudieron cargar las tarjetas." onRetry={fetchCards} />;
   }
 
   if (creditCards.length === 0) {

@@ -26,6 +26,7 @@ import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
+import ErrorState from "@/shared/components/ErrorState";
 
 type ChartTab = "monthly" | "categories" | "usd";
 const ALL_PERIODS = "__all__";
@@ -78,6 +79,7 @@ export default function ChartsScreen() {
   const [selectedPeriodMonth, setSelectedPeriodMonth] =
     useState<string>(ALL_PERIODS);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<ChartTab>("monthly");
 
@@ -111,6 +113,7 @@ export default function ChartsScreen() {
   const fetchData = useCallback(async () => {
     if (!selectedCardId) return;
     try {
+      setError(null);
       const [data, periodsResponse] = await Promise.all([
         getMonthlyStats(selectedCardId),
         getBillingPeriodsByCreditCard(selectedCardId),
@@ -124,6 +127,7 @@ export default function ChartsScreen() {
       setBillingPeriods(sorted);
       setSelectedPeriodMonth(detectCurrentPeriod(sorted));
     } catch (error) {
+      setError(error instanceof Error ? error.message : "Error al cargar los gráficos");
       if (!isSessionExpired())
         console.error("Error fetching chart data:", error);
     }
@@ -228,6 +232,10 @@ export default function ChartsScreen() {
 
   const formatCLP = (n: number) => `$${n.toLocaleString("es-CL")}`;
   const summary = getSummaryCards();
+
+  if (error) {
+    return <ErrorState message="No se pudieron cargar los gráficos." onRetry={() => { setError(null); fetchData(); }} />;
+  }
 
   if (loading && creditCards.length === 0) {
     return (
@@ -433,7 +441,7 @@ export default function ChartsScreen() {
           </Text>
           <Pressable
             style={styles.emptyCta}
-            onPress={() => {}}
+            onPress={onRefresh}
             accessibilityLabel="Sincronizar movimientos"
             accessibilityRole="button"
           >

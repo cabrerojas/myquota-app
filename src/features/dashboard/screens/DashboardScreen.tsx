@@ -46,6 +46,7 @@ import { CreditCardWithLimits, CreditCard } from "@/shared/types/creditCard";
 import { formatShortDate, toISODateString } from "@/shared/utils/format";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { useQueryClient } from "@tanstack/react-query";
+import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/colors";
 import { spacing, borderRadius, typography } from "@/shared/theme/tokens";
 import { iconContainer } from "@/shared/theme/effects";
@@ -144,9 +145,9 @@ export default function DashboardScreen() {
   const [alertsDismissed, setAlertsDismissed] = useState(false);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
-  const { data: creditCardsData, isLoading: isLoadingCards } = useCreditCards();
+  const { data: creditCardsData, isLoading: isLoadingCards, isError: cardsError } = useCreditCards();
   const creditCards = creditCardsData || [];
-  const { data: debtSummary } = useDebtSummary();
+  const { data: debtSummary, isError: debtError } = useDebtSummary();
   const { data: profile } = useMyProfile();
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -320,6 +321,15 @@ export default function DashboardScreen() {
   }
 
   // No cards yet → show unified empty state
+  if (cardsError || debtError) {
+    return (
+      <ErrorState
+        message="No se pudo cargar el dashboard. Verifica tu conexión."
+        onRetry={handlePullRefresh}
+      />
+    );
+  }
+
   if (creditCards.length === 0) {
     return (
       <ScrollView

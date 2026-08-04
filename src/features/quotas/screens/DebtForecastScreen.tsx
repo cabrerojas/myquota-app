@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import ErrorState from "@/shared/components/ErrorState";
 import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
 import {
   getQuotasByTransaction,
@@ -339,23 +340,16 @@ export default function DebtForecastScreen() {
     );
   }
 
-  if (error && months.length === 0) {
+  if (error) {
     return (
-      <View style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.accent} />
-        <Text style={styles.loadingText}>
-          {error instanceof Error
-            ? error.message
-            : "Error al cargar la proyección"}
-        </Text>
-        <Pressable onPress={onRefresh}>
-          <Text
-            style={[styles.loadingText, { color: colors.accent, marginTop: 8 }]}
-          >
-            Toca para reintentar
-          </Text>
-        </Pressable>
-      </View>
+      <ErrorState
+        message="No se pudo calcular la proyección de deuda."
+        onRetry={() => {
+          queryClient.invalidateQueries({ queryKey: ["creditCards"] });
+          queryClient.invalidateQueries({ queryKey: ["transactions"] });
+          queryClient.invalidateQueries({ queryKey: ["billingPeriods"] });
+        }}
+      />
     );
   }
 

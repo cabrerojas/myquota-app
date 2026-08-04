@@ -27,6 +27,7 @@ import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 import { colors } from "@/shared/theme/tokens";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
+import ErrorState from "@/shared/components/ErrorState";
 
 type CurrencyFilter = "all" | "CLP" | "USD";
 
@@ -82,6 +83,7 @@ export default function TransactionsScreen() {
   const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [loadingCards, setLoadingCards] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>("all");
   const [monthFilter, setMonthFilter] = useState(0);
@@ -157,17 +159,26 @@ export default function TransactionsScreen() {
     return Array.from(years).sort((a, b) => b - a);
   }, [transactions]);
 
+  const loadCreditCards = useCallback(async () => {
+    try {
+      setCardsError(null);
+      setLoadingCards(true);
+      const cardsResponse = await getCreditCards();
+      setCreditCards(cardsResponse.items);
+      if (cardsResponse.items.length > 0) {
+        setSelectedCardId(cardsResponse.items[0].id);
+      }
+    } catch (error) {
+      setCardsError(error instanceof Error ? error.message : "Error al cargar las tarjetas");
+    } finally {
+      setLoadingCards(false);
+    }
+  }, []);
+
   // Load credit cards
   useEffect(() => {
-    getCreditCards()
-      .then((cardsResponse) => {
-        setCreditCards(cardsResponse.items);
-        if (cardsResponse.items.length > 0) {
-          setSelectedCardId(cardsResponse.items[0].id);
-        }
-      })
-      .finally(() => setLoadingCards(false));
-  }, []);
+    loadCreditCards();
+  }, [loadCreditCards]);
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -269,6 +280,18 @@ export default function TransactionsScreen() {
 
   if (loadingCards) {
     return <TransactionsSkeleton />;
+  }
+
+  if (cardsError) {
+    return (
+      <ErrorState
+        message="No se pudo cargar las transacciones. Verifica tu conexión."
+        onRetry={() => {
+          setCardsError(null);
+          loadCreditCards();
+        }}
+      />
+    );
   }
 
   return (
