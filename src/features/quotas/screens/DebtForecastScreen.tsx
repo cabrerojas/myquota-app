@@ -115,7 +115,7 @@ export default function DebtForecastScreen() {
 
       const txs = Array.isArray(txQueries[i]?.data) ? txQueries[i].data : [];
       txs.forEach((tx) => {
-        const quotas = Array.isArray(quotaQueries[quotaIdx]?.data) ? quotaQueries[quotaIdx].data : [];
+        const quotas = (Array.isArray(quotaQueries[quotaIdx]?.data) ? quotaQueries[quotaIdx].data : []) as QuotaEnriched[];
         const sorted = [...quotas].sort(
           (a, b) =>
             new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
