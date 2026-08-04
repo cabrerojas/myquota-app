@@ -20,15 +20,16 @@ function toMonthKey(date: Date): string {
   return `${y}-${m}`;
 }
 
+const MONTH_NAMES_LONG = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
 /** Spanish display name from YYYY-MM key, e.g. "2026-08" → "Agosto". */
 function monthDisplayName(key: string): string {
-  const [year, month] = key.split("-");
-  const date = new Date(Number(year), Number(month) - 1, 1);
-  const name = new Intl.DateTimeFormat("es-CL", {
-    month: "long",
-    timeZone: "America/Santiago",
-  }).format(date);
-  return name.charAt(0).toUpperCase() + name.slice(1);
+  if (/^\d{4}-\d{2}$/.test(key)) {
+    const [, month] = key.split("-");
+    const idx = parseInt(month, 10);
+    return MONTH_NAMES_LONG[idx];
+  }
+  return key;
 }
 
 const MonthSummaryCardComponent = ({
