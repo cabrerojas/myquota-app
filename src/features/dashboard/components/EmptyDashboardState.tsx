@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   stepsLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "700",
     color: colors.textMuted,
     letterSpacing: 1.4,

@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     marginTop: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm2,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.pill,
     borderWidth: 1,

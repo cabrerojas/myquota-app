@@ -2,6 +2,7 @@ import { View, StyleSheet, Animated, Platform } from "react-native";
 import { useRef, useEffect } from "react";
 import { colors } from "@/shared/theme/colors";
 import { spacing, borderRadius } from "@/shared/theme/tokens";
+import Skeleton, { SkeletonCard } from "@/shared/components/Skeleton";
 
 /** Single shimmer block matching card dimensions. */
 function SkeletonBlock({
@@ -94,12 +95,37 @@ export function MonthlyStatsSkeleton() {
   );
 }
 
+/** Mimics FinancialHealthIndicator loading state. */
+export function FinancialHealthSkeleton() {
+  return (
+    <SkeletonCard>
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        {/* CLP indicator skeleton */}
+        <View style={{ flex: 1, gap: 8 }}>
+          <Skeleton width={80} height={14} />
+          <Skeleton width="100%" height={6} borderRadius={4} />
+          <Skeleton width={60} height={13} />
+        </View>
+        {/* USD indicator skeleton */}
+        <View style={{ flex: 1, gap: 8 }}>
+          <Skeleton width={80} height={14} />
+          <Skeleton width="100%" height={6} borderRadius={4} />
+          <Skeleton width={60} height={13} />
+        </View>
+      </View>
+    </SkeletonCard>
+  );
+}
+
 /** Full dashboard skeleton. */
 export default function DashboardSkeleton() {
   return (
     <View style={s.container}>
       {/* Welcome line */}
       <SkeletonBlock width={180} height={24} radius={12} />
+      <View style={{ height: spacing.lg }} />
+      {/* Financial health indicator */}
+      <FinancialHealthSkeleton />
       <View style={{ height: spacing.lg }} />
       {/* Card selector row */}
       <SkeletonBlock width="100%" height={44} radius={12} />

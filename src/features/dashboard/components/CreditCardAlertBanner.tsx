@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { glassSubtle } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius } from "@/shared/theme/tokens";
+import { borderRadius, spacing } from "@/shared/theme/tokens";
 import { CreditCardWithLimits } from "@/shared/types/creditCard";
 
 interface CreditCardAlertBannerProps {
@@ -132,7 +132,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dismissButton: {
-    padding: 2,
+    padding: spacing.sm,
+    minWidth: 44,
+    minHeight: 44,
   },
   alertRow: {
     flexDirection: "row",
