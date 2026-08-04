@@ -24,7 +24,7 @@ import CategorySuggestModal from "@/features/categories/components/CategorySugge
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
-import { colors, borderRadius } from "@/shared/theme/tokens";
+import { colors, borderRadius, spacing } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
@@ -423,6 +423,21 @@ export default function TransactionsScreen() {
             </Text>
           </TouchableOpacity>
 
+          {/* Category drill-down filter */}
+          {categoryFilter && (
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                { backgroundColor: colors.secondary, flexDirection: "row", alignItems: "center", gap: 4, alignSelf: "flex-start", marginBottom: 12 },
+              ]}
+              onPress={() => setCategoryFilter(null)}
+              accessibilityLabel={`Quitar filtro de categoría ${categoryFilter.name}`}
+            >
+              <Ionicons name="close-circle" size={16} color={colors.textPrimary} />
+              <Text style={styles.filterChipTextActive}>{categoryFilter.name}</Text>
+            </TouchableOpacity>
+          )}
+
           {/* Currency filter */}
           <Text style={styles.filterLabel}>Moneda</Text>
           <View style={styles.filterRow}>
@@ -552,6 +567,7 @@ export default function TransactionsScreen() {
                 setMaxAmount("");
                 setSearchQuery("");
                 setOnlyUncategorized(false);
+                setCategoryFilter(null);
                 if (creditCards.length > 0) {
                   setSelectedCardId(creditCards[0].id);
                 }
@@ -833,13 +849,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: borderRadius.pill,
     backgroundColor: "rgba(255,255,255,0.06)",
-    marginRight: 8,
-    gap: 6,
+    marginRight: spacing.sm,
+    gap: spacing.sm,
   },
   cardChipActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.secondary,
   },
   // Category pill
   categoryPill: {
@@ -942,7 +958,8 @@ const styles = StyleSheet.create({
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 16,
+    minHeight: 44,
+    borderRadius: borderRadius.pill,
     backgroundColor: "rgba(255,255,255,0.06)",
     marginRight: 6,
   },
@@ -971,6 +988,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 10,
+    ...glassSurface(false),
   },
   summaryCount: {
     ...typography.presets.tab,
@@ -996,6 +1014,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginLeft: 10,
+    minHeight: 44,
   },
   exportButtonText: {
     ...typography.presets.cardTitle,
