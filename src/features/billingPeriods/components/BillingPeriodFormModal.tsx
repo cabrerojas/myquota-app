@@ -47,10 +47,12 @@ const toMonthDisplay = (key: string): string => {
   return key;
 };
 
-/** Parses an ISO date string as local time, avoiding UTC shift */
+/** Parses an ISO date string as local Chile time, avoiding UTC shift */
 function parseDateLocal(dateStr: string): Date {
-  const parts = dateStr.split(/[-T:]/);
-  return new Date(+parts[0], +parts[1] - 1, +parts[2]);
+  const d = new Date(dateStr);
+  const chileDateStr = d.toLocaleDateString("es-CL", { timeZone: "America/Santiago" });
+  const [day, month, year] = chileDateStr.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
 }
 
 type WizardStep = "intro" | "form";
