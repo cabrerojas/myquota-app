@@ -32,6 +32,8 @@ import {
   formatDate,
   formatShortDate,
 } from "@/shared/utils/format";
+import { colors } from "@/shared/theme/colors";
+import { spacing, borderRadius } from "@/shared/theme/tokens";
 
 type FilterMode = "pending" | "paid" | "all";
 
@@ -118,7 +120,7 @@ export default function QuotasScreen() {
 
       setQuotas((prevQuotas: QuotaWithTransaction[]) => {
         const newQuotas = results.flat();
-        
+
         if (isRefresh || !cursor) {
           // Sort by due date
           newQuotas.sort(
@@ -261,7 +263,7 @@ export default function QuotasScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: spacing.md }}
       >
         {creditCards.map((card) => (
           <TouchableOpacity
@@ -275,7 +277,7 @@ export default function QuotasScreen() {
             <Ionicons
               name="card-outline"
               size={16}
-              color={selectedCardId === card.id ? "#fff" : "#495057"}
+              color={selectedCardId === card.id ? colors.textPrimary : colors.textSecondary}
             />
             <Text
               style={[
@@ -294,13 +296,13 @@ export default function QuotasScreen() {
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
             <View style={styles.summaryItem}>
-              <Ionicons name="time-outline" size={20} color="#F57C00" />
+              <Ionicons name="time-outline" size={20} color={colors.warning} />
               <Text style={styles.summaryValue}>{summary.pendingCount}</Text>
               <Text style={styles.summaryLabel}>Pendientes</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
-              <Ionicons name="cart-outline" size={20} color="#007BFF" />
+              <Ionicons name="cart-outline" size={20} color={colors.secondary} />
               <Text style={styles.summaryValue}>
                 {summary.uniqueTransactions}
               </Text>
@@ -308,7 +310,7 @@ export default function QuotasScreen() {
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
-              <Ionicons name="cash-outline" size={20} color="#DC3545" />
+              <Ionicons name="cash-outline" size={20} color={colors.destructive} />
               <Text style={styles.summaryValue}>
                 ${summary.totalPending.toLocaleString("es-CL")}
               </Text>
@@ -317,7 +319,7 @@ export default function QuotasScreen() {
           </View>
           {summary.nextDue && (
             <View style={styles.nextDueRow}>
-              <Ionicons name="calendar-outline" size={14} color="#868E96" />
+              <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
               <Text style={styles.nextDueText}>
                 Próximo vencimiento: {formatDate(summary.nextDue.dueDate)}
                 {" — "}
@@ -363,7 +365,7 @@ export default function QuotasScreen() {
             <Ionicons
               name={f.icon}
               size={16}
-              color={filter === f.key ? "#fff" : "#495057"}
+              color={filter === f.key ? colors.textPrimary : colors.textSecondary}
             />
             <Text
               style={[
@@ -382,7 +384,7 @@ export default function QuotasScreen() {
         style={styles.createButton}
         onPress={() => setShowCreateModal(true)}
       >
-        <Ionicons name="add-circle-outline" size={20} color="#fff" />
+        <Ionicons name="add-circle-outline" size={20} color={colors.textPrimary} />
         <Text style={styles.createButtonText}>Crear Cuotas</Text>
       </TouchableOpacity>
 
@@ -390,12 +392,12 @@ export default function QuotasScreen() {
       {loading ? (
         <ActivityIndicator
           size="small"
-          color="#007BFF"
-          style={{ marginTop: 20 }}
+          color={colors.secondary}
+          style={{ marginTop: spacing.md2 }}
         />
       ) : filteredQuotas.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="layers-outline" size={56} color="#CED4DA" />
+          <Ionicons name="layers-outline" size={56} color={colors.border} />
           <Text style={styles.emptyTitle}>
             {filter === "pending"
               ? "Sin cuotas pendientes"
@@ -436,7 +438,7 @@ export default function QuotasScreen() {
                   <Text
                     style={[
                       styles.quotaAmount,
-                      overdue && { color: "#DC3545" },
+                      overdue && { color: colors.destructive },
                     ]}
                   >
                     {formatCurrency(quota.amount, quota.currency)}
@@ -446,28 +448,28 @@ export default function QuotasScreen() {
                       <Ionicons
                         name="checkmark-circle"
                         size={12}
-                        color="#28A745"
+                        color={colors.success}
                       />
                       <Text style={styles.paidBadgeText}>Pagada</Text>
                     </View>
                   ) : overdue ? (
                     <View
-                      style={[styles.paidBadge, { backgroundColor: "#FFF3F3" }]}
+                      style={[styles.paidBadge, { backgroundColor: colors.destructiveBg }]}
                     >
-                      <Ionicons name="alert-circle" size={12} color="#DC3545" />
+                      <Ionicons name="alert-circle" size={12} color={colors.destructive} />
                       <Text
-                        style={[styles.paidBadgeText, { color: "#DC3545" }]}
+                        style={[styles.paidBadgeText, { color: colors.destructive }]}
                       >
                         Vencida
                       </Text>
                     </View>
                   ) : dueSoon ? (
                     <View
-                      style={[styles.paidBadge, { backgroundColor: "#FFF8E1" }]}
+                      style={[styles.paidBadge, { backgroundColor: colors.warningBg }]}
                     >
-                      <Ionicons name="time" size={12} color="#F57C00" />
+                      <Ionicons name="time" size={12} color={colors.warning} />
                       <Text
-                        style={[styles.paidBadgeText, { color: "#F57C00" }]}
+                        style={[styles.paidBadgeText, { color: colors.warning }]}
                       >
                         Pronto
                       </Text>
@@ -478,13 +480,13 @@ export default function QuotasScreen() {
 
               <View style={styles.quotaDetails}>
                 <View style={styles.quotaDetailItem}>
-                  <Ionicons name="calendar-outline" size={13} color="#868E96" />
+                  <Ionicons name="calendar-outline" size={13} color={colors.textMuted} />
                   <Text style={styles.quotaDetailText}>
                     Vence: {formatShortDate(quota.dueDate)}
                   </Text>
                 </View>
                 <View style={styles.quotaDetailItem}>
-                  <Ionicons name="receipt-outline" size={13} color="#868E96" />
+                  <Ionicons name="receipt-outline" size={13} color={colors.textMuted} />
                   <Text style={styles.quotaDetailText}>
                     Compra:{" "}
                     {formatCurrency(quota.transactionAmount, quota.currency)}
@@ -518,7 +520,7 @@ export default function QuotasScreen() {
                   <Ionicons
                     name="checkmark-done-outline"
                     size={16}
-                    color="#28A745"
+                    color={colors.success}
                   />
                   <Text style={styles.markPaidText}>Marcar como pagada</Text>
                 </TouchableOpacity>
@@ -536,10 +538,10 @@ export default function QuotasScreen() {
             disabled={loadingMore}
           >
             {loadingMore ? (
-              <ActivityIndicator size="small" color="#007BFF" />
+              <ActivityIndicator size="small" color={colors.secondary} />
             ) : (
               <View style={styles.loadMoreContent}>
-                <Ionicons name="download-outline" size={18} color="#007BFF" />
+                <Ionicons name="download-outline" size={18} color={colors.secondary} />
                 <Text style={styles.loadMoreText}>Cargar más</Text>
               </View>
             )}
@@ -558,7 +560,7 @@ export default function QuotasScreen() {
                   setSelectedTransaction(null);
                 }}
               >
-                <Ionicons name="close" size={24} color="#495057" />
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -675,7 +677,7 @@ export default function QuotasScreen() {
                     disabled={creating}
                   >
                     {creating ? (
-                      <ActivityIndicator size="small" color="#fff" />
+                      <ActivityIndicator size="small" color={colors.textPrimary} />
                     ) : (
                       <Text style={styles.confirmButtonText}>Crear Cuotas</Text>
                     )}
@@ -691,44 +693,44 @@ export default function QuotasScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
-  contentContainer: { padding: 16, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  contentContainer: { padding: spacing.md, paddingBottom: 40 },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
-  loadingText: { marginTop: 12, fontSize: 15, color: "#868E96" },
+  loadingText: { marginTop: spacing.sm2, fontSize: 15, color: colors.textMuted },
 
   // Card selector chips
   cardChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 14,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    marginRight: 8,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.pill,
+    marginRight: spacing.sm,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   cardChipActive: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
-  cardChipText: { fontSize: 13, fontWeight: "600", color: "#495057" },
-  cardChipTextActive: { color: "#fff" },
+  cardChipText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  cardChipTextActive: { color: colors.textPrimary },
 
   // Summary
   summaryCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   summaryRow: {
     flexDirection: "row",
@@ -736,53 +738,53 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   summaryItem: { alignItems: "center", flex: 1 },
-  summaryDivider: { width: 1, height: 36, backgroundColor: "#E9ECEF" },
+  summaryDivider: { width: 1, height: 36, backgroundColor: colors.border },
   summaryValue: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#212529",
-    marginTop: 4,
+    color: colors.textPrimary,
+    marginTop: spacing.xs,
   },
   summaryLabel: {
     fontSize: 11,
-    color: "#868E96",
-    marginTop: 2,
+    color: colors.textMuted,
+    marginTop: spacing.xxs,
     textTransform: "uppercase",
   },
   nextDueRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: spacing.sm2,
+    paddingTop: spacing.sm2,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
-  nextDueText: { fontSize: 13, color: "#868E96" },
+  nextDueText: { fontSize: 13, color: colors.textMuted },
 
   // Filters
   filterRow: {
     flexDirection: "row",
-    gap: 8,
+    gap: spacing.sm,
     marginBottom: 14,
   },
   filterTab: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingVertical: 8,
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 14,
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.pill,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   filterTabActive: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
-  filterTabText: { fontSize: 13, fontWeight: "600", color: "#495057" },
-  filterTabTextActive: { color: "#fff" },
+  filterTabText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  filterTabTextActive: { color: colors.textPrimary },
 
   // Create button
   createButton: {
@@ -790,39 +792,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#28A745",
-    paddingVertical: 12,
-    borderRadius: 10,
-    marginBottom: 16,
+    backgroundColor: colors.success,
+    paddingVertical: spacing.sm2,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
   },
-  createButtonText: { color: "#fff", fontSize: 14, fontWeight: "700" },
+  createButtonText: { color: colors.textPrimary, fontSize: 14, fontWeight: "700" },
 
   // Empty
   emptyContainer: { alignItems: "center", paddingVertical: 40 },
   emptyTitle: {
     fontSize: 17,
     fontWeight: "600",
-    color: "#495057",
-    marginTop: 12,
+    color: colors.textSecondary,
+    marginTop: spacing.sm2,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#868E96",
+    color: colors.textMuted,
     marginTop: 6,
     textAlign: "center",
   },
 
   // Quota Card
   quotaCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.card,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
-  quotaCardOverdue: { borderColor: "#FFCDD2", backgroundColor: "#FFFAFA" },
-  quotaCardDueSoon: { borderColor: "#FFE082", backgroundColor: "#FFFDF5" },
+  quotaCardOverdue: {
+    borderLeftColor: colors.destructive,
+    borderLeftWidth: 3,
+    backgroundColor: colors.destructiveBg,
+  },
+  quotaCardDueSoon: {
+    borderLeftColor: colors.warning,
+    borderLeftWidth: 3,
+    backgroundColor: colors.warningBg,
+  },
   quotaHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -830,51 +840,51 @@ const styles = StyleSheet.create({
   },
   quotaHeaderLeft: { flex: 1, marginRight: 10 },
   quotaHeaderRight: { alignItems: "flex-end" },
-  quotaMerchant: { fontSize: 15, fontWeight: "600", color: "#212529" },
-  quotaProgress: { fontSize: 12, color: "#868E96", marginTop: 2 },
-  quotaAmount: { fontSize: 16, fontWeight: "700", color: "#212529" },
+  quotaMerchant: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
+  quotaProgress: { fontSize: 12, color: colors.textMuted, marginTop: spacing.xxs },
+  quotaAmount: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
   paidBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#E8F5E9",
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginTop: 4,
+    backgroundColor: colors.successBg,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.xs,
   },
-  paidBadgeText: { fontSize: 11, fontWeight: "600", color: "#28A745" },
+  paidBadgeText: { fontSize: 11, fontWeight: "600", color: colors.success },
   quotaDetails: {
     flexDirection: "row",
-    gap: 16,
+    gap: spacing.md,
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
-  quotaDetailItem: { flexDirection: "row", alignItems: "center", gap: 4 },
-  quotaDetailText: { fontSize: 12, color: "#868E96" },
+  quotaDetailItem: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  quotaDetailText: { fontSize: 12, color: colors.textMuted },
 
   // Mini progress
   miniProgressContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
     marginTop: 10,
   },
   miniProgressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: "#E9ECEF",
+    backgroundColor: colors.border,
     borderRadius: 2,
     overflow: "hidden",
   },
   miniProgressFill: {
     height: "100%",
-    backgroundColor: "#28A745",
+    backgroundColor: colors.success,
     borderRadius: 2,
   },
-  miniProgressText: { fontSize: 11, color: "#868E96" },
+  miniProgressText: { fontSize: 11, color: colors.textMuted },
 
   // Mark paid
   markPaidButton: {
@@ -885,9 +895,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
-  markPaidText: { fontSize: 13, fontWeight: "600", color: "#28A745" },
+  markPaidText: { fontSize: 13, fontWeight: "600", color: colors.success },
 
   // Modal
   modalOverlay: {
@@ -896,20 +906,20 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.md2,
     maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#212529" },
-  modalSubtitle: { fontSize: 14, color: "#868E96", marginBottom: 12 },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: colors.textPrimary },
+  modalSubtitle: { fontSize: 14, color: colors.textMuted, marginBottom: spacing.sm2 },
 
   // Transaction options
   txOption: {
@@ -917,105 +927,105 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F3F5",
+    borderBottomColor: colors.borderLight,
   },
-  txOptionMerchant: { fontSize: 14, fontWeight: "600", color: "#212529" },
-  txOptionDate: { fontSize: 12, color: "#868E96", marginTop: 2 },
-  txOptionAmount: { fontSize: 14, fontWeight: "700", color: "#DC3545" },
+  txOptionMerchant: { fontSize: 14, fontWeight: "600", color: colors.textPrimary },
+  txOptionDate: { fontSize: 12, color: colors.textMuted, marginTop: spacing.xxs },
+  txOptionAmount: { fontSize: 14, fontWeight: "700", color: colors.destructive },
   noTxText: {
     textAlign: "center",
-    color: "#868E96",
-    paddingVertical: 20,
+    color: colors.textMuted,
+    paddingVertical: spacing.md2,
     fontSize: 14,
   },
 
   // Selected tx
   selectedTxCard: {
-    backgroundColor: "#F8F9FA",
-    borderRadius: 10,
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.md,
     padding: 14,
-    marginBottom: 16,
+    marginBottom: spacing.md,
     alignItems: "center",
   },
-  selectedTxMerchant: { fontSize: 15, fontWeight: "600", color: "#212529" },
+  selectedTxMerchant: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
   selectedTxAmount: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#DC3545",
-    marginTop: 4,
+    color: colors.destructive,
+    marginTop: spacing.xs,
   },
-  selectedTxDate: { fontSize: 12, color: "#868E96", marginTop: 4 },
+  selectedTxDate: { fontSize: 12, color: colors.textMuted, marginTop: spacing.xs },
 
   // Input
   inputLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#DEE2E6",
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: spacing.sm2,
     fontSize: 16,
-    color: "#212529",
-    marginBottom: 12,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm2,
   },
 
   // Preview
   previewBox: {
-    backgroundColor: "#F0F7FF",
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm2,
+    marginBottom: spacing.md,
   },
   previewTitle: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#007BFF",
-    marginBottom: 4,
+    color: colors.secondary,
+    marginBottom: spacing.xs,
   },
-  previewText: { fontSize: 13, color: "#495057", marginTop: 2 },
+  previewText: { fontSize: 13, color: colors.textSecondary, marginTop: spacing.xxs },
 
   // Modal actions
   modalActions: { flexDirection: "row", gap: 10 },
   backButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#DEE2E6",
+    borderColor: colors.border,
   },
-  backButtonText: { fontSize: 14, fontWeight: "600", color: "#495057" },
+  backButtonText: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },
   confirmButton: {
     flex: 2,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     alignItems: "center",
-    backgroundColor: "#28A745",
+    backgroundColor: colors.success,
   },
-  confirmButtonText: { fontSize: 14, fontWeight: "700", color: "#fff" },
+  confirmButtonText: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
 
   // Load More
   loadMoreButton: {
-    marginHorizontal: 16,
-    marginVertical: 16,
-    paddingVertical: 12,
-    backgroundColor: "#F8F9FA",
-    borderRadius: 8,
+    marginHorizontal: spacing.md,
+    marginVertical: spacing.md,
+    paddingVertical: spacing.sm2,
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.input,
     alignItems: "center",
   },
   loadMoreContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   loadMoreText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#007BFF",
+    color: colors.secondary,
   },
 });

@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Platform } from "react-native";
+import { borderRadius } from "@/shared/theme/tokens";
 import {
   BarChart,
   Bar,
@@ -77,7 +78,7 @@ export function WebChart({ data, type, testID }: WebChartProps) {
               contentStyle={{
                 backgroundColor: "#1E293B",
                 border: "1px solid rgba(148,163,184,0.2)",
-                borderRadius: 8,
+                borderRadius: borderRadius.input,
                 color: "#F8FAFC",
               }}
               labelStyle={{ color: "#94A3B8" }}
@@ -134,7 +135,7 @@ export function WebChart({ data, type, testID }: WebChartProps) {
               contentStyle={{
                 backgroundColor: "#1E293B",
                 border: "1px solid rgba(148,163,184,0.2)",
-                borderRadius: 8,
+                borderRadius: borderRadius.input,
                 color: "#F8FAFC",
               }}
               formatter={(value: number) => [

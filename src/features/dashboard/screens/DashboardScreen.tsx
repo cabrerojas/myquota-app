@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   contentContainer: { padding: spacing.lg, paddingBottom: 40 },
   welcome: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontWeight: "700",
     marginBottom: 4,
     color: colors.textPrimary,
   },
@@ -639,9 +639,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   seeAllText: {
-    fontSize: 13,
+    ...typography.presets.label,
     color: colors.accent,
-    fontWeight: "600",
   },
   transaction: {
     flexDirection: "row",
@@ -743,9 +742,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(59,130,246,0.08)",
   },
   emptyTxCtaText: {
+    ...typography.presets.label,
     color: colors.accent,
-    fontSize: 13,
-    fontWeight: "600",
   },
   buttonDisabled: { opacity: 0.6 },
   importButton: {
@@ -763,9 +761,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   importButtonText: {
+    ...typography.presets.label,
     color: colors.accent,
-    fontSize: 13,
-    fontWeight: "600",
   },
   categorizeBanner: {
     flexDirection: "row",
@@ -790,7 +787,7 @@ const styles = StyleSheet.create({
   categorizeIconWrap: {
     width: 42,
     height: 42,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     backgroundColor: "rgba(59,130,246,0.14)",
     alignItems: "center",
     justifyContent: "center",
@@ -839,7 +836,7 @@ const styles = StyleSheet.create({
   billingPromptIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     backgroundColor: "rgba(59,130,246,0.12)",
     justifyContent: "center",
     alignItems: "center",
@@ -873,8 +870,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   billingPromptBtnText: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.accent,
   },
 });

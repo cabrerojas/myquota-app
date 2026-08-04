@@ -18,6 +18,7 @@ import * as Haptics from "expo-haptics";
 import type { CreditCard } from "@/shared/types/creditCard";
 import { createCreditCard } from "@/features/onboarding/services/onboardingApi";
 import type { ApiError } from "@/features/onboarding/services/onboardingApi";
+import { borderRadius } from "@/shared/theme/tokens";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -674,7 +675,7 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 		gap: 6,
 		height: 46,
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		backgroundColor: "#101A34",
 		borderWidth: 1.5,
 		borderColor: "rgba(255, 255, 255, 0.06)",
@@ -707,7 +708,7 @@ const styles = StyleSheet.create({
 	input: {
 		height: 50,
 		backgroundColor: "#101A34",
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		borderWidth: 1.5,
 		borderColor: "rgba(255, 255, 255, 0.06)",
 		paddingHorizontal: 16,
@@ -734,7 +735,7 @@ const styles = StyleSheet.create({
 	pickerButton: {
 		height: 50,
 		backgroundColor: "#101A34",
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		borderWidth: 1.5,
 		borderColor: "rgba(255, 255, 255, 0.06)",
 		paddingHorizontal: 16,
@@ -749,7 +750,7 @@ const styles = StyleSheet.create({
 	},
 	pickerDropdown: {
 		backgroundColor: "#192134",
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		borderWidth: 1,
 		borderColor: "rgba(255, 255, 255, 0.06)",
 		marginTop: 4,
@@ -785,7 +786,7 @@ const styles = StyleSheet.create({
 		alignItems: "flex-start",
 		gap: 8,
 		backgroundColor: "#192134",
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		padding: 12,
 		borderWidth: StyleSheet.hairlineWidth,
 		borderColor: "rgba(255, 255, 255, 0.06)",
@@ -874,7 +875,7 @@ const styles = StyleSheet.create({
 		width: "100%",
 		height: 56,
 		backgroundColor: "#1E40AF",
-		borderRadius: 28,
+		borderRadius: borderRadius.full,
 		flexDirection: "row",
 		justifyContent: "center",
 		alignItems: "center",

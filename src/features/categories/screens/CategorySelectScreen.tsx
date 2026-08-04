@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -17,6 +17,9 @@ import {
   getMerchantCategoryHistory,
   MerchantCategoryHistoryItem,
 } from "@/features/categories/services/categoryApi";
+import ErrorState from "@/shared/components/ErrorState";
+import { colors } from "@/shared/theme/colors";
+import { spacing, borderRadius } from "@/shared/theme/tokens";
 
 interface DebtRouteParams {
   editMode?: string;
@@ -45,9 +48,11 @@ export default function CategorySelectScreen({
 }: CategorySelectScreenProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(merchant);
   const [categories, setCategories] = useState<Category[]>([]);
   const [history, setHistory] = useState<MerchantCategoryHistoryItem[]>([]);
+  const loadRef = useRef<() => Promise<void>>(async () => {});
 
   useFocusEffect(
     useCallback(() => {
@@ -55,6 +60,7 @@ export default function CategorySelectScreen({
 
       const loadData = async () => {
         setLoading(true);
+        setError(null);
         try {
           const [allCategories, merchantHistory] = await Promise.all([
             getAllCategories(),
@@ -66,6 +72,10 @@ export default function CategorySelectScreen({
           if (!isActive) return;
           setCategories(allCategories);
           setHistory(merchantHistory);
+        } catch {
+          if (isActive) {
+            setError("No se pudieron cargar las categorías.");
+          }
         } finally {
           if (isActive) {
             setLoading(false);
@@ -73,6 +83,7 @@ export default function CategorySelectScreen({
         }
       };
 
+      loadRef.current = loadData;
       loadData();
 
       return () => {
@@ -124,10 +135,14 @@ export default function CategorySelectScreen({
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.secondary} />
         <Text style={styles.loadingText}>Cargando categorías...</Text>
       </View>
     );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={() => loadRef.current()} />;
   }
 
   return (
@@ -138,13 +153,13 @@ export default function CategorySelectScreen({
           Comercio: {merchant || "Sin nombre"}
         </Text>
         <View style={styles.searchRow}>
-          <Ionicons name="search" size={16} color="#868E96" />
+          <Ionicons name="search" size={16} color={colors.textMuted} />
           <TextInput
             value={search}
             onChangeText={setSearch}
             placeholder="Buscar categoría..."
             style={styles.searchInput}
-            placeholderTextColor="#ADB5BD"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
       </View>
@@ -171,13 +186,13 @@ export default function CategorySelectScreen({
                   ) : null}
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color="#ADB5BD" />
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           );
         }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="pricetag-outline" size={42} color="#CED4DA" />
+            <Ionicons name="pricetag-outline" size={42} color={colors.border} />
             <Text style={styles.emptyTitle}>Sin resultados</Text>
             <Text style={styles.emptySubtitle}>
               No encontramos categorías con ese texto.
@@ -204,22 +219,22 @@ export default function CategorySelectScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
   loadingText: {
     marginTop: 10,
-    color: "#6C757D",
+    color: colors.textMuted,
   },
   headerCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surfaceElevated,
     borderBottomWidth: 1,
-    borderBottomColor: "#E9ECEF",
+    borderBottomColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 14,
     gap: 8,
@@ -227,26 +242,26 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#212529",
+    color: colors.textPrimary,
   },
   headerSubtitle: {
     fontSize: 13,
-    color: "#6C757D",
+    color: colors.textMuted,
   },
   searchRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
-    backgroundColor: "#fff",
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   searchInput: {
     flex: 1,
-    color: "#212529",
+    color: colors.textPrimary,
     fontSize: 14,
   },
   listContent: {
@@ -254,10 +269,10 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   categoryItem: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
     paddingHorizontal: 14,
     paddingVertical: 12,
     marginBottom: 8,
@@ -277,11 +292,11 @@ const styles = StyleSheet.create({
   categoryName: {
     fontSize: 15,
     fontWeight: "600",
-    color: "#212529",
+    color: colors.textPrimary,
   },
   categoryHint: {
     fontSize: 12,
-    color: "#007BFF",
+    color: colors.secondary,
     marginTop: 2,
   },
   emptyState: {
@@ -292,24 +307,24 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#495057",
+    color: colors.textSecondary,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: "#868E96",
+    color: colors.textMuted,
   },
   skipButton: {
     position: "absolute",
     left: 16,
     right: 16,
     bottom: 20,
-    borderRadius: 12,
-    backgroundColor: "#6C757D",
+    borderRadius: borderRadius.card,
+    backgroundColor: colors.borderLight,
     paddingVertical: 14,
     alignItems: "center",
   },
   skipButtonText: {
-    color: "#fff",
+    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: "700",
   },

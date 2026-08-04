@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { glassSubtle } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 import { CreditCardWithLimits } from "@/shared/types/creditCard";
 
 interface CreditCardAlertBannerProps {
@@ -114,7 +115,7 @@ export default function CreditCardAlertBanner({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     borderWidth: 1,
     padding: 14,
     marginBottom: 8,

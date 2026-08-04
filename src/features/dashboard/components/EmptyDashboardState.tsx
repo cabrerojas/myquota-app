@@ -17,6 +17,7 @@ import { useRef } from "react";
 import { useRouter } from "expo-router";
 import Svg, { Circle, Defs, LinearGradient, Stop, Rect } from "react-native-svg";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -264,7 +265,7 @@ const styles = StyleSheet.create({
   heroIconOuter: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: borderRadius.full,
     backgroundColor: "rgba(59,130,246,0.1)",
     justifyContent: "center",
     alignItems: "center",
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
   heroIconInner: {
     width: 56,
     height: 56,
-    borderRadius: 28,
+    borderRadius: borderRadius.full,
     backgroundColor: "rgba(59,130,246,0.15)",
     justifyContent: "center",
     alignItems: "center",
@@ -361,7 +362,7 @@ const styles = StyleSheet.create({
   actionIconWrap: {
     width: 44,
     height: 44,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -385,7 +386,7 @@ const styles = StyleSheet.create({
   tipCard: {
     flexDirection: "row",
     backgroundColor: "rgba(59,130,246,0.04)",
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     borderWidth: 1,
     borderColor: "rgba(59,130,246,0.1)",
     padding: 14,

@@ -39,3 +39,7 @@ app-example
 /eas.json
 /.env
 .vercel
+
+# Env test files with potentially real values
+**/env.test.ts
+**/env.test.tsx

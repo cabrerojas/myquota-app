@@ -16,6 +16,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop, Rect, Line } from "react-nativ
 import { useGoogleSignIn, parseOAuthReturn } from "../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 
 const { width } = Dimensions.get("window");
 
@@ -152,7 +153,7 @@ export default function LoginScreen() {
             accessibilityRole="button"
           >
             <View style={styles.googleIconBox}>
-              <Ionicons name="logo-google" size={20} color="#fff" />
+              <Ionicons name="logo-google" size={20} color={colors.textPrimary} />
             </View>
             <Text style={styles.googleButtonLabel}>
               Continuar con Google
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
   iconOuter: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: borderRadius.full,
     backgroundColor: "rgba(59,130,246,0.08)",
     justifyContent: "center",
     alignItems: "center",
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   valueCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: colors.surfaceElevated,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.border,

@@ -26,6 +26,8 @@ import {
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { formatCurrency } from "@/shared/utils/format";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
+import { typography } from "@/shared/theme/typography";
 import { glassSurface } from "@/shared/theme/effects";
 
 interface MonthBucket {
@@ -866,8 +868,7 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   monthAmountUSD: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.textMuted,
     marginTop: 2,
   },
@@ -908,7 +909,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 7,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     backgroundColor: "rgba(5,150,105,0.12)",
     borderWidth: 1,
     borderColor: "rgba(5,150,105,0.2)",
@@ -960,12 +961,11 @@ const styles = StyleSheet.create({
   },
   detailLeft: { flex: 1, marginRight: 10 },
   detailMerchant: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.textPrimary,
   },
   detailQuota: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
-  detailAmount: { fontSize: 14, fontWeight: "700", color: colors.accent },
+  detailAmount: { ...typography.presets.cardTitle, color: colors.accent },
   detailRight: {
     flexDirection: "row",
     alignItems: "center",
@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: borderRadius.full,
     backgroundColor: "rgba(5,150,105,0.1)",
     justifyContent: "center",
     alignItems: "center",
@@ -1086,11 +1086,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 4,
-    shadowColor: colors.accent,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
+    elevation: 6,
   },
   fabPressed: {
     opacity: 0.85,

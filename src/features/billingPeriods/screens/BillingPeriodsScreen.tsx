@@ -19,6 +19,10 @@ import {
   useDeleteBillingPeriod,
 } from "../services/billingPeriodsApi";
 import BillingPeriodFormModal from "../components/BillingPeriodFormModal";
+import ErrorState from "@/shared/components/ErrorState";
+import { colors } from "@/shared/theme/colors";
+import { spacing, borderRadius } from "@/shared/theme/tokens";
+import { shadows } from "@/shared/theme/effects";
 
 interface BillingPeriodsScreenProps {
   creditCardId: string;
@@ -151,9 +155,8 @@ export default function BillingPeriodsScreen({
         dueDate: editingPeriod.dueDate,
       };
     }
-    // Sugerir siguiente período basado en el más reciente
     if (periods.length > 0) {
-      const latest = periods[0]; // Ya vienen ordenados desc
+      const latest = periods[0];
       const latestEnd = new Date(latest.endDate);
       const nextStart = new Date(latestEnd);
       nextStart.setDate(nextStart.getDate() + 1);
@@ -212,7 +215,7 @@ export default function BillingPeriodsScreen({
             openEditModal(item);
           }}
         >
-          <Ionicons name="pencil" size={20} color="#007BFF" />
+          <Ionicons name="pencil" size={20} color={colors.secondary} />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.iconButton}
@@ -221,9 +224,9 @@ export default function BillingPeriodsScreen({
             handleDelete(item);
           }}
         >
-          <Ionicons name="trash-outline" size={20} color="#DC3545" />
+          <Ionicons name="trash-outline" size={20} color={colors.destructive} />
         </TouchableOpacity>
-        <Ionicons name="chevron-forward" size={18} color="#ADB5BD" />
+        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </View>
     </TouchableOpacity>
   );
@@ -231,10 +234,14 @@ export default function BillingPeriodsScreen({
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.secondary} />
         <Text style={styles.loadingText}>Cargando períodos...</Text>
       </View>
     );
+  }
+
+  if (isError) {
+    return <ErrorState message="No se pudieron cargar los períodos." onRetry={() => refetch()} />;
   }
 
   return (
@@ -243,7 +250,7 @@ export default function BillingPeriodsScreen({
 
       {periods.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="calendar-outline" size={64} color="#CED4DA" />
+          <Ionicons name="calendar-outline" size={64} color={colors.border} />
           <Text style={styles.emptyTitle}>Sin períodos de facturación</Text>
           <Text style={styles.emptyText}>
             Crea tu primer período para organizar tus transacciones.
@@ -264,12 +271,10 @@ export default function BillingPeriodsScreen({
         />
       )}
 
-      {/* Botón flotante para agregar */}
       <TouchableOpacity style={styles.fab} onPress={openCreateModal}>
-        <Ionicons name="add" size={28} color="#fff" />
+        <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
-      {/* Modal de formulario */}
       <BillingPeriodFormModal
         visible={showFormModal}
         onClose={() => {
@@ -291,104 +296,98 @@ export default function BillingPeriodsScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#6C757D",
+    color: colors.textMuted,
   },
   cardLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#495057",
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
+    color: colors.textSecondary,
+    paddingHorizontal: spacing.md2,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
   },
   listContent: {
-    padding: 16,
+    padding: spacing.md,
     paddingBottom: 80,
   },
   periodCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    marginBottom: spacing.sm2,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    ...shadows.pressed,
   },
   periodInfo: {
     flex: 1,
   },
   periodMonth: {
     fontSize: 17,
-    fontWeight: "bold",
-    color: "#1A1A2E",
-    marginBottom: 4,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   periodDates: {
     fontSize: 14,
-    color: "#6C757D",
+    color: colors.textMuted,
   },
   periodDueDate: {
     fontSize: 13,
-    color: "#E67E22",
+    color: colors.warning,
     fontWeight: "500",
-    marginTop: 2,
+    marginTop: spacing.xxs,
   },
   periodActions: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.sm2,
   },
   iconButton: {
-    padding: 8,
+    padding: spacing.sm,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: spacing.xxl,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "bold",
-    color: "#495057",
-    marginTop: 16,
-    marginBottom: 8,
+    fontWeight: "700",
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
   },
   emptyText: {
     fontSize: 14,
-    color: "#6C757D",
+    color: colors.textMuted,
     textAlign: "center",
     lineHeight: 20,
   },
   fab: {
     position: "absolute",
-    right: 20,
-    bottom: 24,
+    right: spacing.md2,
+    bottom: spacing.lg,
     width: 56,
     height: 56,
-    borderRadius: 28,
-    backgroundColor: "#007BFF",
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.secondary,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 5,
+    ...shadows.floating,
   },
 });

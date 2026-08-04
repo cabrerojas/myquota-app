@@ -6,50 +6,55 @@
  */
 
 export const colors = {
-  // Legacy aliases for backward compatibility during migration
-  bgLight: "#0F172A",
-  bgWhite: "#1A2440",
-  primary: "#3B82F6",
-  primaryDark: "#2563EB",
-  danger: "#DC2626",
-  dangerDark: "#B91C1C",
-  textLight: "rgba(255,255,255,0.5)",
-  info: "#3B82F6",
-  bg: "#0F172A",
-  surface: "#1A2440",
-  surfaceElevated: "#1E2D4A",
+  // ── Fondos ──────────────────────────────────────
+  bg:              "#0F172A",   // Fondo principal
+  surface:         "#192134",   // Tarjetas, cards (menos saturado de azul que #1A2440)
+  surfaceElevated: "#1E2D4A",   // Modals, dropdowns, sheets
 
-  // Text hierarchy (opacity scale for white)
-  textPrimary: "#FFFFFF",
-  textSecondary: "rgba(255,255,255,0.8)",
-  textMuted: "rgba(255,255,255,0.5)",
-  textSubtle: "rgba(255,255,255,0.3)",
+  // ── Marca ───────────────────────────────────────
+  primary:         "#1E40AF",   // Azul confianza — navegación, identidad
+  primaryDark:     "#1E3A8A",   // Estados pressed/hover de primary
+  secondary:       "#3B82F6",   // Azul acción — links, chips activos, selecciones
+  accent:          "#059669",   // Verde profit — CTAs positivos: Pagar, Crear, Guardar
+  accentDark:      "#047857",   // Estados pressed/hover de accent
 
-  // Brand / accent
-  accent: "#3B82F6",
-  accentGlow: "rgba(59,130,246,0.3)",
+  // ── Texto ───────────────────────────────────────
+  textPrimary:     "#FFFFFF",
+  textSecondary:   "rgba(255,255,255,0.8)",
+  textMuted:       "rgba(255,255,255,0.5)",
+  textSubtle:      "rgba(255,255,255,0.3)",
 
-  // Borders
-  border: "rgba(255,255,255,0.08)",
-  borderLight: "rgba(255,255,255,0.04)",
+  // ── Feedback ────────────────────────────────────
+  destructive:     "#DC2626",
+  destructiveBg:   "rgba(220,38,38,0.1)",
+  success:         "#059669",
+  successBg:       "rgba(5,150,105,0.1)",
+  warning:         "#F59E0B",
+  warningBg:       "rgba(245,158,11,0.1)",
 
-  // Feedback
-  destructive: "#DC2626",
-  success: "#059669",
-  warning: "#D97706",
+  // ── Bordes ──────────────────────────────────────
+  border:          "rgba(255,255,255,0.08)",
+  borderLight:     "rgba(255,255,255,0.04)",
 
-  // Skeleton loading
-  skeleton: {
-    base: "rgba(255,255,255,0.06)",
-    highlight: "rgba(255,255,255,0.12)",
-  } as const,
-
-  // Glassmorphism
+  // ── Glass ───────────────────────────────────────
   glass: {
-    background: "rgba(26,36,64,0.8)",
-    border: "rgba(255,255,255,0.08)",
+    background:    "rgba(26,36,64,0.8)",
+    border:        "rgba(255,255,255,0.08)",
     blurIntensity: 20,
   } as const,
+
+  // ── Skeleton ────────────────────────────────────
+  skeleton: {
+    base:          "rgba(255,255,255,0.06)",
+    highlight:     "rgba(255,255,255,0.12)",
+  } as const,
+
+  // ── Gráficos ────────────────────────────────────
+  chartPalette: [
+    "#3B82F6", "#059669", "#F59E0B", "#DC2626",
+    "#8B5CF6", "#F97316", "#14B8A6", "#EC4899",
+    "#1E40AF", "#047857", "#D97706", "#6B7280",
+  ] as const,
 } as const;
 
 export type ColorTokens = typeof colors;

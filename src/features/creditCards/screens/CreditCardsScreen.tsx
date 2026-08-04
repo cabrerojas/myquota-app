@@ -15,7 +15,8 @@ import { CreditCard } from "@/shared/types/creditCard";
 import { formatCLP } from "@/shared/utils/format";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import ErrorState from "@/shared/components/ErrorState";
-import { colors } from "@/shared/theme/tokens";
+import { colors, borderRadius } from "@/shared/theme/tokens";
+import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 
 export default function CreditCardsScreen() {
@@ -340,7 +341,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "700",
     color: colors.textSecondary,
     marginTop: 16,
   },
@@ -360,11 +361,11 @@ const styles = StyleSheet.create({
   card: {
     ...glassSurface(),
     marginBottom: 16,
-    elevation: 3,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: 2,
+    elevation: 1,
     overflow: "hidden",
   },
   cardHeader: {
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   },
   cardType: {
     fontSize: 17,
-    fontWeight: "bold",
+    fontWeight: "700",
     color: "#fff",
   },
   cardDigits: {
@@ -396,7 +397,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.25)",
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
   },
   statusText: {
     fontSize: 12,
@@ -423,9 +424,8 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   usageLabel: {
-    fontSize: 13,
+    ...typography.presets.label,
     color: colors.textSecondary,
-    fontWeight: "600",
   },
   usageAmount: {
     fontSize: 13,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginTop: 8,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
   },
   actionText: {
     fontSize: 14,

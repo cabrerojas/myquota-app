@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 import { useState } from "react";
 
 type WebScreen = "dashboard" | "creditCards" | "transactions" | "charts" | "debtForecast" | "manualDebts" | "profile";
@@ -81,7 +82,7 @@ const s = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     marginHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     marginBottom: 2,
   },
   menuItemActive: {

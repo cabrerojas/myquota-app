@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 
 interface ActionCard {
 	id: string;
@@ -140,7 +141,7 @@ const styles = StyleSheet.create({
 	heroIconWrap: {
 		width: 56,
 		height: 56,
-		borderRadius: 28,
+		borderRadius: borderRadius.full,
 		backgroundColor: "rgba(59, 130, 246, 0.1)",
 		alignItems: "center",
 		justifyContent: "center",
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
 	actionIconWrap: {
 		width: 44,
 		height: 44,
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		alignItems: "center",
 		justifyContent: "center",
 		flexShrink: 0,
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
 	tipCard: {
 		flexDirection: "row",
 		backgroundColor: "rgba(217, 119, 6, 0.06)",
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		borderWidth: 1,
 		borderColor: "rgba(217, 119, 6, 0.15)",
 		padding: 14,

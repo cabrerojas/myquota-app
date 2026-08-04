@@ -31,6 +31,8 @@ import {
 } from "@/features/categories/services/categoryApi";
 
 import { CreditCardBasic } from "@/shared/types/creditCard";
+import { colors } from "@/shared/theme/colors";
+import { spacing, borderRadius } from "@/shared/theme/tokens";
 
 const MONTHS = [
   "Enero",
@@ -288,7 +290,7 @@ export default function AddDebtScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.secondary} />
       </View>
     );
   }
@@ -321,7 +323,11 @@ export default function AddDebtScreen() {
               <Ionicons
                 name="card"
                 size={16}
-                color={selectedCardId === card.id ? "#fff" : "#495057"}
+                color={
+                  selectedCardId === card.id
+                    ? colors.textPrimary
+                    : colors.textSecondary
+                }
               />
               <Text
                 style={[
@@ -343,7 +349,7 @@ export default function AddDebtScreen() {
             placeholder="Ej: TRAVEL TIENDA TCOMP"
             value={merchant}
             onChangeText={setMerchant}
-            placeholderTextColor="#ADB5BD"
+            placeholderTextColor={colors.textMuted}
           />
           <TouchableOpacity
             style={{ padding: 10 }}
@@ -372,12 +378,12 @@ export default function AddDebtScreen() {
               router.push(categorySelectHref);
             }}
           >
-            <Ionicons name="pricetag-outline" size={22} color="#007BFF" />
+            <Ionicons name="pricetag-outline" size={22} color={colors.secondary} />
           </TouchableOpacity>
         </View>
         {chosenCategoryId ? (
           <View style={styles.categorySelectedBadge}>
-            <Ionicons name="checkmark-circle" size={14} color="#0B8F3C" />
+            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
             <Text style={styles.categorySelectedText}>
               Categoría: {chosenCategoryName || "Seleccionada"}
             </Text>
@@ -393,7 +399,7 @@ export default function AddDebtScreen() {
             value={quotaAmount}
             onChangeText={setQuotaAmount}
             keyboardType="numeric"
-            placeholderTextColor="#ADB5BD"
+            placeholderTextColor={colors.textMuted}
           />
           <View style={styles.currencyToggle}>
             <TouchableOpacity
@@ -441,7 +447,7 @@ export default function AddDebtScreen() {
               value={totalInstallments}
               onChangeText={setTotalInstallments}
               keyboardType="numeric"
-              placeholderTextColor="#ADB5BD"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
           <View style={{ flex: 1, marginLeft: 8 }}>
@@ -452,7 +458,7 @@ export default function AddDebtScreen() {
               value={paidInstallments}
               onChangeText={setPaidInstallments}
               keyboardType="numeric"
-              placeholderTextColor="#ADB5BD"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
         </View>
@@ -462,7 +468,7 @@ export default function AddDebtScreen() {
           paidInstallments !== "" &&
           Number(totalInstallments) > Number(paidInstallments) && (
             <View style={styles.infoBox}>
-              <Ionicons name="information-circle" size={16} color="#007BFF" />
+              <Ionicons name="information-circle" size={16} color={colors.secondary} />
               <Text style={styles.infoText}>
                 Te quedan {Number(totalInstallments) - Number(paidInstallments)}{" "}
                 cuotas pendientes
@@ -533,12 +539,12 @@ export default function AddDebtScreen() {
           <Ionicons
             name="calendar-outline"
             size={18}
-            color={purchaseDate ? "#212529" : "#ADB5BD"}
+            color={purchaseDate ? colors.textPrimary : colors.textMuted}
           />
           <Text
             style={[
               styles.datePickerText,
-              !purchaseDate && { color: "#ADB5BD" },
+              !purchaseDate && { color: colors.textMuted },
             ]}
           >
             {purchaseDate
@@ -554,7 +560,7 @@ export default function AddDebtScreen() {
               onPress={() => setPurchaseDate(null)}
               style={styles.dateClearBtn}
             >
-              <Ionicons name="close-circle" size={18} color="#868E96" />
+              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           )}
         </TouchableOpacity>
@@ -575,10 +581,9 @@ export default function AddDebtScreen() {
             style={{
               padding: 10,
               fontSize: 16,
-              borderRadius: 8,
-              border: "1px solid #DEE2E6",
-              backgroundColor: "#fff",
-              color: "#212529",
+              borderRadius: borderRadius.input,
+              backgroundColor: colors.surface,
+              color: colors.textPrimary,
               width: "100%",
               marginTop: 8,
             }}
@@ -605,13 +610,13 @@ export default function AddDebtScreen() {
           disabled={submitting}
         >
           {submitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.textPrimary} />
           ) : (
             <>
               <Ionicons
                 name={isEdit ? "checkmark-circle" : "add-circle"}
                 size={20}
-                color="#fff"
+                color={colors.textPrimary}
               />
               <Text style={styles.submitText}>
                 {isEdit ? "Guardar Cambios" : "Agregar Deuda"}
@@ -627,30 +632,39 @@ export default function AddDebtScreen() {
               flex: 1,
               backgroundColor: "rgba(0,0,0,0.4)",
               justifyContent: "center",
-              padding: 20,
+              padding: spacing.md2,
             }}
           >
             <View
-              style={{ backgroundColor: "#fff", borderRadius: 12, padding: 16 }}
+              style={{
+                backgroundColor: colors.surface,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+              }}
             >
               <Text
-                style={{ fontSize: 16, fontWeight: "700", marginBottom: 8 }}
+                style={{
+                  fontSize: 16,
+                  fontWeight: "700",
+                  marginBottom: 8,
+                  color: colors.textPrimary,
+                }}
               >
                 Categoría sugerida
               </Text>
-              <Text style={{ marginBottom: 12 }}>
+              <Text style={{ marginBottom: 12, color: colors.textSecondary }}>
                 {suggestedMatch?.categoryName}
               </Text>
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: "#007BFF",
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}
-                onPress={async () => {
-                  if (!suggestedMatch) return;
+                   backgroundColor: colors.secondary,
+                   padding: spacing.sm2,
+                   borderRadius: borderRadius.input,
+                   marginBottom: 8,
+                 }}
+                 onPress={async () => {
+                   if (!suggestedMatch) return;
                   setSuggestionProcessing(true);
                   try {
                     // Copiar la categoría global a las del usuario y usarla
@@ -670,7 +684,7 @@ export default function AddDebtScreen() {
               >
                 <Text
                   style={{
-                    color: "#fff",
+                    color: colors.textPrimary,
                     textAlign: "center",
                     fontWeight: "700",
                   }}
@@ -681,12 +695,12 @@ export default function AddDebtScreen() {
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: "#28A745",
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 8,
-                }}
-                onPress={async () => {
+                   backgroundColor: colors.success,
+                   padding: spacing.sm2,
+                   borderRadius: borderRadius.input,
+                   marginBottom: 8,
+                 }}
+                 onPress={async () => {
                   // Crear nueva categoría personal y asociar el merchant
                   setSuggestionProcessing(true);
                   try {
@@ -709,7 +723,7 @@ export default function AddDebtScreen() {
               >
                 <Text
                   style={{
-                    color: "#fff",
+                    color: colors.textPrimary,
                     textAlign: "center",
                     fontWeight: "700",
                   }}
@@ -720,9 +734,9 @@ export default function AddDebtScreen() {
 
               <TouchableOpacity
                 style={{
-                  backgroundColor: "#6C757D",
-                  padding: 12,
-                  borderRadius: 8,
+                  backgroundColor: colors.textMuted,
+                  padding: spacing.sm2,
+                  borderRadius: borderRadius.input,
                 }}
                 onPress={() => {
                   setShowSuggestionModal(false);
@@ -732,7 +746,7 @@ export default function AddDebtScreen() {
               >
                 <Text
                   style={{
-                    color: "#fff",
+                    color: colors.textPrimary,
                     textAlign: "center",
                     fontWeight: "700",
                   }}
@@ -749,13 +763,13 @@ export default function AddDebtScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
-  content: { padding: 20, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.md2, paddingBottom: spacing.xxl },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   sectionLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 10,
@@ -763,18 +777,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
     marginBottom: 6,
-    marginTop: 16,
+    marginTop: spacing.md,
   },
   input: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
     padding: 14,
     fontSize: 15,
-    color: "#212529",
+    color: colors.textPrimary,
   },
   row: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
   cardSelector: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
@@ -784,99 +798,99 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
+    borderColor: colors.border,
   },
   cardChipSelected: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
-  cardChipText: { fontSize: 14, fontWeight: "600", color: "#495057" },
-  cardChipTextSelected: { color: "#fff" },
+  cardChipText: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },
+  cardChipTextSelected: { color: colors.textPrimary },
   currencyToggle: { flexDirection: "row", gap: 4 },
   currencyBtn: {
     paddingHorizontal: 14,
     paddingVertical: 14,
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
+    borderColor: colors.border,
   },
   currencyBtnActive: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
-  currencyText: { fontSize: 13, fontWeight: "700", color: "#495057" },
-  currencyTextActive: { color: "#fff" },
+  currencyText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
+  currencyTextActive: { color: colors.textPrimary },
   infoBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    backgroundColor: "#E7F5FF",
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: "rgba(59,130,246,0.08)",
+    padding: spacing.sm2,
+    borderRadius: borderRadius.md,
     marginTop: 12,
   },
-  infoText: { fontSize: 13, color: "#1864AB", flex: 1 },
+  infoText: { fontSize: 13, color: colors.secondary, flex: 1 },
   monthPicker: { marginTop: 4 },
   monthScroll: { marginBottom: 8 },
   monthChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    borderRadius: borderRadius.input,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
+    borderColor: colors.border,
     marginRight: 6,
   },
   monthChipSelected: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
-  monthChipText: { fontSize: 13, fontWeight: "600", color: "#495057" },
-  monthChipTextSelected: { color: "#fff" },
+  monthChipText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  monthChipTextSelected: { color: colors.textPrimary },
   yearRow: { flexDirection: "row", gap: 6 },
   yearChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: "#fff",
+    borderRadius: borderRadius.input,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
+    borderColor: colors.border,
   },
   yearChipSelected: {
-    backgroundColor: "#007BFF",
-    borderColor: "#007BFF",
+    backgroundColor: colors.secondary,
+    borderColor: colors.secondary,
   },
-  yearChipText: { fontSize: 13, fontWeight: "600", color: "#495057" },
-  yearChipTextSelected: { color: "#fff" },
+  yearChipText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  yearChipTextSelected: { color: colors.textPrimary },
   submitBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#007BFF",
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: colors.secondary,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.card,
     marginTop: 28,
   },
   submitBtnDisabled: { opacity: 0.6 },
-  submitText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  submitText: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
   datePickerBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#DEE2E6",
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
     padding: 14,
   },
   datePickerText: {
     fontSize: 15,
-    color: "#212529",
+    color: colors.textPrimary,
     flex: 1,
   },
   dateClearBtn: {
@@ -888,15 +902,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: "#EBFAF0",
+    backgroundColor: colors.successBg,
     borderWidth: 1,
-    borderColor: "#B8EBC9",
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: borderRadius.card,
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
   categorySelectedText: {
-    color: "#0B8F3C",
+    color: colors.success,
     fontSize: 12,
     fontWeight: "600",
   },

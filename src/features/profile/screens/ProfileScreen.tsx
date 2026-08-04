@@ -10,6 +10,7 @@ import { signOut } from "@/features/auth/hooks/useAuth";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { useMyProfile } from "@/features/profile/services/userApi";
 import { updateMyProfile } from "@/features/profile/services/userApi";
+import ErrorState from "@/shared/components/ErrorState";
 import Constants from "expo-constants";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserInfo, User } from "@/shared/types/user";
@@ -17,6 +18,7 @@ import { CreditCardSummary } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 
 function SettingsRow({ icon, label, value, detail, showChevron, onPress }: {
@@ -51,7 +53,7 @@ const sRowStyles = StyleSheet.create({
 export default function ProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: profile, isLoading, isFetching, refetch } = useMyProfile();
+  const { data: profile, isLoading, isFetching, isError: profileError, refetch } = useMyProfile();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [cardsSummary, setCardsSummary] = useState<CreditCardSummary>({ total: 0, active: 0 });
   const [budgetCLP, setBudgetCLP] = useState("");
@@ -101,6 +103,10 @@ export default function ProfileScreen() {
       }},
     ]);
   };
+
+  if (profileError) {
+    return <ErrorState message="No se pudo cargar el perfil." onRetry={() => refetch()} />;
+  }
 
   return (
     <ScrollView
@@ -213,8 +219,8 @@ const s = StyleSheet.create({
     alignItems: "center", borderBottomWidth: 1, borderBottomColor: colors.border,
   },
   avatarContainer: { marginBottom: 12 },
-  avatar: { width: 76, height: 76, borderRadius: 38, borderWidth: 2, borderColor: colors.accent },
-  avatarPlaceholder: { width: 76, height: 76, borderRadius: 38,
+  avatar: { width: 76, height: 76, borderRadius: borderRadius.full, borderWidth: 2, borderColor: colors.accent },
+  avatarPlaceholder: { width: 76, height: 76, borderRadius: borderRadius.full,
     backgroundColor: "rgba(59,130,246,0.15)", justifyContent: "center", alignItems: "center" },
   userName: { fontSize: 20, fontWeight: "700", color: colors.textPrimary },
   userEmail: { fontSize: 13, color: colors.textMuted, marginTop: 3 },
@@ -229,14 +235,14 @@ const s = StyleSheet.create({
   budgetRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 6 },
   budgetLabel: { flexDirection: "row", alignItems: "center", gap: 8 },
   budgetLabelText: { fontSize: 14, fontWeight: "500", color: colors.textPrimary },
-  budgetInput: { backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 8, paddingHorizontal: 12,
+  budgetInput: { backgroundColor: "rgba(255,255,255,0.05)", borderRadius: borderRadius.input, paddingHorizontal: 12,
     paddingVertical: 8, fontSize: 14, fontWeight: "600", color: colors.textPrimary, minWidth: 120, textAlign: "right",
     borderWidth: 1, borderColor: colors.border },
   budgetDivider: { height: 1, backgroundColor: colors.borderLight, marginVertical: 8 },
-  saveButton: { backgroundColor: colors.accent, borderRadius: 8, paddingVertical: 12,
+  saveButton: { backgroundColor: colors.accent, borderRadius: borderRadius.input, paddingVertical: 12,
     alignItems: "center", marginTop: 14 },
   saveButtonText: { color: colors.textPrimary, fontSize: 14, fontWeight: "600" },
-  logoutCard: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, borderRadius: 12,
+  logoutCard: { flexDirection: "row", alignItems: "center", marginHorizontal: 16, borderRadius: borderRadius.card,
     borderWidth: 1, borderColor: "rgba(220,38,38,0.2)", padding: 14, gap: 10,
     backgroundColor: "rgba(220,38,38,0.04)" },
   logoutText: { fontSize: 15, fontWeight: "600", color: colors.destructive, flex: 1 },
