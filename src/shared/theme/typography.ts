@@ -44,7 +44,7 @@ export const typography = {
     /** Tabs, chips — 13px medium */
     tab:         { fontSize: 13, fontWeight: "500", lineHeight: 18 } as const,
     /** UPPERCASE card labels — 14px bold */
-    cardTitle:   { fontSize: 14, fontWeight: "700", lineHeight: 18 } as const,
+    cardTitle:   { fontSize: 14, fontWeight: "700", lineHeight: 18, color: "#FFFFFF" } as const,
   } as const,
 } as const;
 

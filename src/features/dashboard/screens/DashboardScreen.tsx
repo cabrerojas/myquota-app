@@ -624,6 +624,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.presets.cardTitle,
+    color: colors.textPrimary,
     marginBottom: 0,
   },
   sectionHeader: {
