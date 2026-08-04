@@ -53,6 +53,7 @@ if (Platform.OS !== "web") {
     forceCodeForRefreshToken: true,
     iosClientId: iosClientId,
   });
+}
 
 WebBrowser.maybeCompleteAuthSession();
 
