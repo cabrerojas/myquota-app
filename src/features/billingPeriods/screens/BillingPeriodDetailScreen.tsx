@@ -14,6 +14,8 @@ import {
   Transaction,
 } from "@/features/transactions/services/transactionsApi";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import { colors } from "@/shared/theme/colors";
+import { spacing, borderRadius } from "@/shared/theme/tokens";
 
 interface BillingPeriodDetailScreenProps {
   creditCardId: string;
@@ -124,7 +126,6 @@ export default function BillingPeriodDetailScreen({
     loadTransactions();
   };
 
-  // Totals
   let totalCLP = 0;
   let totalUSD = 0;
   transactions.forEach((t) => {
@@ -132,7 +133,6 @@ export default function BillingPeriodDetailScreen({
     else totalCLP += t.amount;
   });
 
-  // Group by day
   const grouped: GroupedTransactions[] = (() => {
     const groups: Record<string, GroupedTransactions> = {};
     transactions.forEach((t) => {
@@ -156,7 +156,7 @@ export default function BillingPeriodDetailScreen({
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.secondary} />
         <Text style={styles.loadingText}>Cargando transacciones...</Text>
       </View>
     );
@@ -175,10 +175,9 @@ export default function BillingPeriodDetailScreen({
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      {/* Period info card */}
       <View style={styles.periodCard}>
         <View style={styles.periodHeader}>
-          <Ionicons name="calendar" size={20} color="#007BFF" />
+          <Ionicons name="calendar" size={20} color={colors.secondary} />
           <Text style={styles.periodMonth}>{formatMonthDisplay(periodMonth)}</Text>
         </View>
         <Text style={styles.periodDates}>
@@ -205,7 +204,7 @@ export default function BillingPeriodDetailScreen({
         </View>
 
         <View style={styles.countRow}>
-          <Ionicons name="receipt-outline" size={14} color="#868E96" />
+          <Ionicons name="receipt-outline" size={14} color={colors.textMuted} />
           <Text style={styles.countText}>
             {transactions.length}{" "}
             {transactions.length === 1 ? "transacción" : "transacciones"}
@@ -213,10 +212,9 @@ export default function BillingPeriodDetailScreen({
         </View>
       </View>
 
-      {/* Transactions grouped by day */}
       {transactions.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons name="receipt-outline" size={48} color="#CED4DA" />
+          <Ionicons name="receipt-outline" size={48} color={colors.border} />
           <Text style={styles.emptyText}>
             Sin transacciones en este período
           </Text>
@@ -268,92 +266,90 @@ export default function BillingPeriodDetailScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
   },
   contentContainer: {
-    padding: 16,
-    paddingBottom: 32,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
   },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: spacing.md2,
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: spacing.sm2,
     fontSize: 15,
-    color: "#868E96",
+    color: colors.textMuted,
   },
-  // Period card
   periodCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
     padding: 18,
-    marginBottom: 16,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   periodHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
   periodMonth: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#212529",
+    color: colors.textPrimary,
   },
   periodDates: {
     fontSize: 13,
-    color: "#868E96",
-    marginBottom: 16,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
     marginLeft: 28,
   },
   totalsRow: {
     flexDirection: "row",
-    gap: 24,
-    marginBottom: 12,
+    gap: spacing.lg,
+    marginBottom: spacing.sm2,
   },
   totalBlock: {},
   totalLabel: {
     fontSize: 11,
-    color: "#868E96",
+    color: colors.textMuted,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   totalCLP: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#DC3545",
+    color: colors.destructive,
   },
   totalUSD: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#007BFF",
+    color: colors.secondary,
   },
   countRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingTop: 12,
+    paddingTop: spacing.sm2,
     borderTopWidth: 1,
-    borderTopColor: "#F1F3F5",
+    borderTopColor: colors.borderLight,
   },
   countText: {
     fontSize: 13,
-    color: "#868E96",
+    color: colors.textMuted,
   },
-  // Day groups
   dayGroup: {
-    marginBottom: 12,
-    backgroundColor: "#fff",
-    borderRadius: 12,
+    marginBottom: spacing.sm2,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.card,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   dayHeader: {
     flexDirection: "row",
@@ -362,15 +358,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F3F5",
-    backgroundColor: "#F8F9FA",
+    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.surfaceElevated,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
   },
   dayTitle: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
     textTransform: "capitalize",
   },
   dayTotals: {
@@ -380,48 +376,49 @@ const styles = StyleSheet.create({
   dayTotal: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#DC3545",
+    color: colors.destructive,
   },
   dayTotalUSD: {
     fontSize: 13,
     fontWeight: "700",
-    color: "#007BFF",
+    color: colors.secondary,
   },
   transaction: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingVertical: spacing.sm2,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#F8F9FA",
+    borderBottomColor: colors.borderLight,
   },
   transactionLeft: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm2,
   },
   merchant: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#212529",
+    color: colors.textPrimary,
   },
   transactionDate: {
     fontSize: 12,
-    color: "#ADB5BD",
-    marginTop: 2,
+    color: colors.textMuted,
+    marginTop: spacing.xxs,
   },
   amount: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#DC3545",
+    color: colors.destructive,
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 40,
-    gap: 8,
+    paddingVertical: spacing.xxl,
+    gap: spacing.sm,
   },
   emptyText: {
     fontSize: 15,
-    color: "#868E96",
+    color: colors.textMuted,
   },
 });

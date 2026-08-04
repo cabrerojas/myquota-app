@@ -1,19 +1,13 @@
 /**
- * Visual effects — glass surfaces, glows, and shadows.
- *
- * These are style creators, not components. Import and spread into
- * your component's style array for consistent glassmorphism effects.
+ * Visual effects — glass surfaces, shadows, and icon containers.
  */
 
-import { ViewStyle, Platform } from "react-native";
+import { ViewStyle } from "react-native";
 import { colors } from "./colors";
 import { borderRadius } from "./tokens";
 
-/**
- * Standard glass surface: solid dark base with glass border.
- *
- * @param elevated - When true, adds accent glow shadow for highlighted cards.
- */
+// ─── Glassmorphism ──────────────────────────────────────────────
+
 export function glassSurface(elevated: boolean = false): ViewStyle {
   const style: ViewStyle = {
     backgroundColor: colors.surface,
@@ -24,20 +18,12 @@ export function glassSurface(elevated: boolean = false): ViewStyle {
   };
 
   if (elevated) {
-    style.shadowColor = colors.accent;
-    style.shadowOffset = { width: 0, height: 4 };
-    style.shadowOpacity = 0.3;
-    style.shadowRadius = 12;
-    style.elevation = 8;
+    Object.assign(style, shadows.elevated);
   }
 
   return style;
 }
 
-/**
- * Subtle glass surface: lower opacity, thinner border.
- * Use for backgrounds, containers that shouldn't compete with content.
- */
 export const glassSubtle: ViewStyle = {
   backgroundColor: "rgba(26,36,64,0.5)",
   borderWidth: 1,
@@ -45,38 +31,49 @@ export const glassSubtle: ViewStyle = {
   borderRadius: 12,
 };
 
-/**
- * Accent glow shadow — use on elevated/highlighted elements.
- */
-export const accentGlow: ViewStyle = {
-  shadowColor: colors.accent,
-  shadowOffset: { width: 0, height: 0 },
-  shadowOpacity: 0.4,
-  shadowRadius: 16,
-  elevation: 6,
+// ─── Shadows (SÓLO 3 en toda la app) ────────────────────────────
+
+export const shadows = {
+  /** Card elevada con glow de acento — glassSurface(true) */
+  elevated: {
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  } as ViewStyle,
+
+  /** FAB y elementos flotantes */
+  floating: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  } as ViewStyle,
+
+  /** Presionado / inset sutil */
+  pressed: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  } as ViewStyle,
 };
 
-/**
- * Inset shadow for pressed/depressed states.
- */
-export const insetShadow: ViewStyle = {
-  shadowColor: "#000000",
-  shadowOffset: { width: 0, height: -2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
-  elevation: 1,
-};
+// ─── Icon scale ─────────────────────────────────────────────────
 
-export const effects = {
-  glassSurface,
-  glassSubtle,
-  accentGlow,
-  insetShadow,
-};
+export const iconSize = {
+  xs: 12,   // Badges, indicadores
+  sm: 16,   // Acciones inline (edit, delete, chevron)
+  md: 20,   // Íconos de sección, navegación
+  lg: 24,   // Features, empty states
+  xl: 32,   // Hero, login
+} as const;
 
-// ─── Shared icon containers ──────────────────────────────────────────
+// ─── Icon containers ────────────────────────────────────────────
 
-/** Standard icon container (42×42, glass bg). */
 export const iconContainer: ViewStyle = {
   width: 42,
   height: 42,
@@ -86,7 +83,6 @@ export const iconContainer: ViewStyle = {
   alignItems: "center",
 };
 
-/** Small variant (34×34). */
 export const iconContainerSm: ViewStyle = {
   ...iconContainer,
   width: 34,
@@ -94,9 +90,21 @@ export const iconContainerSm: ViewStyle = {
   borderRadius: 10,
 };
 
-/** Large variant (48×48). */
 export const iconContainerLg: ViewStyle = {
   ...iconContainer,
   width: 48,
   height: 48,
+  borderRadius: 14,
+};
+
+// ─── Barrel ─────────────────────────────────────────────────────
+
+export const effects = {
+  glassSurface,
+  glassSubtle,
+  shadows,
+  iconSize,
+  iconContainer,
+  iconContainerSm,
+  iconContainerLg,
 };

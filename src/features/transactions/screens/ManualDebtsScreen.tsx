@@ -20,6 +20,7 @@ import {
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 import ErrorState from "@/shared/components/ErrorState";
 
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: borderRadius.full,
     backgroundColor: "rgba(255,255,255,0.04)",
     justifyContent: "center",
     alignItems: "center",
@@ -324,11 +325,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 4,
-    shadowColor: colors.accent,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
+    elevation: 6,
   },
   fabPressed: { opacity: 0.85 },
 });

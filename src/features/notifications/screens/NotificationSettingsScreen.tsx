@@ -8,7 +8,9 @@ import {
   cancelAllScheduledNotifications, getScheduledNotifications, CreditCardForNotification,
 } from "@/features/notifications/services/notificationService";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 
 const DAYS_OPTIONS = [1, 2, 3, 5];
@@ -17,18 +19,22 @@ const HOUR_OPTIONS = [7, 8, 9, 10, 12, 18, 20];
 export default function NotificationSettingsScreen() {
   const [settings, setSettings] = useState<NotificationSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [scheduledCount, setScheduledCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadSettings = async (isRefresh?: boolean) => {
     if (!isRefresh) setLoading(true);
+    setError(null);
     try {
       const s = await getNotificationSettings();
       setSettings(s);
       const scheduled = await getScheduledNotifications();
       setScheduledCount(scheduled.length);
-    } catch { Alert.alert("Error", "No se pudieron cargar las preferencias"); }
+    } catch {
+      setError("No se pudieron cargar las preferencias.");
+    }
     finally { setLoading(false); if (isRefresh) setRefreshing(false); }
   };
 
@@ -66,6 +72,10 @@ export default function NotificationSettingsScreen() {
 
   if (loading || !settings) {
     return <View style={s.center}><ActivityIndicator size="large" color={colors.accent} /></View>;
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={() => loadSettings()} />;
   }
 
   return (
@@ -196,7 +206,7 @@ const s = StyleSheet.create({
   switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   switchInfo: { flexDirection: "row", alignItems: "center", gap: 12 },
   switchIconBox: {
-    width: 40, height: 40, borderRadius: 12,
+    width: 40, height: 40, borderRadius: borderRadius.card,
     backgroundColor: "rgba(59,130,246,0.12)", justifyContent: "center", alignItems: "center",
   },
   switchLabel: { fontSize: 16, fontWeight: "600", color: colors.textPrimary },
@@ -214,7 +224,7 @@ const s = StyleSheet.create({
   chipTextActive: { color: colors.textPrimary },
 
   saveButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
-    backgroundColor: colors.accent, borderRadius: 12, padding: 14, marginTop: 6, marginBottom: 16 },
+    backgroundColor: colors.accent, borderRadius: borderRadius.card, padding: 14, marginTop: 6, marginBottom: 16 },
   saveText: { color: colors.textPrimary, fontSize: 15, fontWeight: "600" },
   infoBox: { flexDirection: "row", gap: 8, backgroundColor: "rgba(255,255,255,0.03)",
     borderRadius: 10, borderWidth: 1, borderColor: colors.border, padding: 12, alignItems: "flex-start" },

@@ -25,6 +25,8 @@ import {
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
+import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import ErrorState from "@/shared/components/ErrorState";
 
@@ -802,8 +804,7 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
   },
   cardChipText: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.textSecondary,
   },
   cardChipTextActive: {
@@ -947,7 +948,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     marginVertical: 1,
   },
   breakdownRowSelected: {
@@ -965,8 +966,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   breakdownMonth: {
-    fontSize: 13,
-    fontWeight: "500",
+    ...typography.presets.tab,
     color: colors.textSecondary,
   },
   breakdownMonthSelected: {
@@ -974,16 +974,14 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   breakdownAmount: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.accent,
   },
   breakdownAmountSelected: {
     fontWeight: "700",
   },
   breakdownUSD: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.success,
   },
   breakdownUSDSelected: {
@@ -1038,7 +1036,7 @@ const styles = StyleSheet.create({
   emptyIconWrap: {
     width: 64,
     height: 64,
-    borderRadius: 32,
+    borderRadius: borderRadius.full,
     backgroundColor: "rgba(255,255,255,0.04)",
     justifyContent: "center",
     alignItems: "center",
@@ -1069,8 +1067,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(59,130,246,0.08)",
   },
   emptyCtaText: {
+    ...typography.presets.label,
     color: colors.accent,
-    fontSize: 13,
-    fontWeight: "600",
   },
 });

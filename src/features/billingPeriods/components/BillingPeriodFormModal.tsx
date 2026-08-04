@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { formatDateInput, toISODateString } from "@/shared/utils/format";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 
 // DateTimePicker crashes at module level on web — use dynamic require
 const DateTimePicker: any = Platform.OS === "web" ? null : require("@react-native-community/datetimepicker").default;
@@ -304,7 +305,7 @@ function IntroStep({ orphanedCount, onContinue, onSkip }: {
 
 const is = StyleSheet.create({
   hero: { alignItems: "center", paddingVertical: 20 },
-  heroIcon: { width: 72, height: 72, borderRadius: 36, backgroundColor: "rgba(5,150,105,0.1)",
+  heroIcon: { width: 72, height: 72, borderRadius: borderRadius.full, backgroundColor: "rgba(5,150,105,0.1)",
     justifyContent: "center", alignItems: "center", marginBottom: 14, borderWidth: 1, borderColor: "rgba(5,150,105,0.2)" },
   heroTitle: { fontSize: 22, fontWeight: "800", color: colors.textPrimary, marginBottom: 6 },
   heroSub: { fontSize: 14, color: colors.textMuted, textAlign: "center", lineHeight: 20, marginBottom: 16 },
@@ -321,7 +322,7 @@ const is = StyleSheet.create({
 
   infoCards: { gap: 10 },
   infoCard: { flexDirection: "row", gap: 12, backgroundColor: "rgba(255,255,255,0.03)",
-    borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.border },
+    borderRadius: borderRadius.card, padding: 14, borderWidth: 1, borderColor: colors.border },
   infoText: { flex: 1 },
   infoTitle: { fontSize: 14, fontWeight: "600", color: colors.textPrimary, marginBottom: 2 },
   infoDesc: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
@@ -367,7 +368,7 @@ const s = StyleSheet.create({
   progressFill: { height: "100%", width: "100%", backgroundColor: colors.accent, borderRadius: 2 },
 
   alertBox: { flexDirection: "row", gap: 10, backgroundColor: "rgba(217,119,6,0.08)",
-    borderRadius: 12, borderWidth: 1, borderColor: "rgba(217,119,6,0.15)",
+    borderRadius: borderRadius.card, borderWidth: 1, borderColor: "rgba(217,119,6,0.15)",
     padding: 14, marginBottom: 18, alignItems: "flex-start" },
   alertText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
   alertBold: { fontWeight: "700", color: colors.warning },
@@ -382,7 +383,7 @@ const s = StyleSheet.create({
   dateText: { fontSize: 15, color: colors.textPrimary },
 
   buttonRow: { flexDirection: "row", gap: 12, marginTop: 24 },
-  btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: "center" },
+  btn: { flex: 1, padding: 14, borderRadius: borderRadius.card, alignItems: "center" },
   btnCancel: { backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: colors.border },
   btnCancelText: { fontSize: 15, fontWeight: "600", color: colors.textSecondary },
   btnSubmit: { backgroundColor: colors.accent },

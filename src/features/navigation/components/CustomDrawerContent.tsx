@@ -19,6 +19,7 @@ import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 import { UserInfo } from "@/shared/types/user";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -369,7 +370,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginHorizontal: 8,
     marginVertical: 1,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     gap: 12,
     position: "relative",
     overflow: "hidden",
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
   navIconBox: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.04)",
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
   logoutIconBox: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(220,38,38,0.1)",

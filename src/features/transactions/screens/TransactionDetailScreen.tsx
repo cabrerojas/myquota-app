@@ -24,6 +24,8 @@ import {
 } from "@/features/quotas/services/quotasApi";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 import { formatCurrency, formatDate } from "@/shared/utils/format";
+import { colors } from "@/shared/theme/colors";
+import { spacing, borderRadius } from "@/shared/theme/tokens";
 
 interface Props {
   creditCardId: string;
@@ -138,7 +140,7 @@ export default function TransactionDetailScreen({
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007BFF" />
+        <ActivityIndicator size="large" color={colors.secondary} />
       </View>
     );
   }
@@ -146,7 +148,7 @@ export default function TransactionDetailScreen({
   if (error || !transaction) {
     return (
       <View style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={48} color="#DC3545" />
+        <Ionicons name="alert-circle-outline" size={48} color={colors.destructive} />
         <Text style={styles.errorText}>
           {error || "No se encontró la transacción"}
         </Text>
@@ -173,12 +175,12 @@ export default function TransactionDetailScreen({
         <View style={styles.headerCard}>
           <Text style={styles.merchant}>{transaction.merchant}</Text>
           <View style={styles.headerMeta}>
-            <Ionicons name="card-outline" size={14} color="#868E96" />
+            <Ionicons name="card-outline" size={14} color={colors.textMuted} />
             <Text style={styles.headerMetaText}>
               {transaction.cardType} •{transaction.cardLastDigits}
             </Text>
             <View style={styles.dot} />
-            <Ionicons name="calendar-outline" size={14} color="#868E96" />
+            <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
             <Text style={styles.headerMetaText}>
               {formatDate(transaction.transactionDate)}
             </Text>
@@ -210,7 +212,7 @@ export default function TransactionDetailScreen({
               style={styles.editButton}
               onPress={() => setCategoryModalVisible(true)}
             >
-              <Ionicons name="pencil-outline" size={16} color="#007BFF" />
+              <Ionicons name="pencil-outline" size={16} color={colors.secondary} />
               <Text style={styles.editButtonText}>Cambiar</Text>
             </TouchableOpacity>
           </View>
@@ -218,7 +220,7 @@ export default function TransactionDetailScreen({
             <View
               style={[
                 styles.categoryPill,
-                { backgroundColor: transaction.categoryColor || "#E9ECEF" },
+                { backgroundColor: transaction.categoryColor || colors.border },
               ]}
             >
               <Text style={styles.categoryEmoji}>
@@ -230,7 +232,7 @@ export default function TransactionDetailScreen({
             </View>
           ) : (
             <View style={styles.uncategorizedPill}>
-              <Ionicons name="pricetag-outline" size={16} color="#F57C00" />
+              <Ionicons name="pricetag-outline" size={16} color={colors.warning} />
               <Text style={styles.uncategorizedText}>Sin categoría</Text>
             </View>
           )}
@@ -261,7 +263,7 @@ export default function TransactionDetailScreen({
                 style={styles.splitButton}
                 onPress={() => setShowSplitModal(true)}
               >
-                <Ionicons name="git-branch-outline" size={16} color="#fff" />
+                <Ionicons name="git-branch-outline" size={16} color={colors.textPrimary} />
                 <Text style={styles.splitButtonText}>Dividir</Text>
               </TouchableOpacity>
             )}
@@ -316,14 +318,14 @@ export default function TransactionDetailScreen({
                         <Ionicons
                           name="checkmark-circle"
                           size={12}
-                          color="#28A745"
+                          color={colors.success}
                         />
                         <Text style={styles.statusBadgePaidText}>Pagada</Text>
                       </View>
                     )}
                     {overdue && (
                       <View style={styles.statusBadgeOverdue}>
-                        <Ionicons name="warning" size={12} color="#DC3545" />
+                        <Ionicons name="warning" size={12} color={colors.destructive} />
                         <Text style={styles.statusBadgeOverdueText}>
                           Vencida
                         </Text>
@@ -334,7 +336,7 @@ export default function TransactionDetailScreen({
                         <Ionicons
                           name="time-outline"
                           size={12}
-                          color="#F57C00"
+                          color={colors.warning}
                         />
                         <Text style={styles.statusBadgeDueSoonText}>
                           Próxima
@@ -389,7 +391,7 @@ export default function TransactionDetailScreen({
               value={numQuotas}
               onChangeText={setNumQuotas}
               placeholder="2-48"
-              placeholderTextColor="#ADB5BD"
+              placeholderTextColor={colors.textMuted}
               maxLength={2}
             />
 
@@ -426,7 +428,7 @@ export default function TransactionDetailScreen({
                 disabled={splitting}
               >
                 {splitting ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  <ActivityIndicator size="small" color={colors.textPrimary} />
                 ) : (
                   <Text style={styles.modalConfirmText}>Dividir</Text>
                 )}
@@ -448,67 +450,67 @@ export default function TransactionDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8F9FA" },
-  content: { padding: 16, paddingBottom: 40 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: spacing.md, paddingBottom: 40 },
   centered: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    padding: 20,
+    backgroundColor: colors.bg,
+    padding: spacing.md2,
   },
   errorText: {
     fontSize: 15,
-    color: "#868E96",
-    marginTop: 12,
+    color: colors.textMuted,
+    marginTop: spacing.sm2,
     textAlign: "center",
   },
   retryButton: {
-    marginTop: 16,
-    backgroundColor: "#007BFF",
-    borderRadius: 8,
-    paddingHorizontal: 24,
+    marginTop: spacing.md,
+    backgroundColor: colors.secondary,
+    borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 10,
   },
-  retryButtonText: { color: "#fff", fontWeight: "600", fontSize: 14 },
+  retryButtonText: { color: colors.textPrimary, fontWeight: "600", fontSize: 14 },
 
   // Header Card
   headerCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.card,
+    padding: spacing.md2,
+    marginBottom: spacing.sm2,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   merchant: {
     fontSize: 22,
     fontWeight: "700",
-    color: "#212529",
-    marginBottom: 8,
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
   },
   headerMeta: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
   },
-  headerMetaText: { fontSize: 13, color: "#868E96" },
+  headerMetaText: { fontSize: 13, color: colors.textMuted },
   dot: {
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "#CED4DA",
-    marginHorizontal: 4,
+    backgroundColor: colors.border,
+    marginHorizontal: spacing.xs,
   },
 
   // Amount Card
   amountCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    marginBottom: spacing.sm2,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   amountRow: {
     flexDirection: "row",
@@ -516,196 +518,196 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 4,
   },
-  amountLabel: { fontSize: 14, color: "#868E96" },
-  amountValue: { fontSize: 20, fontWeight: "700", color: "#DC3545" },
-  amountCurrency: { fontSize: 14, fontWeight: "600", color: "#495057" },
+  amountLabel: { fontSize: 14, color: colors.textMuted },
+  amountValue: { fontSize: 20, fontWeight: "700", color: colors.destructive },
+  amountCurrency: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },
   amountDivider: {
     height: 1,
-    backgroundColor: "#F1F3F5",
-    marginVertical: 8,
+    backgroundColor: colors.borderLight,
+    marginVertical: spacing.sm,
   },
 
   // Section Card
   sectionCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.card,
+    padding: spacing.md,
+    marginBottom: spacing.sm2,
     borderWidth: 1,
-    borderColor: "#E9ECEF",
+    borderColor: colors.border,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: spacing.sm2,
   },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#212529" },
+  sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
   editButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
-  editButtonText: { fontSize: 13, color: "#007BFF", fontWeight: "600" },
+  editButtonText: { fontSize: 13, color: colors.secondary, fontWeight: "600" },
 
   // Category
   categoryPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.sm,
     borderRadius: 20,
     gap: 6,
     alignSelf: "flex-start",
   },
   categoryEmoji: { fontSize: 16 },
-  categoryName: { fontSize: 14, fontWeight: "600", color: "#212529" },
+  categoryName: { fontSize: 14, fontWeight: "600", color: colors.textPrimary },
   uncategorizedPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.sm,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#F57C00",
+    borderColor: colors.warning,
     borderStyle: "dashed",
-    backgroundColor: "#FFF8E1",
+    backgroundColor: colors.warningBg,
     gap: 6,
     alignSelf: "flex-start",
   },
-  uncategorizedText: { fontSize: 14, fontWeight: "600", color: "#F57C00" },
+  uncategorizedText: { fontSize: 14, fontWeight: "600", color: colors.warning },
 
   // Quotas Title
-  quotasTitleRow: { flex: 1, marginRight: 12 },
+  quotasTitleRow: { flex: 1, marginRight: spacing.sm2 },
   quotasBadgeRow: {
     flexDirection: "row",
     gap: 6,
     marginTop: 4,
   },
   badgePaid: {
-    backgroundColor: "#E8F5E9",
+    backgroundColor: colors.successBg,
     borderRadius: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
   badgePending: {
-    backgroundColor: "#FFF3E0",
+    backgroundColor: colors.warningBg,
     borderRadius: 10,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: 11, fontWeight: "600", color: "#495057" },
+  badgeText: { fontSize: 11, fontWeight: "600", color: colors.textSecondary },
 
   // Split button
   splitButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#007BFF",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    backgroundColor: colors.secondary,
+    borderRadius: borderRadius.input,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.sm,
     gap: 4,
   },
-  splitButtonText: { fontSize: 13, fontWeight: "600", color: "#fff" },
+  splitButtonText: { fontSize: 13, fontWeight: "600", color: colors.textPrimary },
 
   // Progress
   progressContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    marginBottom: 12,
+    marginBottom: spacing.sm2,
   },
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: "#E9ECEF",
+    backgroundColor: colors.border,
     borderRadius: 3,
   },
   progressFill: {
     height: 6,
-    backgroundColor: "#28A745",
+    backgroundColor: colors.success,
     borderRadius: 3,
   },
   progressText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#868E96",
+    color: colors.textMuted,
   },
 
   // Quota Card
   quotaCard: {
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.bg,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
+    padding: spacing.sm2,
+    marginBottom: spacing.sm,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     borderLeftWidth: 3,
-    borderLeftColor: "#E9ECEF",
+    borderLeftColor: colors.border,
   },
   quotaCardOverdue: {
-    borderLeftColor: "#DC3545",
-    backgroundColor: "#FFF5F5",
+    borderLeftColor: colors.destructive,
+    backgroundColor: colors.destructiveBg,
   },
   quotaCardDueSoon: {
-    borderLeftColor: "#F57C00",
-    backgroundColor: "#FFF8E1",
+    borderLeftColor: colors.warning,
+    backgroundColor: colors.warningBg,
   },
   quotaCardPaid: {
-    borderLeftColor: "#28A745",
-    backgroundColor: "#F0FFF4",
+    borderLeftColor: colors.success,
+    backgroundColor: colors.successBg,
   },
-  quotaLeft: { flex: 1, marginRight: 12 },
+  quotaLeft: { flex: 1, marginRight: spacing.sm2 },
   quotaNumberRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
-  quotaNumber: { fontSize: 14, fontWeight: "600", color: "#212529" },
-  quotaDueDate: { fontSize: 12, color: "#868E96", marginTop: 2 },
-  quotaPaymentDate: { fontSize: 12, color: "#28A745", marginTop: 1 },
+  quotaNumber: { fontSize: 14, fontWeight: "600", color: colors.textPrimary },
+  quotaDueDate: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  quotaPaymentDate: { fontSize: 12, color: colors.success, marginTop: 1 },
   quotaRight: { alignItems: "flex-end" },
-  quotaAmount: { fontSize: 15, fontWeight: "700", color: "#DC3545" },
-  quotaAmountPaid: { color: "#28A745" },
+  quotaAmount: { fontSize: 15, fontWeight: "700", color: colors.destructive },
+  quotaAmountPaid: { color: colors.success },
   // Status badges
   statusBadgePaid: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#E8F5E9",
-    borderRadius: 8,
+    backgroundColor: colors.successBg,
+    borderRadius: borderRadius.input,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  statusBadgePaidText: { fontSize: 10, fontWeight: "600", color: "#28A745" },
+  statusBadgePaidText: { fontSize: 10, fontWeight: "600", color: colors.success },
   statusBadgeOverdue: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#FFEBEE",
-    borderRadius: 8,
+    backgroundColor: colors.destructiveBg,
+    borderRadius: borderRadius.input,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   statusBadgeOverdueText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#DC3545",
+    color: colors.destructive,
   },
   statusBadgeDueSoon: {
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#FFF3E0",
-    borderRadius: 8,
+    backgroundColor: colors.warningBg,
+    borderRadius: borderRadius.input,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   statusBadgeDueSoonText: {
     fontSize: 10,
     fontWeight: "600",
-    color: "#F57C00",
+    color: colors.warning,
   },
 
   // Modal
@@ -714,65 +716,65 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: spacing.md2,
   },
   modalContent: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.glass,
+    padding: spacing.lg,
     width: "100%",
     maxWidth: 400,
   },
-  modalTitle: { fontSize: 18, fontWeight: "700", color: "#212529" },
+  modalTitle: { fontSize: 18, fontWeight: "700", color: colors.textPrimary },
   modalSubtitle: {
     fontSize: 14,
-    color: "#868E96",
+    color: colors.textMuted,
     marginTop: 4,
-    marginBottom: 20,
+    marginBottom: spacing.md2,
   },
   modalLabel: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#495057",
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   modalInput: {
     borderWidth: 1,
-    borderColor: "#DEE2E6",
-    borderRadius: 10,
-    padding: 12,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm2,
     fontSize: 18,
     textAlign: "center",
-    color: "#212529",
-    backgroundColor: "#F8F9FA",
+    color: colors.textPrimary,
+    backgroundColor: colors.bg,
   },
   previewCard: {
-    backgroundColor: "#E9F5FF",
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 16,
+    backgroundColor: "rgba(59,130,246,0.08)",
+    borderRadius: borderRadius.md,
+    padding: spacing.sm2,
+    marginTop: spacing.md,
     alignItems: "center",
   },
-  previewText: { fontSize: 15, fontWeight: "600", color: "#0056B3" },
+  previewText: { fontSize: 15, fontWeight: "600", color: colors.secondary },
   modalActions: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 24,
+    gap: spacing.sm2,
+    marginTop: spacing.lg,
   },
   modalCancelButton: {
     flex: 1,
-    backgroundColor: "#F1F3F5",
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: colors.borderLight,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm2,
     alignItems: "center",
   },
-  modalCancelText: { fontSize: 15, fontWeight: "600", color: "#495057" },
+  modalCancelText: { fontSize: 15, fontWeight: "600", color: colors.textSecondary },
   modalConfirmButton: {
     flex: 1,
-    backgroundColor: "#007BFF",
-    borderRadius: 10,
-    paddingVertical: 12,
+    backgroundColor: colors.secondary,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.sm2,
     alignItems: "center",
   },
-  modalConfirmText: { fontSize: 15, fontWeight: "600", color: "#fff" },
+  modalConfirmText: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
 });

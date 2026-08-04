@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { CreditCard } from "@/shared/types/creditCard";
+import { borderRadius } from "@/shared/theme/tokens";
 
 interface SuccessStepProps {
 	card: CreditCard;
@@ -232,7 +233,7 @@ const styles = StyleSheet.create({
 		width: "100%",
 		height: 56,
 		backgroundColor: "#1E40AF",
-		borderRadius: 28,
+		borderRadius: borderRadius.full,
 		flexDirection: "row",
 		justifyContent: "center",
 		alignItems: "center",

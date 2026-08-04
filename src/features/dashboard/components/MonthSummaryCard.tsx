@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { glassSurface, iconContainer } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 import { useMonthlyStats } from "../services/statsApi";
 
 interface MonthSummaryCardProps {
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
   },
   totalCLP: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "700",
     color: colors.textPrimary,
   },
   totalUSD: {
@@ -234,7 +235,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     backgroundColor: colors.borderLight,
     gap: 2,
   },

@@ -24,7 +24,8 @@ import CategorySuggestModal from "@/features/categories/components/CategorySugge
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
-import { colors } from "@/shared/theme/tokens";
+import { colors, borderRadius } from "@/shared/theme/tokens";
+import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
 import ErrorState from "@/shared/components/ErrorState";
@@ -823,7 +824,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 12,
+    borderRadius: borderRadius.card,
     gap: 4,
   },
   categoryEmoji: { fontSize: 12 },
@@ -834,8 +835,7 @@ const styles = StyleSheet.create({
     maxWidth: 90,
   },
   cardChipText: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.textSecondary,
   },
   cardChipTextActive: {
@@ -889,7 +889,7 @@ const styles = StyleSheet.create({
   },
   filterBadgeText: {
     fontSize: 10,
-    fontWeight: "bold",
+    fontWeight: "700",
     color: colors.textPrimary,
   },
   // Filters panel
@@ -927,8 +927,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   filterChipText: {
-    fontSize: 13,
-    fontWeight: "500",
+    ...typography.presets.tab,
     color: colors.textSecondary,
   },
   filterChipTextActive: {
@@ -939,9 +938,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   clearFiltersText: {
-    fontSize: 13,
+    ...typography.presets.label,
     color: colors.accent,
-    fontWeight: "600",
   },
   // Summary bar
   summaryBar: {
@@ -952,37 +950,33 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   summaryCount: {
-    fontSize: 13,
+    ...typography.presets.tab,
     color: colors.textMuted,
-    fontWeight: "500",
   },
   summaryTotals: {
     flexDirection: "row",
     gap: 12,
   },
   summaryAmount: {
-    fontSize: 14,
-    fontWeight: "700",
+    ...typography.presets.cardTitle,
     color: colors.textPrimary,
   },
   summaryAmountUSD: {
-    fontSize: 14,
-    fontWeight: "700",
+    ...typography.presets.cardTitle,
     color: colors.accent,
   },
   exportButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(59,130,246,0.1)",
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     paddingHorizontal: 12,
     paddingVertical: 6,
     marginLeft: 10,
   },
   exportButtonText: {
+    ...typography.presets.cardTitle,
     color: colors.accent,
-    fontWeight: "700",
-    fontSize: 14,
     marginLeft: 6,
   },
   exportInfo: {
@@ -1011,8 +1005,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
   },
   dayTitle: {
-    fontSize: 13,
-    fontWeight: "600",
+    ...typography.presets.label,
     color: colors.textSecondary,
     textTransform: "capitalize",
   },
@@ -1082,7 +1075,7 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     padding: 8,
     fontSize: 15,
     backgroundColor: colors.surface,
@@ -1095,7 +1088,7 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     paddingVertical: 12,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: borderRadius.input,
     alignItems: "center",
   },
   loadMoreContent: {

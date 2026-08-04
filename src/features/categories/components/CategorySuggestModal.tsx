@@ -9,6 +9,7 @@ import {
   createCategoryWithMerchant, Category, MerchantCategoryHistoryItem,
 } from "@/features/categories/services/categoryApi";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius } from "@/shared/theme/tokens";
 
 interface Props {
   visible: boolean; merchant: string; onClose: () => void;
@@ -242,7 +243,7 @@ const s = StyleSheet.create({
     alignItems: "center", borderWidth: 2, borderColor: "transparent" },
   colorSwatchActive: { borderColor: colors.textPrimary },
   createActions: { flexDirection: "row", gap: 12, marginTop: 24 },
-  btn: { flex: 1, paddingVertical: 13, borderRadius: 12, alignItems: "center" },
+  btn: { flex: 1, paddingVertical: 13, borderRadius: borderRadius.card, alignItems: "center" },
   btnCancel: { backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: colors.border },
   btnCancelText: { fontWeight: "600", color: colors.textSecondary, fontSize: 15 },
   btnCreate: { backgroundColor: colors.accent },

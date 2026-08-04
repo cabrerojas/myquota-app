@@ -8,6 +8,7 @@ import {
 	Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { borderRadius } from "@/shared/theme/tokens";
 
 interface WelcomeStepProps {
 	onNext: () => void;
@@ -235,7 +236,7 @@ const styles = StyleSheet.create({
 	valueIconWrap: {
 		width: 40,
 		height: 40,
-		borderRadius: 12,
+		borderRadius: borderRadius.card,
 		backgroundColor: "rgba(59, 130, 246, 0.12)",
 		justifyContent: "center",
 		alignItems: "center",
@@ -266,7 +267,7 @@ const styles = StyleSheet.create({
 		width: "100%",
 		height: 56,
 		backgroundColor: "#1E40AF",
-		borderRadius: 28,
+		borderRadius: borderRadius.full,
 		justifyContent: "center",
 		alignItems: "center",
 	},
