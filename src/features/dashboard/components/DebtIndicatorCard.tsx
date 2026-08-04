@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
   },
   nowChipText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: "800",
     color: "#fff",
     letterSpacing: 0.5,

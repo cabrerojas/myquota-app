@@ -8,7 +8,7 @@
  * Visual:
  *   ┌───────────────────────────────────────────┐
  *   │   ✅  Tarjeta registrada                  │
- *   │   Ahora importá tus primeros movimientos  │
+ *   │   Ahora importa tus primeros movimientos  │
  *   │                                           │
  *   │   Paso 1 ───── Paso 2 ───── Paso 3       │
  *   │   [✅]         [  ]         [  ]          │
@@ -20,7 +20,7 @@
  *   │   │  tu bandeja de email            │     │
  *   │   └─────────────────────────────────┘     │
  *   │                                           │
- *   │   💡 Podés importar en cualquier          │
+ *   │   💡 Puedes importar en cualquier          │
  *   │   momento desde el botón "Sincronizar"    │
  *   └───────────────────────────────────────────┘
  */
@@ -131,7 +131,7 @@ export default function FirstImportPrompt({
               : `${cardCount} tarjetas registradas`}
           </Text>
           <Text style={styles.headerSubtitle}>
-            Ahora importá tus primeros movimientos para ver estadísticas y
+            Ahora importa tus primeros movimientos para ver estadísticas y
             proyecciones.
           </Text>
         </View>
@@ -171,7 +171,7 @@ export default function FirstImportPrompt({
           <Text style={styles.ctaBody}>
             {isImporting
               ? "Buscando nuevas transacciones..."
-              : "Sincronizá tus gastos bancarios desde tu email"}
+              : "Sincroniza tus gastos bancarios desde tu email"}
           </Text>
         </View>
         {!isImporting && (
@@ -183,7 +183,7 @@ export default function FirstImportPrompt({
       <View style={styles.tipRow}>
         <Ionicons name="information-circle-outline" size={14} color={colors.textSubtle} />
         <Text style={styles.tipText}>
-          También podés importar después desde el botón "Sincronizar" en cualquier momento.
+          También puedes importar después desde el botón "Sincronizar" en cualquier momento.
         </Text>
       </View>
     </View>
@@ -229,7 +229,7 @@ const stepStyles = StyleSheet.create({
     borderColor: colors.border,
   },
   label: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: "600",
     textAlign: "center",
   },
