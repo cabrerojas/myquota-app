@@ -1,6 +1,6 @@
 import {
   View, Text, StyleSheet, Image, Pressable, ScrollView, Alert,
-  Linking, TextInput, ActivityIndicator,
+  Linking, TextInput, ActivityIndicator, RefreshControl,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -8,7 +8,8 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { signOut } from "@/features/auth/hooks/useAuth";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
-import { getMyProfile, updateMyProfile } from "@/features/profile/services/userApi";
+import { useMyProfile } from "@/features/profile/services/userApi";
+import { updateMyProfile } from "@/features/profile/services/userApi";
 import Constants from "expo-constants";
 import { useQueryClient } from "@tanstack/react-query";
 import { UserInfo, User } from "@/shared/types/user";
@@ -50,11 +51,11 @@ const sRowStyles = StyleSheet.create({
 export default function ProfileScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: profile, isLoading, isFetching, refetch } = useMyProfile();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [cardsSummary, setCardsSummary] = useState<CreditCardSummary>({ total: 0, active: 0 });
   const [budgetCLP, setBudgetCLP] = useState("");
   const [budgetUSD, setBudgetUSD] = useState("");
-  const [isLoadingBudget, setIsLoadingBudget] = useState(false);
   const [isSavingBudget, setIsSavingBudget] = useState(false);
 
   useEffect(() => {
@@ -63,12 +64,6 @@ export default function ProfileScreen() {
       const cards = r.items;
       setCardsSummary({ total: cards.length, active: cards.filter((c) => c.status === "active").length });
     }).catch(() => {});
-    setIsLoadingBudget(true);
-    getMyProfile().then((p: User) => {
-      if (p.monthlyBudgetCLP) setBudgetCLP(p.monthlyBudgetCLP.toString());
-      if (p.monthlyBudgetUSD) setBudgetUSD(p.monthlyBudgetUSD.toString());
-    }).catch((e) => { if (!isSessionExpired()) console.error("Error loading budgets:", e); })
-      .finally(() => setIsLoadingBudget(false));
   }, []);
 
   const handleSaveBudget = async () => {
@@ -108,7 +103,16 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={s.container} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          refreshing={isFetching}
+          onRefresh={refetch}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+        />
+      }
+      style={s.container} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
       {/* Profile header */}
       <View style={s.profileHeader}>
         <View style={s.avatarContainer}>
@@ -138,7 +142,7 @@ export default function ProfileScreen() {
       {/* Budget */}
       <Text style={styles.sectionTitle}>Presupuestos Mensuales</Text>
       <View style={[styles.card, { padding: 16 }]}>
-        {isLoadingBudget ? <ActivityIndicator size="small" color={colors.accent} /> : <>
+        {isLoading ? <ActivityIndicator size="small" color={colors.accent} /> : <>
           <View style={s.budgetRow}>
             <View style={s.budgetLabel}>
               <Ionicons name="cash-outline" size={18} color={colors.success} />
