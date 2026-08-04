@@ -30,11 +30,17 @@ interface BillingPeriodsScreenProps {
 }
 
 const formatDisplayDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const day = date.getDate().toString().padStart(2, "0");
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("es-CL", {
+      timeZone: "America/Santiago",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return "";
+  }
 };
 
 /** Converts YYYY-MM (DB format) to human-readable, e.g. "jul 2026". */
@@ -57,7 +63,8 @@ export default function BillingPeriodsScreen({
   creditCardLabel,
 }: BillingPeriodsScreenProps) {
   const router = useRouter();
-  const { data, isLoading, isFetching, refetch, isError } = useBillingPeriods(creditCardId);
+  const { data, isLoading, isFetching, refetch, isError } =
+    useBillingPeriods(creditCardId);
   const periods = data?.items ?? [];
   const createMutation = useCreateBillingPeriod();
   const updateMutation = useUpdateBillingPeriod();
@@ -67,7 +74,9 @@ export default function BillingPeriodsScreen({
     null,
   );
 
-  const handleRefresh = async () => { await refetch(); };
+  const handleRefresh = async () => {
+    await refetch();
+  };
 
   const handleCreate = (data: {
     creditCardId: string;
@@ -76,13 +85,20 @@ export default function BillingPeriodsScreen({
     endDate: string;
     dueDate: string;
   }) => {
-    createMutation.mutate({ creditCardId, data }, {
-      onSuccess: () => {
-        Alert.alert("Éxito", "Período de facturación creado correctamente.");
-        setShowFormModal(false);
+    createMutation.mutate(
+      { creditCardId, data },
+      {
+        onSuccess: () => {
+          Alert.alert("Éxito", "Período de facturación creado correctamente.");
+          setShowFormModal(false);
+        },
+        onError: (err) =>
+          Alert.alert(
+            "Error",
+            err instanceof Error ? err.message : "Error al crear",
+          ),
       },
-      onError: (err) => Alert.alert("Error", err instanceof Error ? err.message : "Error al crear"),
-    });
+    );
   };
 
   const handleUpdate = (data: {
@@ -93,14 +109,24 @@ export default function BillingPeriodsScreen({
     dueDate: string;
   }) => {
     if (!editingPeriod) return;
-    updateMutation.mutate({ creditCardId, billingPeriodId: editingPeriod.id, data }, {
-      onSuccess: () => {
-        Alert.alert("Éxito", "Período de facturación actualizado correctamente.");
-        setEditingPeriod(null);
-        setShowFormModal(false);
+    updateMutation.mutate(
+      { creditCardId, billingPeriodId: editingPeriod.id, data },
+      {
+        onSuccess: () => {
+          Alert.alert(
+            "Éxito",
+            "Período de facturación actualizado correctamente.",
+          );
+          setEditingPeriod(null);
+          setShowFormModal(false);
+        },
+        onError: (err) =>
+          Alert.alert(
+            "Error",
+            err instanceof Error ? err.message : "Error al actualizar",
+          ),
       },
-      onError: (err) => Alert.alert("Error", err instanceof Error ? err.message : "Error al actualizar"),
-    });
+    );
   };
 
   const handleDelete = (period: BillingPeriod) => {
@@ -113,22 +139,25 @@ export default function BillingPeriodsScreen({
           text: "Eliminar",
           style: "destructive",
           onPress: () => {
-            deleteMutation.mutate({ creditCardId, billingPeriodId: period.id }, {
-              onSuccess: () => {
-                Alert.alert(
-                  "Eliminado",
-                  "Período de facturación eliminado correctamente.",
-                );
+            deleteMutation.mutate(
+              { creditCardId, billingPeriodId: period.id },
+              {
+                onSuccess: () => {
+                  Alert.alert(
+                    "Eliminado",
+                    "Período de facturación eliminado correctamente.",
+                  );
+                },
+                onError: (err) => {
+                  Alert.alert(
+                    "Error",
+                    err instanceof Error
+                      ? err.message
+                      : "Error al eliminar período",
+                  );
+                },
               },
-              onError: (err) => {
-                Alert.alert(
-                  "Error",
-                  err instanceof Error
-                    ? err.message
-                    : "Error al eliminar período",
-                );
-              },
-            });
+            );
           },
         },
       ],
@@ -157,7 +186,19 @@ export default function BillingPeriodsScreen({
     }
     if (periods.length > 0) {
       const latest = periods[0];
-      const latestEnd = new Date(latest.endDate);
+      const latestEndUtc = new Date(latest.endDate);
+      const chileParts = latestEndUtc
+        .toLocaleDateString("es-CL", { timeZone: "America/Santiago" })
+        .split("-")
+        .map(Number);
+      const latestEnd = new Date(
+        chileParts[2],
+        chileParts[1] - 1,
+        chileParts[0],
+        12,
+        0,
+        0,
+      );
       const nextStart = new Date(latestEnd);
       nextStart.setDate(nextStart.getDate() + 1);
       const nextEnd = new Date(nextStart);
@@ -241,7 +282,12 @@ export default function BillingPeriodsScreen({
   }
 
   if (isError) {
-    return <ErrorState message="No se pudieron cargar los períodos." onRetry={() => refetch()} />;
+    return (
+      <ErrorState
+        message="No se pudieron cargar los períodos."
+        onRetry={() => refetch()}
+      />
+    );
   }
 
   return (
@@ -263,10 +309,7 @@ export default function BillingPeriodsScreen({
           renderItem={renderPeriodItem}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl
-              refreshing={isFetching}
-              onRefresh={refetch}
-            />
+            <RefreshControl refreshing={isFetching} onRefresh={refetch} />
           }
         />
       )}
@@ -281,7 +324,11 @@ export default function BillingPeriodsScreen({
           setShowFormModal(false);
           setEditingPeriod(null);
         }}
-        onSubmit={(data) => Promise.resolve(editingPeriod ? handleUpdate(data) : handleCreate(data))}
+        onSubmit={(data) =>
+          Promise.resolve(
+            editingPeriod ? handleUpdate(data) : handleCreate(data),
+          )
+        }
         initialData={getInitialFormData()}
         title={
           editingPeriod
