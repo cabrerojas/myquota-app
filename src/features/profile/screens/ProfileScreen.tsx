@@ -68,6 +68,14 @@ export default function ProfileScreen() {
     }).catch(() => {});
   }, []);
 
+  // Sync profile budget data to local state when loaded
+  useEffect(() => {
+    if (profile) {
+      if (profile.monthlyBudgetCLP != null) setBudgetCLP(String(profile.monthlyBudgetCLP));
+      if (profile.monthlyBudgetUSD != null) setBudgetUSD(String(profile.monthlyBudgetUSD));
+    }
+  }, [profile]);
+
   const handleSaveBudget = async () => {
     setIsSavingBudget(true);
     try {
