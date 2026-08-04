@@ -16,7 +16,7 @@ import Svg, { Circle, Defs, LinearGradient, Stop, Rect, Line } from "react-nativ
 import { useGoogleSignIn, parseOAuthReturn } from "../hooks/useAuth";
 import { useRouter } from "expo-router";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius } from "@/shared/theme/tokens";
+import { borderRadius, spacing } from "@/shared/theme/tokens";
 
 const { width } = Dimensions.get("window");
 
@@ -55,7 +55,7 @@ const bgStyles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: "rgba(59,130,246,0.06)",
+    backgroundColor: "rgba(16,185,129,0.06)",
   },
 });
 
@@ -110,7 +110,7 @@ export default function LoginScreen() {
           </View>
           <Text style={styles.brandName}>myQuota</Text>
           <Text style={styles.tagline}>
-            Controlá tus gastos, proyecciones{'\n'}y cuotas en un solo lugar.
+            Controla tus gastos, proyecciones{'\n'}y cuotas en un solo lugar.
           </Text>
         </View>
 
@@ -164,7 +164,7 @@ export default function LoginScreen() {
         {/* ── Footer ────────────────────────────────────────── */}
         <View style={styles.footer}>
           <Text style={styles.terms}>
-            Al continuar, aceptás nuestros{" "}
+            Al continuar, aceptas nuestros{" "}
             <Text
               style={styles.termsLink}
               onPress={() => Linking.openURL("https://myquota.app/terms")}
@@ -189,41 +189,41 @@ const styles = StyleSheet.create({
   // ── Content ────────────────────────────────────────────
   content: {
     flex: 1,
-    paddingHorizontal: 28,
+    paddingHorizontal: spacing.xl,
     paddingTop: 70,
-    paddingBottom: 32,
+    paddingBottom: spacing.xl,
   },
 
   // ── Brand ──────────────────────────────────────────────
   brandSection: {
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: spacing.xl,
   },
   iconOuter: {
     width: 72,
     height: 72,
     borderRadius: borderRadius.full,
-    backgroundColor: "rgba(59,130,246,0.08)",
+    backgroundColor: "rgba(16,185,129,0.08)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(59,130,246,0.12)",
-    marginBottom: 16,
+    borderColor: "rgba(16,185,129,0.12)",
+    marginBottom: spacing.md,
   },
   iconInner: {
     width: 52,
     height: 52,
-    borderRadius: 26,
-    backgroundColor: "rgba(59,130,246,0.18)",
+    borderRadius: borderRadius.full,
+    backgroundColor: "rgba(16,185,129,0.18)",
     justifyContent: "center",
     alignItems: "center",
   },
   brandName: {
     fontSize: 30,
-    fontWeight: "800",
+    fontWeight: "700",
     color: colors.textPrimary,
     letterSpacing: -0.5,
-    marginBottom: 6,
+    marginBottom: spacing.sm,
   },
   tagline: {
     fontSize: 14,
@@ -234,23 +234,23 @@ const styles = StyleSheet.create({
 
   // ── Value Cards ────────────────────────────────────────
   valueCards: {
-    gap: 10,
+    gap: spacing.sm2,
   },
   valueCard: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: colors.surfaceElevated,
-    borderRadius: 14,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: 14,
-    gap: 12,
+    padding: spacing.md,
+    gap: spacing.sm2,
   },
   valueCardDot: {
     width: 36,
     height: 36,
-    borderRadius: 10,
-    backgroundColor: "rgba(59,130,246,0.1)",
+    borderRadius: borderRadius.md,
+    backgroundColor: "rgba(16,185,129,0.1)",
     justifyContent: "center",
     alignItems: "center",
     flexShrink: 0,
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: colors.textPrimary,
-    marginBottom: 2,
+    marginBottom: spacing.xxs,
   },
   valueCardDesc: {
     fontSize: 12,
@@ -275,9 +275,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 12,
-    paddingVertical: 16,
-    borderRadius: 14,
+    gap: spacing.sm2,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: "rgba(255,255,255,0.03)",
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.surface,
-    borderRadius: 14,
+    borderRadius: borderRadius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: 15,
-    paddingHorizontal: 24,
-    gap: 14,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
   },
   googleButtonPressed: {
     backgroundColor: colors.surfaceElevated,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   googleIconBox: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     backgroundColor: colors.accent,
     justifyContent: "center",
     alignItems: "center",
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   // ── Footer ────────────────────────────────────────────
   footer: {
     alignItems: "center",
-    marginTop: 20,
+    marginTop: spacing.md2,
   },
   terms: {
     fontSize: 11,
