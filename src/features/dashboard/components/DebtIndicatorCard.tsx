@@ -1,10 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Circle } from "react-native-svg";
 import { glassSurface, iconContainerSm } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
-import { spacing } from "@/shared/theme/tokens";
+import { borderRadius, spacing } from "@/shared/theme/tokens";
 import type { DebtSummary } from "@/features/dashboard/services/statsApi";
 
 interface DebtIndicatorCardProps {
@@ -35,101 +34,88 @@ export default function DebtIndicatorCard({
 }: DebtIndicatorCardProps) {
   const router = useRouter();
   const hasData = !!summary && (summary.totalCLP > 0 || summary.totalUSD > 0);
-  const next3 = hasData ? (summary!.monthlyBreakdown ?? []).slice(0, 3) : [];
-  const maxCLP = next3.length > 0 ? Math.max(...next3.map((m) => m.CLP), 1) : 1;
-  const extraMonths = hasData ? Math.max(0, summary!.monthsRemaining - next3.length) : 0;
+  const nextPeriod = hasData ? summary!.monthlyBreakdown?.[0] : undefined;
+  const progressCurrency = (summary?.totalCLP ?? 0) > 0 ? "CLP" : "USD";
+  const nextPeriodAmount =
+    progressCurrency === "CLP"
+      ? (nextPeriod?.CLP ?? 0)
+      : (nextPeriod?.USD ?? 0);
+  const pendingAmount =
+    progressCurrency === "CLP"
+      ? (summary?.totalCLP ?? 0)
+      : (summary?.totalUSD ?? 0);
+  const nextProgress =
+    pendingAmount > 0
+      ? Math.min(Math.max((nextPeriodAmount / pendingAmount) * 100, 0), 100)
+      : 0;
 
   return (
     <TouchableOpacity
       style={styles.card}
       onPress={() => router.push("/(drawer)/debtForecast")}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={
+        hasData
+          ? `Próximo pago ${nextPeriod ? formatMonthLabel(nextPeriod.month) : ""}. Ver proyección completa`
+          : "Ver proyección completa de deuda"
+      }
+      hitSlop={4}
     >
-      {/* Subtle gradient decoration */}
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        <Svg width="100%" height={120} style={StyleSheet.absoluteFill}>
-          <Circle cx={40} cy={30} r={80} fill={colors.accent} opacity={0.05} />
-          <Circle cx={200} cy={-20} r={100} fill={colors.accent} opacity={0.04} />
-        </Svg>
-      </View>
-
       <View style={styles.header}>
-        <View style={[styles.iconCircle, !hasData && { backgroundColor: colors.borderLight }]}>
-          <Ionicons name="calendar-outline" size={18} color={hasData ? colors.accent : colors.textMuted} />
+        <View
+          style={[
+            styles.iconCircle,
+            !hasData && { backgroundColor: colors.borderLight },
+          ]}
+        >
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color={hasData ? colors.accent : colors.textMuted}
+          />
         </View>
         <View style={styles.headerText}>
-          <Text style={styles.title}>Proyección de Deuda</Text>
+          <Text style={styles.title}>Próximo pago</Text>
           {hasData ? (
             <Text style={styles.subtitle}>
               {summary!.pendingCount} cuotas en {summary!.monthsRemaining}{" "}
               {summary!.monthsRemaining === 1 ? "período" : "períodos"}
             </Text>
           ) : (
-            <Text style={styles.subtitle}>Aparecerá cuando tengas cuotas pendientes</Text>
+            <Text style={styles.subtitle}>
+              Aparecerá cuando tengas cuotas pendientes
+            </Text>
           )}
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.textSubtle} />
       </View>
 
-      {hasData && (
-        <View style={styles.monthList}>
-          {next3.map((m, i) => {
-            const barPct = Math.max((m.CLP / maxCLP) * 100, 3);
-            const isFirst = i === 0;
-            return (
-              <View key={m.month} style={styles.monthRow}>
-                <View style={styles.monthLeft}>
-                  <View style={styles.monthLabelRow}>
-                    {isFirst && (
-                      <View style={styles.nowChip}>
-                        <Text style={styles.nowChipText}>HOY</Text>
-                      </View>
-                    )}
-                    <Text
-                      style={[
-                        styles.monthName,
-                        isFirst && styles.monthNameCurrent,
-                      ]}
-                    >
-                      {formatMonthLabel(m.month)}
-                    </Text>
-                  </View>
-                  <View style={styles.barTrack}>
-                    <View
-                      style={[
-                        styles.barFill,
-                        { width: `${barPct}%` },
-                        isFirst ? styles.barCurrent : styles.barFuture,
-                      ]}
-                    />
-                  </View>
-                </View>
-                <View style={styles.monthRight}>
-                  {m.CLP > 0 && (
-                    <Text
-                      style={[
-                        styles.monthCLP,
-                        isFirst ? styles.monthCLPCurrent : styles.monthCLPFuture,
-                      ]}
-                    >
-                      ${m.CLP.toLocaleString("es-CL")}
-                    </Text>
-                  )}
-                  {m.USD > 0 && (
-                    <Text style={styles.monthUSD}>
-                      US${m.USD.toLocaleString("es-CL")}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            );
-          })}
-
-          {extraMonths > 0 && (
-            <Text style={styles.moreMonths}>
-              + {extraMonths} {extraMonths === 1 ? "período más" : "períodos más"} →
+      {hasData && nextPeriod && (
+        <View style={styles.nextPayment}>
+          <View style={styles.nextPaymentHeader}>
+            <Text style={styles.monthNameCurrent}>
+              {formatMonthLabel(nextPeriod.month)}
             </Text>
-          )}
+            <View style={styles.monthRight}>
+              {nextPeriod.CLP > 0 && (
+                <Text style={styles.monthCLPCurrent}>
+                  ${nextPeriod.CLP.toLocaleString("es-CL")}
+                </Text>
+              )}
+              {nextPeriod.USD > 0 && (
+                <Text style={styles.monthUSD}>
+                  US${nextPeriod.USD.toLocaleString("es-CL")}
+                </Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.barTrack}>
+            <View style={[styles.barFill, { width: `${nextProgress}%` }]} />
+          </View>
+          <Text style={styles.periodContext}>
+            Proporción del total pendiente en {progressCurrency}
+          </Text>
         </View>
       )}
 
@@ -146,10 +132,12 @@ export default function DebtIndicatorCard({
               US${summary!.totalUSD.toLocaleString("es-CL")}
             </Text>
           )}
-          {!hasData && (
-            <Text style={styles.footerEmpty}>$0</Text>
-          )}
+          {!hasData && <Text style={styles.footerEmpty}>$0</Text>}
         </View>
+      </View>
+      <View style={styles.forecastLink}>
+        <Text style={styles.forecastLinkText}>Ver proyección completa</Text>
+        <Ionicons name="arrow-forward" size={16} color={colors.accent} />
       </View>
     </TouchableOpacity>
   );
@@ -157,7 +145,7 @@ export default function DebtIndicatorCard({
 
 const styles = StyleSheet.create({
   card: {
-    ...glassSurface(true),
+    ...glassSurface(false),
     marginTop: spacing.md,
     padding: spacing.md,
   } as any,
@@ -172,70 +160,42 @@ const styles = StyleSheet.create({
   headerText: { flex: 1 },
   title: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
   subtitle: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
-  monthList: { gap: 10, marginTop: 14 },
-  monthRow: {
+  nextPayment: {
+    marginTop: spacing.md,
+    gap: spacing.sm,
+  },
+  nextPaymentHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
-  },
-  monthLeft: { flex: 1, gap: 5 },
-  monthLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  nowChip: {
-    backgroundColor: colors.accent,
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  nowChipText: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: 0.5,
-  },
-  monthName: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.textMuted,
   },
   monthNameCurrent: {
     color: colors.accent,
+    fontSize: 18,
     fontWeight: "700",
   },
   barTrack: {
-    height: 5,
+    height: 8,
     backgroundColor: colors.borderLight,
-    borderRadius: 3,
+    borderRadius: borderRadius.full,
     overflow: "hidden",
   },
   barFill: {
     height: "100%",
     borderRadius: 3,
   },
-  barCurrent: { backgroundColor: colors.accent },
-  barFuture: { backgroundColor: colors.textSubtle },
+  periodContext: { fontSize: 12, color: colors.textSecondary },
   monthRight: {
     alignItems: "flex-end",
     minWidth: 110,
   },
   monthCLP: { fontSize: 15, fontWeight: "700" },
   monthCLPCurrent: { color: colors.accent },
-  monthCLPFuture: { color: colors.textMuted },
   monthUSD: {
     fontSize: 11,
     color: colors.accent,
     fontWeight: "600",
     marginTop: 1,
-  },
-  moreMonths: {
-    fontSize: 12,
-    color: colors.textSubtle,
-    fontWeight: "600",
-    textAlign: "right",
-    marginTop: 2,
   },
   footer: {
     flexDirection: "row",
@@ -271,5 +231,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     color: colors.textSubtle,
+  },
+  forecastLink: {
+    minHeight: 44,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+  },
+  forecastLinkText: {
+    color: colors.accent,
+    fontSize: 13,
+    fontWeight: "700",
   },
 });

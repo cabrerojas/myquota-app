@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
+import { borderRadius, spacing } from "@/shared/theme/tokens";
 
 interface FinancialHealthIndicatorProps {
   monthlyBudgetCLP?: number;
@@ -61,37 +62,6 @@ const healthConfig: Record<
   },
 };
 
-interface BudgetIndicatorProps {
-  budget: number;
-  spent: number;
-  currency: "CLP" | "USD";
-}
-
-function BudgetIndicator({ budget, spent, currency }: BudgetIndicatorProps) {
-  if (!budget || budget <= 0) return null;
-
-  const usagePercent = (spent / budget) * 100;
-  const health = getHealthLevel(usagePercent);
-  const config = healthConfig[health];
-
-  const currencySymbol = currency === "CLP" ? "$" : "US$";
-  const spentFormatted = spent.toLocaleString("es-CL");
-  const budgetFormatted = budget.toLocaleString("es-CL");
-
-  return (
-    <View style={styles.indicatorRow}>
-      <View style={[styles.indicatorDot, { backgroundColor: config.color }]} />
-      <Text style={styles.indicatorText}>
-        {currency === "CLP" ? "🇨🇱 " : "🇺🇸 "}
-        {currencySymbol}{spentFormatted} / {currencySymbol}{budgetFormatted}
-      </Text>
-      <Text style={[styles.indicatorPercent, { color: config.color }]}>
-        {Math.round(usagePercent)}%
-      </Text>
-    </View>
-  );
-}
-
 export default function FinancialHealthIndicator({
   monthlyBudgetCLP,
   monthlyBudgetUSD,
@@ -105,21 +75,29 @@ export default function FinancialHealthIndicator({
   if (noBudget) {
     return (
       <View style={styles.noBudgetContainer}>
-        <View style={styles.header}>
+        <View style={styles.noBudgetHeader}>
           <View style={styles.headerLeft}>
-            <View style={[styles.iconCircle, { backgroundColor: "rgba(59, 130, 246, 0.12)" }]}>
-              <Ionicons name="wallet-outline" size={16} color={colors.accent} />
+            <View style={styles.iconCircle}>
+              <Ionicons
+                name="wallet-outline"
+                size={18}
+                color={colors.secondary}
+              />
             </View>
-            <Text style={[styles.headerLabel, { color: colors.textMuted }]}>
-              Sin presupuesto
-            </Text>
+            <View>
+              <Text style={styles.overline}>SALUD FINANCIERA</Text>
+              <Text style={styles.noBudgetTitle}>Sin presupuesto</Text>
+            </View>
           </View>
-          <Text style={[styles.headerSubtitle, { color: colors.textSubtle }]}>
-            Configure su presupuesto mensual
-          </Text>
+          <Ionicons
+            name="arrow-forward-circle-outline"
+            size={24}
+            color={colors.secondary}
+          />
         </View>
         <Text style={styles.noBudgetHint}>
-          Vaya a Perfil para definir sus límites mensuales y ver el indicador de salud financiera.
+          Configura un límite mensual en Perfil para ver cuánto te queda
+          disponible.
         </Text>
       </View>
     );
@@ -142,106 +120,200 @@ export default function FinancialHealthIndicator({
   }
 
   const headerConfig = healthConfig[overallHealth];
+  const primaryCurrency = hasCLP ? "CLP" : "USD";
+  const budget = hasCLP ? monthlyBudgetCLP! : monthlyBudgetUSD!;
+  const spent = hasCLP ? spentCLP : spentUSD;
+  const currencySymbol = primaryCurrency === "CLP" ? "$" : "US$";
+  const usagePercent = (spent / budget) * 100;
+  const progress = Math.min(Math.max(usagePercent, 0), 100);
+  const remaining = budget - spent;
+  const remainingLabel = remaining >= 0 ? "Te quedan" : "Excediste por";
+  const explanation =
+    overallHealth === "excellent" || overallHealth === "good"
+      ? "Vas dentro de tu límite mensual."
+      : "Revisa tus próximos gastos para cuidar tu límite.";
 
   return (
-    <View style={[styles.container, { backgroundColor: headerConfig.bgAccent }]}>
+    <View
+      style={styles.container}
+      accessibilityLabel="Indicador de salud financiera"
+    >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <View style={[styles.iconCircle, { backgroundColor: headerConfig.color }]}>
-            <Ionicons name={headerConfig.icon} size={16} color="#fff" />
-          </View>
-          <Text style={[styles.headerLabel, { color: headerConfig.color }]}>
+          <Text style={styles.overline}>SALUD FINANCIERA</Text>
+        </View>
+        <View
+          style={[
+            styles.statusIcon,
+            { backgroundColor: headerConfig.bgAccent },
+          ]}
+        >
+          <Ionicons
+            name={headerConfig.icon}
+            size={18}
+            color={headerConfig.color}
+          />
+        </View>
+      </View>
+
+      <Text style={styles.primaryAmount}>
+        {currencySymbol}
+        {spent.toLocaleString("es-CL")}
+      </Text>
+      <Text style={styles.primaryLabel}>gastado este mes</Text>
+      <Text style={styles.remainingAmount}>
+        {remainingLabel} {currencySymbol}
+        {Math.abs(remaining).toLocaleString("es-CL")}
+      </Text>
+      <View
+        style={styles.progressTrack}
+        accessibilityLabel={`${Math.round(usagePercent)}% del presupuesto utilizado`}
+      >
+        <View
+          style={[
+            styles.progressFill,
+            { width: `${progress}%`, backgroundColor: headerConfig.color },
+          ]}
+        />
+      </View>
+      <View style={styles.statusRow}>
+        <View style={styles.statusLabelWrap}>
+          <View
+            style={[
+              styles.indicatorDot,
+              { backgroundColor: headerConfig.color },
+            ]}
+          />
+          <Text style={[styles.statusLabel, { color: headerConfig.color }]}>
             {headerConfig.label}
           </Text>
         </View>
-        <Text style={styles.headerSubtitle}>vs presupuesto mensual</Text>
+        <Text style={styles.statusExplanation}>{explanation}</Text>
       </View>
-
-      <View style={styles.indicators}>
-        {hasCLP && (
-          <BudgetIndicator
-            budget={monthlyBudgetCLP!}
-            spent={spentCLP}
-            currency="CLP"
-          />
-        )}
-        {hasUSD && (
-          <BudgetIndicator
-            budget={monthlyBudgetUSD!}
-            spent={spentUSD}
-            currency="USD"
-          />
-        )}
-      </View>
+      {hasCLP && hasUSD && (
+        <Text style={styles.secondaryCurrency}>
+          USD {spentUSD.toLocaleString("es-CL")} /{" "}
+          {monthlyBudgetUSD!.toLocaleString("es-CL")}
+        </Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
+    ...glassSurface(true),
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+  } as any,
   noBudgetContainer: {
     ...glassSubtle,
-    padding: 14,
-    marginBottom: 16,
-  } as any,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: spacing.sm2,
+  },
+  noBudgetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.sm2,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   iconCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.card,
+    backgroundColor: colors.successBg,
     alignItems: "center",
     justifyContent: "center",
   },
-  headerLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  headerSubtitle: {
+  overline: {
     fontSize: 11,
-    color: colors.textMuted,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    color: colors.textSecondary,
   },
-  noBudgetHint: {
-    fontSize: 12,
-    color: colors.textMuted,
-    lineHeight: 17,
-    marginTop: -4,
+  noBudgetTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "700",
+    marginTop: 3,
   },
-  indicators: {
-    gap: 6,
+  statusIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  indicatorRow: {
+  primaryAmount: {
+    color: colors.textPrimary,
+    fontSize: 32,
+    fontWeight: "800",
+    letterSpacing: -0.8,
+  },
+  primaryLabel: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginTop: 2,
+  },
+  remainingAmount: {
+    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
+    marginTop: spacing.md,
+  },
+  progressTrack: {
+    height: 8,
+    backgroundColor: colors.borderLight,
+    borderRadius: borderRadius.full,
+    overflow: "hidden",
+    marginTop: spacing.sm,
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: borderRadius.full,
+  },
+  statusRow: {
+    marginTop: spacing.sm2,
+    gap: spacing.xs,
+  },
+  statusLabelWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
-  indicatorDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  indicatorText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  indicatorPercent: {
+  statusLabel: {
     fontSize: 14,
     fontWeight: "700",
+  },
+  statusExplanation: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  secondaryCurrency: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: spacing.sm2,
+  },
+  noBudgetHint: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 19,
+  },
+  indicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });

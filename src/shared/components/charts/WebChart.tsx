@@ -13,6 +13,8 @@ import {
   Pie,
   Cell,
   Legend,
+  type RenderableText,
+  type TooltipValueType,
 } from "recharts";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -33,6 +35,17 @@ interface WebChartProps {
   type: "bar" | "pie";
   testID?: string;
 }
+
+const formatCurrencyValue = (value: TooltipValueType | undefined): string => {
+  if (typeof value !== "number") {
+    return "";
+  }
+
+  return `$${value.toLocaleString("es-CL")}`;
+};
+
+const formatLabelValue = (value: RenderableText): RenderableText =>
+  typeof value === "number" ? formatCurrencyValue(value) : (value ?? "");
 
 // ─── WebChart Component ──────────────────────────────────────────────────────────
 
@@ -62,7 +75,10 @@ export function WebChart({ data, type, testID }: WebChartProps) {
             }))}
             margin={{ top: 10, right: 10, left: 10, bottom: 10 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(148,163,184,0.15)"
+            />
             <XAxis
               dataKey="name"
               tick={{ fill: "#94A3B8", fontSize: 11 }}
@@ -82,7 +98,7 @@ export function WebChart({ data, type, testID }: WebChartProps) {
                 color: "#F8FAFC",
               }}
               labelStyle={{ color: "#94A3B8" }}
-              formatter={(value: number) => [`$${value.toLocaleString("es-CL")}`, ""]}
+              formatter={(value) => [formatCurrencyValue(value), ""]}
             />
             <Bar
               dataKey="amount"
@@ -92,7 +108,7 @@ export function WebChart({ data, type, testID }: WebChartProps) {
                 position: "top",
                 fill: "#94A3B8",
                 fontSize: 11,
-                formatter: (value: number) => `$${value.toLocaleString("es-CL")}`,
+                formatter: formatLabelValue,
               }}
             />
           </BarChart>
@@ -119,7 +135,7 @@ export function WebChart({ data, type, testID }: WebChartProps) {
               paddingAngle={3}
               dataKey="value"
               label={({ name, percent }) =>
-                `${name} ${(percent * 100).toFixed(0)}%`
+                `${name} ${((percent ?? 0) * 100).toFixed(0)}%`
               }
               labelLine={false}
             >
@@ -138,10 +154,7 @@ export function WebChart({ data, type, testID }: WebChartProps) {
                 borderRadius: borderRadius.input,
                 color: "#F8FAFC",
               }}
-              formatter={(value: number) => [
-                `$${value.toLocaleString("es-CL")}`,
-                "",
-              ]}
+              formatter={(value) => [formatCurrencyValue(value), ""]}
             />
             <Legend
               wrapperStyle={{ color: "#94A3B8", fontSize: 12 }}
