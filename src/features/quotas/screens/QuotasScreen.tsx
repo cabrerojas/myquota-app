@@ -26,6 +26,7 @@ import {
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import QuotasSkeleton from "../components/QuotasSkeleton";
 import { isSessionExpired } from "@/shared/utils/authEvents";
+import ErrorState from "@/shared/components/ErrorState";
 import {
   formatCurrency,
   formatDate,
@@ -39,6 +40,7 @@ export default function QuotasScreen() {
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [quotas, setQuotas] = useState<QuotaWithTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterMode>("pending");
 
@@ -70,6 +72,7 @@ export default function QuotasScreen() {
   const fetchQuotas = useCallback(async (cursor?: string, isRefresh = false) => {
     if (!selectedCardId) return;
     try {
+      setError(null);
       const txsResponse = await getTransactionsByCreditCard(
         selectedCardId,
         50,
@@ -135,6 +138,7 @@ export default function QuotasScreen() {
         }
       });
     } catch (error) {
+      setError(error instanceof Error ? error.message : "Error al cargar las cuotas");
       if (!isSessionExpired()) console.error("Error fetching quotas:", error);
     }
   }, [selectedCardId]);
@@ -238,6 +242,10 @@ export default function QuotasScreen() {
 
   if (loading && creditCards.length === 0) {
     return <QuotasSkeleton />;
+  }
+
+  if (error) {
+    return <ErrorState message="No se pudieron cargar las cuotas." onRetry={fetchQuotas} />;
   }
 
   return (

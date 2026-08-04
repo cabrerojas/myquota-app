@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import ErrorState from "@/shared/components/ErrorState";
 import {
   getTransactionsByCreditCard,
   Transaction,
@@ -81,6 +82,7 @@ export default function BillingPeriodDetailScreen({
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -102,7 +104,9 @@ export default function BillingPeriodDetailScreen({
       );
 
       setTransactions(filtered);
+      setError(null);
     } catch (error) {
+      setError(error instanceof Error ? error.message : "Error al cargar las transacciones");
       if (!isSessionExpired())
         console.error("Error loading period transactions:", error);
     } finally {
@@ -156,6 +160,10 @@ export default function BillingPeriodDetailScreen({
         <Text style={styles.loadingText}>Cargando transacciones...</Text>
       </View>
     );
+  }
+
+  if (error) {
+    return <ErrorState message="No se pudieron cargar las transacciones del período." onRetry={loadTransactions} />;
   }
 
   return (

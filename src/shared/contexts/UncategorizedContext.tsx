@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUncategorizedCount } from "@/features/creditCards/services/creditCardsApi";
 
 interface UncategorizedContextType {
@@ -20,16 +21,17 @@ export function UncategorizedProvider({
 }) {
   // Use React Query hook for uncategorized count
   const { data: count = 0, refetch } = useUncategorizedCount();
+  const queryClient = useQueryClient();
 
   const refreshCount = useCallback(async () => {
     await refetch();
   }, [refetch]);
 
   const decrementCount = useCallback(() => {
-    // The count will automatically update on next query refetch
-    // For immediate UI update, we could use queryClient.setQueryData but that's complex
-    // The count will refresh naturally with the next query
-  }, []);
+    queryClient.setQueryData<number>(["uncategorizedCount"], (old) =>
+      old !== undefined ? Math.max(0, old - 1) : 0,
+    );
+  }, [queryClient]);
 
   return (
     <UncategorizedContext.Provider

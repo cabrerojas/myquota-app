@@ -21,6 +21,7 @@ import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
 import { glassSurface } from "@/shared/theme/effects";
+import ErrorState from "@/shared/components/ErrorState";
 
 interface ManualDebtItem extends ManualTransaction {
   cardLabel: string;
@@ -29,12 +30,14 @@ interface ManualDebtItem extends ManualTransaction {
 export default function ManualDebtsScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [debts, setDebts] = useState<ManualDebtItem[]>([]);
   const [_cards, setCards] = useState<CreditCardBasic[]>([]);
 
   const fetchDebts = useCallback(async () => {
     try {
+      setError(null);
       const cardListResponse = await getCreditCards();
       const cardList = cardListResponse.items;
       setCards(cardList);
@@ -52,6 +55,7 @@ export default function ManualDebtsScreen() {
       allDebts.sort((a, b) => a.merchant.localeCompare(b.merchant));
       setDebts(allDebts);
     } catch (error) {
+      setError(error instanceof Error ? error.message : "Error al cargar los datos");
       if (!isSessionExpired())
         console.error("Error fetching manual debts:", error);
     }
@@ -114,6 +118,10 @@ export default function ManualDebtsScreen() {
         <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
+  }
+
+  if (error) {
+    return <ErrorState message="No se pudieron cargar las deudas manuales." onRetry={fetchDebts} />;
   }
 
   return (
