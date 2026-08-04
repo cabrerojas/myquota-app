@@ -38,13 +38,10 @@ const formatMonthDisplay = (month: string): string => {
 
 const formatDisplayDate = (dateStr: string): string => {
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("es-CL", {
-      timeZone: "America/Santiago",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const parts = dateStr.slice(0, 10).split("-");
+    if (parts.length !== 3) return "";
+    const [year, month, day] = parts;
+    return `${day}/${month}/${year}`;
   } catch {
     return "";
   }

@@ -33,18 +33,21 @@ export const formatCLP = (amount: number): string => {
 
 // ─── Dates ───────────────────────────────────────────────────────────────────
 
+const MONTH_NAMES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
 /**
  * Full date: "02 mar. 2026"
+ * Extracts YYYY-MM-DD directly from the string to avoid timezone shifts
+ * (date-only strings like "2026-07-24" are UTC midnight; converting to
+ * America/Santiago shifts them by 1 day).
  */
 export const formatDate = (dateStr: string): string => {
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(LOCALE, {
-      timeZone: TIMEZONE,
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const parts = dateStr.slice(0, 10).split("-");
+    if (parts.length !== 3) return "";
+    const [year, month, day] = parts;
+    const m = MONTH_NAMES[parseInt(month, 10) - 1];
+    return `${parseInt(day, 10)} ${m}. ${year}`;
   } catch {
     return "";
   }
@@ -55,12 +58,11 @@ export const formatDate = (dateStr: string): string => {
  */
 export const formatShortDate = (dateStr: string): string => {
   try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString(LOCALE, {
-      timeZone: TIMEZONE,
-      day: "2-digit",
-      month: "short",
-    });
+    const parts = dateStr.slice(0, 10).split("-");
+    if (parts.length !== 3) return "";
+    const [, month, day] = parts;
+    const m = MONTH_NAMES[parseInt(month, 10) - 1];
+    return `${parseInt(day, 10)} ${m}.`;
   } catch {
     return "";
   }
