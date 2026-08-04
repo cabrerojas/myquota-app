@@ -148,7 +148,7 @@ export default function ManualDebtsScreen() {
   }
 
   if (error) {
-    return <ErrorState message="No se pudieron cargar las deudas manuales." onRetry={fetchDebts} />;
+    return <ErrorState message="No se pudieron cargar las compras en cuotas." onRetry={fetchDebts} />;
   }
 
   return (
@@ -166,9 +166,9 @@ export default function ManualDebtsScreen() {
             <View style={styles.emptyIconWrap}>
               <Ionicons name="document-text-outline" size={36} color={colors.textMuted} />
             </View>
-            <Text style={styles.emptyTitle}>Sin deudas manuales</Text>
+            <Text style={styles.emptyTitle}>Sin compras en cuotas</Text>
             <Text style={styles.emptySubtitle}>
-              Agregá deudas manuales para registrar{"\n"}compras en cuotas sin importar
+              Registrá compras antiguas que aún{"\n"}estás pagando en cuotas
             </Text>
           </View>
         }
@@ -247,7 +247,7 @@ export default function ManualDebtsScreen() {
       <Pressable
         onPress={() => router.push("/(screens)/addDebt")}
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        accessibilityLabel="Agregar deuda manual"
+        accessibilityLabel="Registrar compra en cuotas"
         accessibilityRole="button"
       >
         <Ionicons name="add" size={26} color={colors.textPrimary} />

@@ -153,7 +153,7 @@ function DrawerContent() {
           name="debtForecast"
           options={{ title: "Proyección de Deuda" }}
         />
-        <Drawer.Screen name="manualDebts" options={{ title: "Deudas Manuales" }} />
+        <Drawer.Screen name="manualDebts" options={{ title: "Compras en Cuotas" }} />
         <Drawer.Screen name="profile" options={{ title: "Mi Perfil" }} />
         <Drawer.Screen
           name="notificationSettings"
