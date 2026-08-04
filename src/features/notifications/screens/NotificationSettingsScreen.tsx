@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { View, Text, StyleSheet, Switch, Pressable, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, Switch, Pressable, ScrollView, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import {
@@ -19,15 +19,17 @@ export default function NotificationSettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [scheduledCount, setScheduledCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadSettings = async () => {
+  const loadSettings = async (isRefresh?: boolean) => {
+    if (!isRefresh) setLoading(true);
     try {
       const s = await getNotificationSettings();
       setSettings(s);
       const scheduled = await getScheduledNotifications();
       setScheduledCount(scheduled.length);
     } catch { Alert.alert("Error", "No se pudieron cargar las preferencias"); }
-    finally { setLoading(false); }
+    finally { setLoading(false); if (isRefresh) setRefreshing(false); }
   };
 
   useFocusEffect(useCallback(() => { loadSettings(); }, []));
@@ -67,7 +69,16 @@ export default function NotificationSettingsScreen() {
   }
 
   return (
-    <ScrollView style={s.container} contentContainerStyle={s.content}>
+    <ScrollView style={s.container} contentContainerStyle={s.content}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => loadSettings(true)}
+          tintColor={colors.accent}
+          colors={[colors.accent]}
+        />
+      }
+    >
       {/* Enable toggle */}
       <View style={[s.card, settings.enabled && s.cardActive]}>
         <View style={s.switchRow}>

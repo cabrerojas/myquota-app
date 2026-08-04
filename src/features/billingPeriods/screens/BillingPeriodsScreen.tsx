@@ -8,15 +8,15 @@ import {
   Alert,
   RefreshControl,
 } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  getBillingPeriodsByCreditCard,
-  createBillingPeriod,
-  updateBillingPeriod,
-  deleteBillingPeriod,
   BillingPeriod,
+  useBillingPeriods,
+  useCreateBillingPeriod,
+  useUpdateBillingPeriod,
+  useDeleteBillingPeriod,
 } from "../services/billingPeriodsApi";
 import BillingPeriodFormModal from "../components/BillingPeriodFormModal";
 
@@ -53,52 +53,35 @@ export default function BillingPeriodsScreen({
   creditCardLabel,
 }: BillingPeriodsScreenProps) {
   const router = useRouter();
-  const [periods, setPeriods] = useState<BillingPeriod[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data, isLoading, isFetching, refetch, isError } = useBillingPeriods(creditCardId);
+  const periods = data?.items ?? [];
+  const createMutation = useCreateBillingPeriod();
+  const updateMutation = useUpdateBillingPeriod();
+  const deleteMutation = useDeleteBillingPeriod();
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<BillingPeriod | null>(
     null,
   );
 
-  const loadPeriods = useCallback(async () => {
-    try {
-      const response = await getBillingPeriodsByCreditCard(creditCardId);
-      setPeriods(response.items);
-    } catch (error) {
-      Alert.alert(
-        "Error",
-        error instanceof Error
-          ? error.message
-          : "Error al cargar períodos de facturación",
-      );
-    }
-  }, [creditCardId]);
+  const handleRefresh = async () => { await refetch(); };
 
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await loadPeriods();
-    setIsRefreshing(false);
-  }, [loadPeriods]);
-
-  useEffect(() => {
-    setIsLoading(true);
-    loadPeriods().finally(() => setIsLoading(false));
-  }, [loadPeriods]);
-
-  const handleCreate = async (data: {
+  const handleCreate = (data: {
     creditCardId: string;
     month: string;
     startDate: string;
     endDate: string;
     dueDate: string;
   }) => {
-    await createBillingPeriod(creditCardId, data);
-    Alert.alert("Éxito", "Período de facturación creado correctamente.");
-    await loadPeriods();
+    createMutation.mutate({ creditCardId, data }, {
+      onSuccess: () => {
+        Alert.alert("Éxito", "Período de facturación creado correctamente.");
+        setShowFormModal(false);
+      },
+      onError: (err) => Alert.alert("Error", err instanceof Error ? err.message : "Error al crear"),
+    });
   };
 
-  const handleUpdate = async (data: {
+  const handleUpdate = (data: {
     creditCardId: string;
     month: string;
     startDate: string;
@@ -106,10 +89,14 @@ export default function BillingPeriodsScreen({
     dueDate: string;
   }) => {
     if (!editingPeriod) return;
-    await updateBillingPeriod(creditCardId, editingPeriod.id, data);
-    Alert.alert("Éxito", "Período de facturación actualizado correctamente.");
-    setEditingPeriod(null);
-    await loadPeriods();
+    updateMutation.mutate({ creditCardId, billingPeriodId: editingPeriod.id, data }, {
+      onSuccess: () => {
+        Alert.alert("Éxito", "Período de facturación actualizado correctamente.");
+        setEditingPeriod(null);
+        setShowFormModal(false);
+      },
+      onError: (err) => Alert.alert("Error", err instanceof Error ? err.message : "Error al actualizar"),
+    });
   };
 
   const handleDelete = (period: BillingPeriod) => {
@@ -121,22 +108,23 @@ export default function BillingPeriodsScreen({
         {
           text: "Eliminar",
           style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteBillingPeriod(creditCardId, period.id);
-              Alert.alert(
-                "Eliminado",
-                "Período de facturación eliminado correctamente.",
-              );
-              await loadPeriods();
-            } catch (error) {
-              Alert.alert(
-                "Error",
-                error instanceof Error
-                  ? error.message
-                  : "Error al eliminar período",
-              );
-            }
+          onPress: () => {
+            deleteMutation.mutate({ creditCardId, billingPeriodId: period.id }, {
+              onSuccess: () => {
+                Alert.alert(
+                  "Eliminado",
+                  "Período de facturación eliminado correctamente.",
+                );
+              },
+              onError: (err) => {
+                Alert.alert(
+                  "Error",
+                  err instanceof Error
+                    ? err.message
+                    : "Error al eliminar período",
+                );
+              },
+            });
           },
         },
       ],
@@ -269,8 +257,8 @@ export default function BillingPeriodsScreen({
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
+              refreshing={isFetching}
+              onRefresh={refetch}
             />
           }
         />
@@ -288,7 +276,7 @@ export default function BillingPeriodsScreen({
           setShowFormModal(false);
           setEditingPeriod(null);
         }}
-        onSubmit={editingPeriod ? handleUpdate : handleCreate}
+        onSubmit={(data) => Promise.resolve(editingPeriod ? handleUpdate(data) : handleCreate(data))}
         initialData={getInitialFormData()}
         title={
           editingPeriod

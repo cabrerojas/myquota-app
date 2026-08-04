@@ -8,10 +8,11 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
 import {
   getQuotasByTransaction,
@@ -23,7 +24,6 @@ import {
   payBillingPeriod,
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { formatCurrency } from "@/shared/utils/format";
-import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
 import { glassSurface } from "@/shared/theme/effects";
 
@@ -60,173 +60,203 @@ const parseCalendarKey = (key: string): number => {
 
 export default function DebtForecastScreen() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [months, setMonths] = useState<MonthBucket[]>([]);
-  const [totalDebtCLP, setTotalDebtCLP] = useState(0);
-  const [totalDebtUSD, setTotalDebtUSD] = useState(0);
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
   const [paying, setPaying] = useState<string | null>(null);
 
-  const fetchDebtForecast = useCallback(async () => {
-    try {
-      const cardsResponse = await getCreditCards();
-      const cards = cardsResponse.items;
-      const allQuotas: QuotaEnriched[] = [];
-      const allBillingPeriods: BillingPeriod[] = [];
+  const queryClient = useQueryClient();
+  const {
+    data: cardsData = [],
+    isLoading: loadingCards,
+    error: cardsError,
+  } = useCreditCards();
 
-      for (const card of cards) {
-        const [txs, periods] = await Promise.all([
-          getTransactionsByCreditCard(card.id),
-          getBillingPeriodsByCreditCard(card.id),
-        ]);
-        const txItems = txs.items;
-        const periodItems = periods.items;
-        allBillingPeriods.push(
-          ...periodItems.map((p) => ({ ...p, creditCardId: card.id })),
-        );
+  const txQueries = useQueries({
+    queries: cardsData.map((card) => ({
+      queryKey: ["transactions", card.id],
+      queryFn: () => getTransactionsByCreditCard(card.id).then((r) => r.items),
+      staleTime: 5 * 60 * 1000,
+      enabled: cardsData.length > 0,
+    })),
+  });
 
-        const results = await Promise.all(
-          txItems.map(async (tx) => {
-            const quotas = await getQuotasByTransaction(card.id, tx.id);
-            const sorted = [...quotas].sort(
-              (a, b) =>
-                new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
-            );
-            return sorted.map((q, idx) => ({
-              ...q,
-              merchant: tx.merchant,
-              creditCardId: card.id,
-              creditCardLabel: `${card.cardType} •${card.cardLastDigits}`,
-              quotaNumber: idx + 1,
-              totalQuotas: sorted.length,
-            }));
-          }),
-        );
-        allQuotas.push(...results.flat());
-      }
+  const bpQueries = useQueries({
+    queries: cardsData.map((card) => ({
+      queryKey: ["billingPeriods", card.id],
+      queryFn: () =>
+        getBillingPeriodsByCreditCard(card.id).then((r) => r.items),
+      staleTime: 5 * 60 * 1000,
+      enabled: cardsData.length > 0,
+    })),
+  });
 
-      const pending = allQuotas.filter((q) => q.status === "pending");
-      const sortedPeriods = [...allBillingPeriods].sort(
-        (a, b) =>
-          new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+  const allTransactions = txQueries.flatMap((q) => q.data ?? []);
+  const quotaQueries = useQueries({
+    queries: allTransactions.map((tx) => ({
+      queryKey: ["quotas", tx.creditCardId, tx.id],
+      queryFn: () => getQuotasByTransaction(tx.creditCardId, tx.id),
+      staleTime: 5 * 60 * 1000,
+      enabled: allTransactions.length > 0,
+    })),
+  });
+
+  const { months, totalDebtCLP, totalDebtUSD } = useMemo(() => {
+    const allQuotas: QuotaEnriched[] = [];
+    const allBillingPeriods: (BillingPeriod & { creditCardId: string })[] = [];
+    let quotaIdx = 0;
+
+    cardsData.forEach((card, i) => {
+      const bpData = bpQueries[i]?.data ?? [];
+      allBillingPeriods.push(
+        ...bpData.map((p) => ({ ...p, creditCardId: card.id })),
       );
 
-      const findPeriodForQuota = (dueDate: string): BillingPeriod | null => {
-        const d = new Date(dueDate).getTime();
-        for (const p of sortedPeriods) {
-          const start = new Date(p.startDate).getTime();
-          const end = new Date(p.endDate).getTime();
-          if (d >= start && d <= end) return p;
-        }
-        return null;
-      };
-
-      const bucketMap = new Map<string, MonthBucket>();
-      for (const q of pending) {
-        const period = findPeriodForQuota(q.dueDate);
-        let key: string;
-        let label: string;
-        if (period) {
-          key = period.month;
-          label = period.month;
-        } else {
-          const date = new Date(q.dueDate);
-          key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-          const monthLabel = date.toLocaleDateString("es-CL", {
-            month: "long",
-            year: "numeric",
-            timeZone: "America/Santiago",
+      const txs = txQueries[i]?.data ?? [];
+      txs.forEach((tx) => {
+        const quotas = quotaQueries[quotaIdx]?.data ?? [];
+        const sorted = [...quotas].sort(
+          (a, b) =>
+            new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+        );
+        sorted.forEach((q, qIdx) => {
+          allQuotas.push({
+            ...q,
+            merchant: tx.merchant,
+            creditCardId: card.id,
+            creditCardLabel: `${card.cardType} •${card.cardLastDigits}`,
+            quotaNumber: qIdx + 1,
+            totalQuotas: sorted.length,
           });
-          label = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
-        }
+        });
+        quotaIdx++;
+      });
+    });
 
-        if (!bucketMap.has(key)) {
-          bucketMap.set(key, {
-            key,
-            label,
-            totalCLP: 0,
-            totalUSD: 0,
-            count: 0,
-            details: [],
-            periodsByCard: [],
-          });
-        }
-        const bucket = bucketMap.get(key)!;
-        if (q.currency === "USD") {
-          bucket.totalUSD += q.amount;
-        } else {
-          bucket.totalCLP += q.amount;
-        }
-        bucket.count += 1;
-        bucket.details.push({
-          merchant: q.merchant,
-          amount: q.amount,
-          currency: q.currency,
-          quotaNumber: q.quotaNumber,
-          totalQuotas: q.totalQuotas,
-          transactionId: q.transactionId,
-          creditCardId: q.creditCardId,
+    const pending = allQuotas.filter((q) => q.status === "pending");
+    const sortedPeriods = [...allBillingPeriods].sort(
+      (a, b) =>
+        new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
+    );
+
+    const findPeriodForQuota = (dueDate: string): BillingPeriod | null => {
+      const d = new Date(dueDate).getTime();
+      for (const p of sortedPeriods) {
+        const start = new Date(p.startDate).getTime();
+        const end = new Date(p.endDate).getTime();
+        if (d >= start && d <= end) return p;
+      }
+      return null;
+    };
+
+    const bucketMap = new Map<string, MonthBucket>();
+    for (const q of pending) {
+      const period = findPeriodForQuota(q.dueDate);
+      let key: string;
+      let label: string;
+      if (period) {
+        key = period.month;
+        label = period.month;
+      } else {
+        const date = new Date(q.dueDate);
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const monthLabel = date.toLocaleDateString("es-CL", {
+          month: "long",
+          year: "numeric",
+          timeZone: "America/Santiago",
+        });
+        label = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+      }
+
+      if (!bucketMap.has(key)) {
+        bucketMap.set(key, {
+          key,
+          label,
+          totalCLP: 0,
+          totalUSD: 0,
+          count: 0,
+          details: [],
+          periodsByCard: [],
         });
       }
-
-      for (const p of allBillingPeriods) {
-        const bucket = bucketMap.get(p.month);
-        if (bucket) {
-          const existing = bucket.periodsByCard.find(
-            (pb) =>
-              pb.creditCardId === p.creditCardId &&
-              pb.billingPeriodId === p.id,
-          );
-          if (!existing) {
-            bucket.periodsByCard.push({
-              creditCardId: p.creditCardId,
-              billingPeriodId: p.id,
-            });
-          }
-        }
+      const bucket = bucketMap.get(key)!;
+      if (q.currency === "USD") {
+        bucket.totalUSD += q.amount;
+      } else {
+        bucket.totalCLP += q.amount;
       }
-
-      const periodStartMap = new Map<string, number>();
-      for (const p of sortedPeriods) {
-        if (!periodStartMap.has(p.month)) {
-          periodStartMap.set(p.month, new Date(p.startDate).getTime());
-        }
-      }
-
-      const sorted = Array.from(bucketMap.values()).sort((a, b) => {
-        const aTime = periodStartMap.get(a.key) ?? parseCalendarKey(a.key);
-        const bTime = periodStartMap.get(b.key) ?? parseCalendarKey(b.key);
-        return aTime - bTime;
+      bucket.count += 1;
+      bucket.details.push({
+        merchant: q.merchant,
+        amount: q.amount,
+        currency: q.currency,
+        quotaNumber: q.quotaNumber,
+        totalQuotas: q.totalQuotas,
+        transactionId: q.transactionId,
+        creditCardId: q.creditCardId,
       });
-      setMonths(sorted);
-
-      setTotalDebtCLP(
-        pending
-          .filter((q) => q.currency !== "USD")
-          .reduce((s, q) => s + q.amount, 0),
-      );
-      setTotalDebtUSD(
-        pending
-          .filter((q) => q.currency === "USD")
-          .reduce((s, q) => s + q.amount, 0),
-      );
-    } catch (error) {
-      if (!isSessionExpired())
-        console.error("Error fetching debt forecast:", error);
     }
-  }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    fetchDebtForecast().finally(() => setLoading(false));
-  }, [fetchDebtForecast]);
+    for (const p of allBillingPeriods) {
+      const bucket = bucketMap.get(p.month);
+      if (bucket) {
+        const existing = bucket.periodsByCard.find(
+          (pb) =>
+            pb.creditCardId === p.creditCardId && pb.billingPeriodId === p.id,
+        );
+        if (!existing) {
+          bucket.periodsByCard.push({
+            creditCardId: p.creditCardId,
+            billingPeriodId: p.id,
+          });
+        }
+      }
+    }
 
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchDebtForecast();
-    setRefreshing(false);
-  };
+    const periodStartMap = new Map<string, number>();
+    for (const p of sortedPeriods) {
+      if (!periodStartMap.has(p.month)) {
+        periodStartMap.set(p.month, new Date(p.startDate).getTime());
+      }
+    }
+
+    const sorted = Array.from(bucketMap.values()).sort((a, b) => {
+      const aTime = periodStartMap.get(a.key) ?? parseCalendarKey(a.key);
+      const bTime = periodStartMap.get(b.key) ?? parseCalendarKey(b.key);
+      return aTime - bTime;
+    });
+
+    return {
+      months: sorted,
+      totalDebtCLP: pending
+        .filter((q) => q.currency !== "USD")
+        .reduce((s, q) => s + q.amount, 0),
+      totalDebtUSD: pending
+        .filter((q) => q.currency === "USD")
+        .reduce((s, q) => s + q.amount, 0),
+    };
+  }, [cardsData, txQueries, bpQueries, quotaQueries]);
+
+  const isLoading =
+    loadingCards ||
+    txQueries.some((q) => q.isLoading) ||
+    bpQueries.some((q) => q.isLoading);
+
+  const isRefreshing =
+    txQueries.some((q) => q.isRefetching) ||
+    bpQueries.some((q) => q.isRefetching) ||
+    quotaQueries.some((q) => q.isRefetching);
+
+  const error =
+    cardsError ||
+    txQueries.find((q) => q.error)?.error ||
+    bpQueries.find((q) => q.error)?.error;
+
+  const onRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+      queryClient.invalidateQueries({ queryKey: ["billingPeriods"] }),
+      queryClient.invalidateQueries({ queryKey: ["quotas"] }),
+    ]);
+  }, [queryClient]);
 
   const handlePayPeriod = (month: MonthBucket) => {
     if (month.periodsByCard.length === 0) {
@@ -252,13 +282,27 @@ export default function DebtForecastScreen() {
             try {
               let totalPaid = 0;
               for (const pb of month.periodsByCard) {
-                const result = await payBillingPeriod(pb.creditCardId, pb.billingPeriodId);
+                const result = await payBillingPeriod(
+                  pb.creditCardId,
+                  pb.billingPeriodId,
+                );
                 totalPaid += result.paidCount;
               }
               Alert.alert("Éxito", `${totalPaid} cuotas pagadas`);
-              await fetchDebtForecast();
+              await queryClient.invalidateQueries({ queryKey: ["quotas"] });
+              await queryClient.invalidateQueries({
+                queryKey: ["transactions"],
+              });
+              await queryClient.invalidateQueries({
+                queryKey: ["billingPeriods"],
+              });
             } catch (error) {
-              Alert.alert("Error", error instanceof Error ? error.message : "No se pudo procesar el pago");
+              Alert.alert(
+                "Error",
+                error instanceof Error
+                  ? error.message
+                  : "No se pudo procesar el pago",
+              );
             } finally {
               setPaying(null);
             }
@@ -286,11 +330,31 @@ export default function DebtForecastScreen() {
 
   const totalCount = months.reduce((s, m) => s + m.count, 0);
 
-  if (loading) {
+  if (isLoading && months.length === 0) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.loadingText}>Calculando proyección...</Text>
+      </View>
+    );
+  }
+
+  if (error && months.length === 0) {
+    return (
+      <View style={styles.centered}>
+        <Ionicons name="alert-circle-outline" size={48} color={colors.accent} />
+        <Text style={styles.loadingText}>
+          {error instanceof Error
+            ? error.message
+            : "Error al cargar la proyección"}
+        </Text>
+        <Pressable onPress={onRefresh}>
+          <Text
+            style={[styles.loadingText, { color: colors.accent, marginTop: 8 }]}
+          >
+            Toca para reintentar
+          </Text>
+        </Pressable>
       </View>
     );
   }
@@ -303,7 +367,7 @@ export default function DebtForecastScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={refreshing}
+            refreshing={isRefreshing}
             onRefresh={onRefresh}
             tintColor={colors.accent}
             colors={[colors.accent]}
@@ -315,16 +379,24 @@ export default function DebtForecastScreen() {
           <View style={styles.totalHeader}>
             <View style={styles.totalIconBox}>
               <Ionicons
-                name={totalDebtCLP + totalDebtUSD > 0 ? "trending-down" : "checkmark-circle"}
+                name={
+                  totalDebtCLP + totalDebtUSD > 0
+                    ? "trending-down"
+                    : "checkmark-circle"
+                }
                 size={20}
-                color={totalDebtCLP + totalDebtUSD > 0 ? colors.accent : colors.success}
+                color={
+                  totalDebtCLP + totalDebtUSD > 0
+                    ? colors.accent
+                    : colors.success
+                }
               />
             </View>
             <View>
               <Text style={styles.totalLabel}>PROYECCIÓN DE DEUDA</Text>
               <Text style={styles.totalMeta}>
-                {months.length} {months.length === 1 ? "mes" : "meses"} • {totalCount}{" "}
-                {totalCount === 1 ? "cuota" : "cuotas"}
+                {months.length} {months.length === 1 ? "mes" : "meses"} •{" "}
+                {totalCount} {totalCount === 1 ? "cuota" : "cuotas"}
               </Text>
             </View>
           </View>
@@ -357,8 +429,14 @@ export default function DebtForecastScreen() {
                     key={m.key}
                     style={[
                       styles.totalProgressSeg,
-                      { flex: m.count || 1,
-                        backgroundColor: i === 0 ? colors.accent : i < 3 ? `${colors.accent}80` : colors.border,
+                      {
+                        flex: m.count || 1,
+                        backgroundColor:
+                          i === 0
+                            ? colors.accent
+                            : i < 3
+                              ? `${colors.accent}80`
+                              : colors.border,
                       },
                     ]}
                   />
@@ -381,7 +459,8 @@ export default function DebtForecastScreen() {
             </View>
             <Text style={styles.emptyTitle}>¡Sin deudas pendientes!</Text>
             <Text style={styles.emptySubtitle}>
-              No tenés cuotas pendientes de pago.{"\n"}¡Buen trabajo manteniendo tus finanzas al día!
+              No tenés cuotas pendientes de pago.{"\n"}¡Buen trabajo manteniendo
+              tus finanzas al día!
             </Text>
           </View>
         ) : (
@@ -389,15 +468,19 @@ export default function DebtForecastScreen() {
             <Text style={styles.sectionTitle}>Proyección mensual</Text>
 
             {months.map((month, idx) => {
-              const barPct = ((month.totalCLP + month.totalUSD * 900) / maxMonthTotal) * 100;
+              const barPct =
+                ((month.totalCLP + month.totalUSD * 900) / maxMonthTotal) * 100;
               const isExpanded = expandedMonth === month.key;
-              const isCurrent = month.label.toLowerCase() === currentPeriodLabel.toLowerCase();
+              const isCurrent =
+                month.label.toLowerCase() === currentPeriodLabel.toLowerCase();
               const isFirst = idx === 0;
 
               return (
                 <Pressable
                   key={month.key}
-                  onPress={() => setExpandedMonth(isExpanded ? null : month.key)}
+                  onPress={() =>
+                    setExpandedMonth(isExpanded ? null : month.key)
+                  }
                   style={[
                     styles.monthCard,
                     isCurrent && styles.monthCardCurrent,
@@ -411,7 +494,11 @@ export default function DebtForecastScreen() {
                     <View style={styles.monthHeaderLeft}>
                       {isCurrent && (
                         <View style={styles.currentBadge}>
-                          <Ionicons name="time-outline" size={10} color={colors.accent} />
+                          <Ionicons
+                            name="time-outline"
+                            size={10}
+                            color={colors.accent}
+                          />
                           <Text style={styles.currentBadgeText}>ESTE MES</Text>
                         </View>
                       )}
@@ -463,13 +550,20 @@ export default function DebtForecastScreen() {
                         accessibilityRole="button"
                       >
                         {paying === month.key ? (
-                          <ActivityIndicator size="small" color={isCurrent ? colors.textPrimary : colors.accent} />
+                          <ActivityIndicator
+                            size="small"
+                            color={
+                              isCurrent ? colors.textPrimary : colors.accent
+                            }
+                          />
                         ) : (
                           <>
                             <Ionicons
                               name="checkmark-done"
                               size={14}
-                              color={isCurrent ? colors.textPrimary : colors.accent}
+                              color={
+                                isCurrent ? colors.textPrimary : colors.accent
+                              }
                             />
                             <Text
                               style={[
@@ -521,7 +615,10 @@ export default function DebtForecastScreen() {
                             accessibilityRole="button"
                           >
                             <View style={styles.detailLeft}>
-                              <Text style={styles.detailMerchant} numberOfLines={1}>
+                              <Text
+                                style={styles.detailMerchant}
+                                numberOfLines={1}
+                              >
                                 {d.merchant}
                               </Text>
                               <Text style={styles.detailQuota}>
@@ -532,7 +629,11 @@ export default function DebtForecastScreen() {
                               <Text style={styles.detailAmount}>
                                 {formatCurrency(d.amount, d.currency)}
                               </Text>
-                              <Ionicons name="chevron-forward" size={14} color={colors.textSubtle} />
+                              <Ionicons
+                                name="chevron-forward"
+                                size={14}
+                                color={colors.textSubtle}
+                              />
                             </View>
                           </Pressable>
                         ))}
@@ -571,13 +672,27 @@ export default function DebtForecastScreen() {
                           </View>
                           <View style={styles.cumContent}>
                             <View style={styles.cumContentRow}>
-                              <Text style={[styles.cumMonth, isLast && styles.cumMonthLast]}>
+                              <Text
+                                style={[
+                                  styles.cumMonth,
+                                  isLast && styles.cumMonthLast,
+                                ]}
+                              >
                                 {m.label}
                               </Text>
-                              <Text style={[styles.cumAmount, isLast && styles.cumAmountLast]}>
-                                {runningCLP > 0 ? `$${runningCLP.toLocaleString("es-CL")}` : ""}
+                              <Text
+                                style={[
+                                  styles.cumAmount,
+                                  isLast && styles.cumAmountLast,
+                                ]}
+                              >
+                                {runningCLP > 0
+                                  ? `$${runningCLP.toLocaleString("es-CL")}`
+                                  : ""}
                                 {runningCLP > 0 && runningUSD > 0 ? " + " : ""}
-                                {runningUSD > 0 ? `US$${runningUSD.toLocaleString("es-CL")}` : ""}
+                                {runningUSD > 0
+                                  ? `US$${runningUSD.toLocaleString("es-CL")}`
+                                  : ""}
                               </Text>
                             </View>
                             <Text style={styles.cumCount}>
@@ -598,10 +713,7 @@ export default function DebtForecastScreen() {
       {/* FAB */}
       <Pressable
         onPress={() => router.push("/(screens)/addDebt")}
-        style={({ pressed }) => [
-          styles.fab,
-          pressed && styles.fabPressed,
-        ]}
+        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         accessibilityLabel="Agregar deuda"
         accessibilityRole="button"
       >
@@ -853,7 +965,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   detailLeft: { flex: 1, marginRight: 10 },
-  detailMerchant: { fontSize: 13, fontWeight: "600", color: colors.textPrimary },
+  detailMerchant: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
   detailQuota: { fontSize: 11, color: colors.textMuted, marginTop: 2 },
   detailAmount: { fontSize: 14, fontWeight: "700", color: colors.accent },
   detailRight: {
