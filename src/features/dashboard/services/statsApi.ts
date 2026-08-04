@@ -6,9 +6,10 @@ export interface MonthlyStat {
   month: string;
   totalCLP: number;
   totalUSD: number;
-  categoryBreakdown: {
-    [category: string]: { CLP: number; USD: number };
-  };
+  categoryBreakdown: Record<
+    string,
+    { categoryId: string; categoryName: string; CLP: number; USD: number }
+  >;
 }
 
 export const getMonthlyStats = async (

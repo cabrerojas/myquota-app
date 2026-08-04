@@ -79,10 +79,17 @@ interface GroupedTransactions {
 }
 
 export default function TransactionsScreen() {
-  const params = useLocalSearchParams<{ filter?: string }>();
+  const params = useLocalSearchParams<{
+    filter?: string;
+    creditCardId?: string;
+    categoryId?: string;
+    categoryName?: string;
+  }>();
   const { decrementCount } = useUncategorized();
   const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
-  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(
+    params.creditCardId ?? null,
+  );
   const [loadingCards, setLoadingCards] = useState(true);
   const [cardsError, setCardsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,6 +104,14 @@ export default function TransactionsScreen() {
   const [showFilters, setShowFilters] = useState(
     params.filter === "uncategorized",
   );
+  const [categoryFilter, setCategoryFilter] = useState<{
+    id: string;
+    name: string;
+  } | null>(
+    params.categoryId && params.categoryName
+      ? { id: params.categoryId, name: params.categoryName }
+      : null,
+  );
 
   // Derive date range from month/year filters → pushed to backend SQL
   const { startDate, endDate } = dateRangeFromFilters(monthFilter, yearFilter);
@@ -109,7 +124,7 @@ export default function TransactionsScreen() {
     isFetchingNextPage,
     isFetching,
     refetch,
-  } = useInfiniteTransactions(selectedCardId, startDate, endDate);
+  } = useInfiniteTransactions(selectedCardId, startDate, endDate, categoryFilter?.id);
 
   // Flat list from all pages, deduplicated by id, capped at MAX_ITEMS_IN_MEMORY
   const transactions = useMemo(() => {
@@ -167,7 +182,7 @@ export default function TransactionsScreen() {
       const cardsResponse = await getCreditCards();
       setCreditCards(cardsResponse.items);
       if (cardsResponse.items.length > 0) {
-        setSelectedCardId(cardsResponse.items[0].id);
+        setSelectedCardId((prev) => prev ?? cardsResponse.items[0].id);
       }
     } catch (error) {
       setCardsError(error instanceof Error ? error.message : "Error al cargar las tarjetas");
@@ -277,7 +292,8 @@ export default function TransactionsScreen() {
     (minAmount ? 1 : 0) +
     (maxAmount ? 1 : 0) +
     (searchQuery ? 1 : 0) +
-    (onlyUncategorized ? 1 : 0);
+    (onlyUncategorized ? 1 : 0) +
+    (categoryFilter ? 1 : 0);
 
   if (loadingCards) {
     return <TransactionsSkeleton />;

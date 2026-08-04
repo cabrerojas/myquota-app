@@ -47,6 +47,7 @@ export const getTransactionsByCreditCard = async (
   startAfter?: string,
   startDate?: string,
   endDate?: string,
+  categoryId?: string,
 ): Promise<PaginatedResponse<Transaction>> => {
   let url = `${API_BASE_URL}/creditCards/${creditCardId}/transactions`;
   const params = new URLSearchParams();
@@ -54,6 +55,7 @@ export const getTransactionsByCreditCard = async (
   if (startAfter) params.append("startAfter", startAfter);
   if (startDate) params.append("startDate", startDate);
   if (endDate) params.append("endDate", endDate);
+  if (categoryId) params.append("categoryId", categoryId);
   if (params.toString()) url += `?${params.toString()}`;
 
   const response = await requestWithAuth(url);
@@ -221,9 +223,10 @@ export function useInfiniteTransactions(
   creditCardId: string | null,
   startDate?: string,
   endDate?: string,
+  categoryId?: string,
 ) {
   return useInfiniteQuery({
-    queryKey: ["transactions", creditCardId, startDate, endDate],
+    queryKey: ["transactions", creditCardId, startDate, endDate, categoryId],
     queryFn: ({ pageParam }) =>
       getTransactionsByCreditCard(
         creditCardId!,
@@ -231,6 +234,7 @@ export function useInfiniteTransactions(
         pageParam as string | undefined,
         startDate,
         endDate,
+        categoryId,
       ),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.metadata.nextCursor ?? undefined,

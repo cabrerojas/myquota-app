@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { WebChart } from "@/shared/components/charts/WebChart";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
@@ -74,6 +75,7 @@ const usdChartConfig = {
 };
 
 export default function ChartsScreen() {
+  const router = useRouter();
   const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [stats, setStats] = useState<MonthlyStat[]>([]);
@@ -173,12 +175,14 @@ export default function ChartsScreen() {
 
   const getPieChartData = () => {
     const merged: { [cat: string]: number } = {};
+    const mergedNames: Record<string, string> = {};
     const source = selectedStat ? [selectedStat] : stats;
     source.forEach((s) => {
       if (s.categoryBreakdown) {
         Object.entries(s.categoryBreakdown).forEach(([cat, amounts]) => {
           const total = (amounts.CLP || 0) + (amounts.USD || 0) * 900;
           merged[cat] = (merged[cat] || 0) + total;
+          mergedNames[cat] = amounts.categoryName;
         });
       }
     });
@@ -188,7 +192,8 @@ export default function ChartsScreen() {
     if (othersTotal > 0) top.push(["Otros", othersTotal]);
     return top.map(([name, amount], idx) => ({
       name: name.length > 15 ? name.substring(0, 14) + "…" : name,
-      fullName: name,
+      fullName: mergedNames[name] || name,
+      categoryId: name,
       amount: Math.round(amount),
       color: CHART_COLORS[idx % CHART_COLORS.length],
       legendFontColor: colors.textMuted,
@@ -656,31 +661,67 @@ export default function ChartsScreen() {
                 </Text>
               )}
               <View style={styles.categoryList}>
-                {getPieChartData().map((cat, idx) => {
-                  const grandTotal = getPieChartData().reduce(
+                {(() => {
+                  const pieData = getPieChartData();
+                  const grandTotal = pieData.reduce(
                     (s, c) => s + c.amount,
                     0,
                   );
-                  const pct =
-                    grandTotal > 0
-                      ? Math.round((cat.amount / grandTotal) * 100)
-                      : 0;
-                  return (
-                    <View key={idx} style={styles.categoryRow}>
-                      <View
-                        style={[
-                          styles.categoryDot,
-                          { backgroundColor: cat.color },
-                        ]}
-                      />
-                      <Text style={styles.categoryName}>{cat.fullName}</Text>
-                      <Text style={styles.categoryPct}>{pct}%</Text>
-                      <Text style={styles.categoryAmount}>
-                        {formatCLP(cat.amount)}
-                      </Text>
-                    </View>
-                  );
-                })}
+                  return pieData.map((cat, idx) => {
+                    const pct =
+                      grandTotal > 0
+                        ? Math.round((cat.amount / grandTotal) * 100)
+                        : 0;
+                    const isOthers = cat.fullName === "Otros";
+                    const Wrapper = isOthers
+                      ? View
+                      : Pressable;
+                    return (
+                      <Wrapper
+                        key={idx}
+                        {...(isOthers
+                          ? {}
+                          : {
+                              onPress: () =>
+                                router.push({
+                                  pathname: "/(drawer)/transactions",
+                                  params: {
+                                    creditCardId: selectedCardId,
+                                    categoryId: cat.categoryId,
+                                    categoryName: cat.fullName,
+                                  },
+                                }),
+                              style: ({ pressed }: { pressed: boolean }) => [
+                                styles.categoryRow,
+                                pressed && styles.categoryRowPressed,
+                              ],
+                              accessibilityRole: "button" as const,
+                              accessibilityLabel: `Ver transacciones de ${cat.fullName}`,
+                            })}
+                      >
+                        <View
+                          style={[
+                            styles.categoryDot,
+                            { backgroundColor: cat.color },
+                          ]}
+                        />
+                        <Text style={styles.categoryName}>{cat.fullName}</Text>
+                        <Text style={styles.categoryPct}>{pct}%</Text>
+                        <Text style={styles.categoryAmount}>
+                          {formatCLP(cat.amount)}
+                        </Text>
+                        {!isOthers && (
+                          <Ionicons
+                            name="chevron-forward"
+                            size={13}
+                            color={colors.textMuted}
+                            style={{ marginLeft: 4 }}
+                          />
+                        )}
+                      </Wrapper>
+                    );
+                  });
+                })()}
               </View>
             </>
           )}
@@ -999,6 +1040,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 7,
+  },
+  categoryRowPressed: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    marginHorizontal: -8,
   },
   categoryDot: {
     width: 10,
