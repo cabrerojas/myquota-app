@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Pressable } from "react-native";
 import { memo, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -160,15 +160,45 @@ const MonthSummaryCardComponent = ({
               {Object.entries(currentMonth.categoryBreakdown)
                 .sort(([, a], [, b]) => b.CLP - a.CLP)
                 .slice(0, 3)
-                .map(([category, amounts]) => (
-                  <View key={category} style={styles.categoryRow}>
-                    <Text style={styles.categoryName} numberOfLines={1}>
-                      {category}
-                    </Text>
-                    <Text style={styles.categoryAmount}>
-                      ${amounts.CLP.toLocaleString("es-CL")}
-                    </Text>
-                  </View>
+                .map(([categoryId, data]) => (
+                  <Pressable
+                    key={categoryId}
+                    style={({ pressed }) => [
+                      styles.categoryRow,
+                      pressed && styles.categoryRowPressed,
+                    ]}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(drawer)/transactions",
+                        params: {
+                          creditCardId,
+                          categoryId,
+                          categoryName: data.categoryName,
+                        },
+                      })
+                    }
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver transacciones de ${data.categoryName}`}
+                  >
+                    <View style={styles.categoryLeft}>
+                      <Text
+                        style={styles.categoryName}
+                        numberOfLines={1}
+                      >
+                        {data.categoryName}
+                      </Text>
+                    </View>
+                    <View style={styles.categoryRight}>
+                      <Text style={styles.categoryAmount}>
+                        ${data.CLP.toLocaleString("es-CL")}
+                      </Text>
+                      <Ionicons
+                        name="chevron-forward"
+                        size={14}
+                        color={colors.textMuted}
+                      />
+                    </View>
+                  </Pressable>
                 ))}
             </View>
           )}
@@ -288,12 +318,27 @@ const styles = StyleSheet.create({
   categoryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 4,
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginHorizontal: -8,
+  },
+  categoryRowPressed: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  categoryLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  categoryRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   categoryName: {
     fontSize: 13,
     color: colors.textSecondary,
-    flex: 1,
   },
   categoryAmount: {
     fontSize: 13,
