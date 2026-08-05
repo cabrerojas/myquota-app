@@ -168,7 +168,7 @@ export default function ManualDebtsScreen() {
             </View>
             <Text style={styles.emptyTitle}>Sin compras en cuotas</Text>
             <Text style={styles.emptySubtitle}>
-              Registrá compras antiguas que aún{"\n"}estás pagando en cuotas
+              Registra compras antiguas que aún{"\n"}estás pagando en cuotas
             </Text>
           </View>
         }
