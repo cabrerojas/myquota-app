@@ -76,7 +76,7 @@ export default function DebtForecastScreen() {
   const txQueries = useQueries({
     queries: cardsData.map((card) => ({
       queryKey: ["transactions", card.id],
-      queryFn: () => getTransactionsByCreditCard(card.id).then((r) => r.items),
+      queryFn: () => getTransactionsByCreditCard(card.id, 1000).then((r) => r.items),
       staleTime: 5 * 60 * 1000,
       enabled: cardsData.length > 0,
     })),
