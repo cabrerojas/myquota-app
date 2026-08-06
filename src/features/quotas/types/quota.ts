@@ -19,3 +19,27 @@ export interface QuotaWithTransaction extends Quota {
   pendingQuotas: number;
   quotaNumber: number;
 }
+
+export interface MonthBucket {
+  key: string;
+  label: string;
+  totalCLP: number;
+  totalUSD: number;
+  count: number;
+  details: Array<{
+    merchant: string;
+    amount: number;
+    currency: string;
+    quotaNumber: number;
+    totalQuotas: number;
+    transactionId: string;
+    creditCardId: string;
+  }>;
+  periodsByCard: Array<{ creditCardId: string; billingPeriodId: string }>;
+}
+
+export interface DebtForecastResponse {
+  months: MonthBucket[];
+  totalDebtCLP: number;
+  totalDebtUSD: number;
+}

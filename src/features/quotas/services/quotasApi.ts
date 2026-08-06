@@ -1,8 +1,8 @@
 import { API_BASE_URL } from "@/config/api";
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
-import type { Quota, QuotaWithTransaction } from "@/features/quotas/types/quota";
+import type { Quota, QuotaWithTransaction, DebtForecastResponse } from "@/features/quotas/types/quota";
 
-export type { Quota, QuotaWithTransaction };
+export type { Quota, QuotaWithTransaction, DebtForecastResponse };
 
 export const getQuotasByTransaction = async (
   creditCardId: string,
@@ -83,5 +83,11 @@ export const splitQuotas = async (
     const error = await response.json().catch(() => ({}));
     throw new Error(error.error || "Error al dividir en cuotas");
   }
+  return response.json();
+};
+
+export const getDebtForecast = async (): Promise<DebtForecastResponse> => {
+  const response = await requestWithAuth(`${API_BASE_URL}/debt-forecast`);
+  if (!response.ok) throw new Error("Error al obtener proyección de deuda");
   return response.json();
 };
