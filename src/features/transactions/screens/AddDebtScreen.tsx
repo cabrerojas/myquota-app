@@ -65,9 +65,12 @@ export default function AddDebtScreen() {
     lastPaidYear?: string;
     selectedCategoryId?: string;
     selectedCategoryName?: string;
+    readOnlyFields?: string;
+    source?: string;
   }>();
 
   const isEdit = params.editMode === "true";
+  const isReadOnly = params.readOnlyFields === "true";
 
   const [cards, setCards] = useState<CreditCardBasic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -177,21 +180,23 @@ export default function AddDebtScreen() {
 
   const handleSubmit = async () => {
     // Validaciones
-    if (!selectedCardId) {
-      Alert.alert("Error", "Selecciona una tarjeta");
-      return;
-    }
-    if (!merchant.trim()) {
-      Alert.alert("Error", "Ingresa el nombre del comercio");
-      return;
-    }
-    if (
-      !quotaAmount ||
-      isNaN(Number(quotaAmount)) ||
-      Number(quotaAmount) <= 0
-    ) {
-      Alert.alert("Error", "Ingresa un monto de cuota válido");
-      return;
+    if (!isReadOnly) {
+      if (!selectedCardId) {
+        Alert.alert("Error", "Selecciona una tarjeta");
+        return;
+      }
+      if (!merchant.trim()) {
+        Alert.alert("Error", "Ingresa el nombre del comercio");
+        return;
+      }
+      if (
+        !quotaAmount ||
+        isNaN(Number(quotaAmount)) ||
+        Number(quotaAmount) <= 0
+      ) {
+        Alert.alert("Error", "Ingresa un monto de cuota válido");
+        return;
+      }
     }
     if (
       !totalInstallments ||
@@ -223,27 +228,37 @@ export default function AddDebtScreen() {
 
     setSubmitting(true);
     try {
-      // 1. Intentar auto-matching de categoría
-      const match = await matchCategoryByMerchant(merchant.trim());
+      if (!isReadOnly) {
+        // 1. Intentar auto-matching de categoría
+        const match = await matchCategoryByMerchant(merchant.trim());
 
-      // Si hay match y aún no tenemos una categoría elegida, mostrar modal de sugerencia
-      if (match && !chosenCategoryId) {
-        setSuggestedMatch(match);
-        setShowSuggestionModal(true);
-        setSubmitting(false);
-        return;
+        // Si hay match y aún no tenemos una categoría elegida, mostrar modal de sugerencia
+        if (match && !chosenCategoryId) {
+          setSuggestedMatch(match);
+          setShowSuggestionModal(true);
+          setSubmitting(false);
+          return;
+        }
       }
 
-      const payload: CreateManualTransactionDto = {
-        merchant: merchant.trim(),
-        purchaseDate: finalPurchaseDate,
-        quotaAmount: Number(quotaAmount),
+      let commonFields: Partial<CreateManualTransactionDto> = {
         totalInstallments: Number(totalInstallments),
         paidInstallments: Number(paidInstallments),
         lastPaidMonth: lastPaidMonthStr,
         currency,
-        ...(chosenCategoryId ? { categoryId: chosenCategoryId } : {}),
       };
+
+      if (!isReadOnly) {
+        commonFields = {
+          ...commonFields,
+          merchant: merchant.trim(),
+          purchaseDate: finalPurchaseDate,
+          quotaAmount: Number(quotaAmount),
+          ...(chosenCategoryId ? { categoryId: chosenCategoryId } : {}),
+        };
+      }
+
+      const payload = commonFields as CreateManualTransactionDto;
 
       let result;
       if (isEdit && params.transactionId) {
@@ -286,16 +301,24 @@ export default function AddDebtScreen() {
         ? purchaseDate.toISOString().split("T")[0]
         : `${lastPaidYear}-${String(lastPaidMonth + 1).padStart(2, "0")}-01`;
 
-      const payload: CreateManualTransactionDto = {
-        merchant: merchant.trim(),
-        purchaseDate: finalPurchaseDate,
-        quotaAmount: Number(quotaAmount),
+      let commonFields: Partial<CreateManualTransactionDto> = {
         totalInstallments: Number(totalInstallments),
         paidInstallments: Number(paidInstallments),
         lastPaidMonth: lastPaidMonthStr,
         currency,
-        ...(categoryId ? { categoryId } : {}),
       };
+
+      if (!isReadOnly) {
+        commonFields = {
+          ...commonFields,
+          merchant: merchant.trim(),
+          purchaseDate: finalPurchaseDate,
+          quotaAmount: Number(quotaAmount),
+          ...(categoryId ? { categoryId } : {}),
+        };
+      }
+
+      const payload = commonFields as CreateManualTransactionDto;
 
       let result;
       if (isEdit && params.transactionId) {
@@ -341,9 +364,18 @@ export default function AddDebtScreen() {
         style={styles.container}
         contentContainerStyle={styles.content}
       >
+        {isReadOnly && (
+          <View style={styles.readOnlyBanner}>
+            <Ionicons name="information-circle" size={16} color={colors.secondary} />
+            <Text style={styles.readOnlyBannerText}>
+              Esta compra fue importada. Solo puedes modificar sus cuotas.
+            </Text>
+          </View>
+        )}
+
         {/* Card Selector */}
         <Text style={styles.sectionLabel}>Tarjeta de Crédito</Text>
-        <View style={[styles.cardSelector, isEdit && { opacity: 0.6 }]}>
+        <View style={[styles.cardSelector, (isEdit || isReadOnly) && { opacity: 0.6 }]}>
           {cards.map((card) => (
             <TouchableOpacity
               key={card.id}
@@ -351,8 +383,8 @@ export default function AddDebtScreen() {
                 styles.cardChip,
                 selectedCardId === card.id && styles.cardChipSelected,
               ]}
-              onPress={() => !isEdit && setSelectedCardId(card.id)}
-              disabled={isEdit}
+              onPress={() => !isEdit && !isReadOnly && setSelectedCardId(card.id)}
+              disabled={isEdit || isReadOnly}
             >
               <Ionicons
                 name="card"
@@ -376,18 +408,20 @@ export default function AddDebtScreen() {
         </View>
 
         {/* Merchant */}
-        <Text style={styles.label}>Comercio</Text>
+         <Text style={styles.label}>Comercio</Text>
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
           <TextInput
-            style={[styles.input, { flex: 1 }]}
+            style={[styles.input, { flex: 1 }, isReadOnly && { opacity: 0.5 }]}
             placeholder="Ej: TRAVEL TIENDA TCOMP"
             value={merchant}
             onChangeText={setMerchant}
             placeholderTextColor={colors.textMuted}
+            editable={!isReadOnly}
           />
           <TouchableOpacity
-            style={{ padding: 10 }}
+            style={{ padding: 10, opacity: isReadOnly ? 0.4 : 1 }}
             onPress={() => {
+              if (isReadOnly) return;
               const categorySelectHref: Href = {
                 pathname: "/categories/select",
                 params: {
@@ -428,20 +462,22 @@ export default function AddDebtScreen() {
         <Text style={styles.label}>Monto de cada cuota</Text>
         <View style={styles.row}>
           <TextInput
-            style={[styles.input, { flex: 1 }]}
+            style={[styles.input, { flex: 1 }, isReadOnly && { opacity: 0.5 }]}
             placeholder="Ej: 30249"
             value={quotaAmount}
             onChangeText={setQuotaAmount}
             keyboardType="numeric"
             placeholderTextColor={colors.textMuted}
+            editable={!isReadOnly}
           />
-          <View style={styles.currencyToggle}>
+          <View style={[styles.currencyToggle, isReadOnly && { opacity: 0.5 }]}>
             <TouchableOpacity
               style={[
                 styles.currencyBtn,
                 currency === "CLP" && styles.currencyBtnActive,
               ]}
-              onPress={() => setCurrency("CLP")}
+              onPress={() => !isReadOnly && setCurrency("CLP")}
+              disabled={isReadOnly}
             >
               <Text
                 style={[
@@ -457,7 +493,8 @@ export default function AddDebtScreen() {
                 styles.currencyBtn,
                 currency === "USD" && styles.currencyBtnActive,
               ]}
-              onPress={() => setCurrency("USD")}
+              onPress={() => !isReadOnly && setCurrency("USD")}
+              disabled={isReadOnly}
             >
               <Text
                 style={[
@@ -585,8 +622,9 @@ export default function AddDebtScreen() {
         {/* Purchase Date (optional) */}
         <Text style={styles.label}>Fecha de compra (opcional)</Text>
         <TouchableOpacity
-          style={styles.datePickerBtn}
-          onPress={() => setShowDatePicker(true)}
+          style={[styles.datePickerBtn, isReadOnly && { opacity: 0.5 }]}
+          onPress={() => !isReadOnly && setShowDatePicker(true)}
+          disabled={isReadOnly}
         >
           <Ionicons
             name="calendar-outline"
@@ -980,5 +1018,20 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontSize: 12,
     fontWeight: "600",
+  },
+  readOnlyBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "rgba(59,130,246,0.08)",
+    padding: spacing.sm2,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm2,
+  },
+  readOnlyBannerText: {
+    fontSize: 13,
+    color: colors.secondary,
+    flex: 1,
+    lineHeight: 18,
   },
 });

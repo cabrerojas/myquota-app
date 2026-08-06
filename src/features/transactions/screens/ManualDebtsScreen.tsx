@@ -135,6 +135,8 @@ export default function ManualDebtsScreen() {
         lastPaidYear: String(debt.lastPaidYear),
         currency: debt.currency,
         purchaseDate: debt.transactionDate,
+        source: debt.source,
+        readOnlyFields: debt.source !== "manual" ? "true" : undefined,
       },
     });
   };
@@ -167,9 +169,9 @@ export default function ManualDebtsScreen() {
               <Ionicons name="document-text-outline" size={36} color={colors.textMuted} />
             </View>
             <Text style={styles.emptyTitle}>Sin compras en cuotas</Text>
-            <Text style={styles.emptySubtitle}>
-              Registra compras antiguas que aún{"\n"}estás pagando en cuotas
-            </Text>
+              <Text style={styles.emptySubtitle}>
+               Registra compras en cuotas o divide{"\n"}transacciones importadas
+             </Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -188,24 +190,45 @@ export default function ManualDebtsScreen() {
                     {item.merchant}
                   </Text>
                   <Text style={styles.cardLabel}>{item.cardLabel}</Text>
+                  <View
+                    style={[
+                      styles.sourceBadge,
+                      item.source === "manual" ? styles.sourceBadgeManual : styles.sourceBadgeImported,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.sourceBadgeText,
+                        item.source === "manual" ? styles.sourceBadgeManualText : styles.sourceBadgeImportedText,
+                      ]}
+                    >
+                      {item.source === "manual" ? "Manual" : "Importado"}
+                    </Text>
+                  </View>
                 </View>
                 <View style={styles.actions}>
                   <Pressable
                     onPress={() => handleEdit(item)}
                     style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
-                    accessibilityLabel="Editar deuda"
+                    accessibilityLabel={item.source === "manual" ? "Editar deuda" : "Editar cuotas"}
                     accessibilityRole="button"
                   >
-                    <Ionicons name="create-outline" size={18} color={colors.accent} />
+                    <Ionicons
+                      name={item.source === "manual" ? "create-outline" : "clipboard-outline"}
+                      size={18}
+                      color={colors.accent}
+                    />
                   </Pressable>
-                  <Pressable
-                    onPress={() => handleDelete(item)}
-                    style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
-                    accessibilityLabel="Eliminar deuda"
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="trash-outline" size={18} color={colors.destructive} />
-                  </Pressable>
+                  {item.source === "manual" && (
+                    <Pressable
+                      onPress={() => handleDelete(item)}
+                      style={({ pressed }) => [styles.actionBtn, pressed && styles.actionBtnPressed]}
+                      accessibilityLabel="Eliminar deuda"
+                      accessibilityRole="button"
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.destructive} />
+                    </Pressable>
+                  )}
                 </View>
               </View>
 
@@ -358,4 +381,29 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   fabPressed: { opacity: 0.85 },
+
+  // Source badge
+  sourceBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    alignSelf: "flex-start",
+    marginTop: 2,
+  },
+  sourceBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  sourceBadgeManual: {
+    backgroundColor: "rgba(59,130,246,0.12)",
+  },
+  sourceBadgeManualText: {
+    color: colors.secondary,
+  },
+  sourceBadgeImported: {
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  sourceBadgeImportedText: {
+    color: colors.textMuted,
+  },
 });

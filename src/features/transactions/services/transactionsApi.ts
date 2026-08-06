@@ -142,7 +142,7 @@ export interface ManualTransaction {
   currency: string;
   transactionDate: string;
   creditCardId: string;
-  source: "manual";
+  source: string;
   totalInstallments: number;
   paidInstallments: number;
 }
