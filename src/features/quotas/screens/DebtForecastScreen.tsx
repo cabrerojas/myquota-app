@@ -8,20 +8,16 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ErrorState from "@/shared/components/ErrorState";
-import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
 import {
-  getQuotasByTransaction,
-  Quota,
+  getDebtForecast,
+  DebtForecastResponse,
 } from "@/features/quotas/services/quotasApi";
 import {
-  getBillingPeriodsByCreditCard,
-  BillingPeriod,
   payBillingPeriod,
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { formatCurrency } from "@/shared/utils/format";
@@ -29,37 +25,7 @@ import { colors } from "@/shared/theme/colors";
 import { borderRadius } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface } from "@/shared/theme/effects";
-
-interface MonthBucket {
-  key: string;
-  label: string;
-  totalCLP: number;
-  totalUSD: number;
-  count: number;
-  details: {
-    merchant: string;
-    amount: number;
-    currency: string;
-    quotaNumber: number;
-    totalQuotas: number;
-    transactionId: string;
-    creditCardId: string;
-  }[];
-  periodsByCard: { creditCardId: string; billingPeriodId: string }[];
-}
-
-interface QuotaEnriched extends Quota {
-  merchant: string;
-  creditCardId: string;
-  creditCardLabel: string;
-  quotaNumber: number;
-  totalQuotas: number;
-}
-
-const parseCalendarKey = (key: string): number => {
-  const [year, month] = key.split("-").map(Number);
-  return new Date(year, month - 1, 1).getTime();
-};
+import type { MonthBucket } from "@/features/quotas/types/quota";
 
 export default function DebtForecastScreen() {
   const router = useRouter();
@@ -67,198 +33,24 @@ export default function DebtForecastScreen() {
   const [paying, setPaying] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
+
   const {
-    data: cardsData = [],
-    isLoading: loadingCards,
-    error: cardsError,
-  } = useCreditCards();
-
-  const txQueries = useQueries({
-    queries: cardsData.map((card) => ({
-      queryKey: ["transactions", card.id],
-      queryFn: () => getTransactionsByCreditCard(card.id, 200).then((r) => r.items),
-      staleTime: 5 * 60 * 1000,
-      enabled: cardsData.length > 0,
-    })),
+    data: forecastData,
+    isLoading,
+    isRefetching,
+    error,
+  } = useQuery<DebtForecastResponse>({
+    queryKey: ["debtForecast"],
+    queryFn: getDebtForecast,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const bpQueries = useQueries({
-    queries: cardsData.map((card) => ({
-      queryKey: ["billingPeriods", card.id],
-      queryFn: () =>
-        getBillingPeriodsByCreditCard(card.id).then((r) => r.items),
-      staleTime: 5 * 60 * 1000,
-      enabled: cardsData.length > 0,
-    })),
-  });
-
-  const allTransactions = txQueries.flatMap((q) => q.data ?? []);
-  const quotaQueries = useQueries({
-    queries: allTransactions.map((tx) => ({
-      queryKey: ["quotas", tx.creditCardId, tx.id],
-      queryFn: () => getQuotasByTransaction(tx.creditCardId, tx.id),
-      staleTime: 5 * 60 * 1000,
-      enabled: allTransactions.length > 0,
-    })),
-  });
-
-  const { months, totalDebtCLP, totalDebtUSD } = useMemo(() => {
-    const allQuotas: QuotaEnriched[] = [];
-    const allBillingPeriods: (BillingPeriod & { creditCardId: string })[] = [];
-    let quotaIdx = 0;
-
-    cardsData.forEach((card, i) => {
-      const bpData = Array.isArray(bpQueries[i]?.data) ? bpQueries[i].data : [];
-      allBillingPeriods.push(
-        ...bpData.map((p) => ({ ...p, creditCardId: card.id })),
-      );
-
-      const txs = Array.isArray(txQueries[i]?.data) ? txQueries[i].data : [];
-      txs.forEach((tx) => {
-        const quotas = (Array.isArray(quotaQueries[quotaIdx]?.data) ? quotaQueries[quotaIdx].data : []) as QuotaEnriched[];
-        const sorted = [...quotas].sort(
-          (a, b) =>
-            new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
-        );
-        sorted.forEach((q, qIdx) => {
-          allQuotas.push({
-            ...q,
-            merchant: tx.merchant,
-            creditCardId: card.id,
-            creditCardLabel: `${card.cardType} •${card.cardLastDigits}`,
-            quotaNumber: qIdx + 1,
-            totalQuotas: sorted.length,
-          });
-        });
-        quotaIdx++;
-      });
-    });
-
-    const pending = allQuotas.filter((q) => q.status === "pending");
-    const sortedPeriods = [...allBillingPeriods].sort(
-      (a, b) =>
-        new Date(a.startDate).getTime() - new Date(b.startDate).getTime(),
-    );
-
-    const findPeriodForQuota = (dueDate: string): BillingPeriod | null => {
-      const d = new Date(dueDate).getTime();
-      for (const p of sortedPeriods) {
-        const start = new Date(p.startDate).getTime();
-        const end = new Date(p.endDate).getTime();
-        if (d >= start && d <= end) return p;
-      }
-      return null;
-    };
-
-    const bucketMap = new Map<string, MonthBucket>();
-    for (const q of pending) {
-      const period = findPeriodForQuota(q.dueDate);
-      let key: string;
-      let label: string;
-      if (period) {
-        key = period.month;
-        label = period.month;
-      } else {
-        const date = new Date(q.dueDate);
-        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-        const monthLabel = date.toLocaleDateString("es-CL", {
-          month: "long",
-          year: "numeric",
-          timeZone: "America/Santiago",
-        });
-        label = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
-      }
-
-      if (!bucketMap.has(key)) {
-        bucketMap.set(key, {
-          key,
-          label,
-          totalCLP: 0,
-          totalUSD: 0,
-          count: 0,
-          details: [],
-          periodsByCard: [],
-        });
-      }
-      const bucket = bucketMap.get(key)!;
-      if (q.currency === "USD") {
-        bucket.totalUSD += q.amount;
-      } else {
-        bucket.totalCLP += q.amount;
-      }
-      bucket.count += 1;
-      bucket.details.push({
-        merchant: q.merchant,
-        amount: q.amount,
-        currency: q.currency,
-        quotaNumber: q.quotaNumber,
-        totalQuotas: q.totalQuotas,
-        transactionId: q.transactionId,
-        creditCardId: q.creditCardId,
-      });
-    }
-
-    for (const p of allBillingPeriods) {
-      const bucket = bucketMap.get(p.month);
-      if (bucket) {
-        const existing = bucket.periodsByCard.find(
-          (pb) =>
-            pb.creditCardId === p.creditCardId && pb.billingPeriodId === p.id,
-        );
-        if (!existing) {
-          bucket.periodsByCard.push({
-            creditCardId: p.creditCardId,
-            billingPeriodId: p.id,
-          });
-        }
-      }
-    }
-
-    const periodStartMap = new Map<string, number>();
-    for (const p of sortedPeriods) {
-      if (!periodStartMap.has(p.month)) {
-        periodStartMap.set(p.month, new Date(p.startDate).getTime());
-      }
-    }
-
-    const sorted = Array.from(bucketMap.values()).sort((a, b) => {
-      const aTime = periodStartMap.get(a.key) ?? parseCalendarKey(a.key);
-      const bTime = periodStartMap.get(b.key) ?? parseCalendarKey(b.key);
-      return aTime - bTime;
-    });
-
-    return {
-      months: sorted,
-      totalDebtCLP: pending
-        .filter((q) => q.currency !== "USD")
-        .reduce((s, q) => s + q.amount, 0),
-      totalDebtUSD: pending
-        .filter((q) => q.currency === "USD")
-        .reduce((s, q) => s + q.amount, 0),
-    };
-  }, [cardsData, txQueries, bpQueries, quotaQueries]);
-
-  const isLoading =
-    loadingCards ||
-    txQueries.some((q) => q.isLoading) ||
-    bpQueries.some((q) => q.isLoading);
-
-  const isRefreshing =
-    txQueries.some((q) => q.isRefetching) ||
-    bpQueries.some((q) => q.isRefetching) ||
-    quotaQueries.some((q) => q.isRefetching);
-
-  const error =
-    cardsError ||
-    txQueries.find((q) => q.error)?.error ||
-    bpQueries.find((q) => q.error)?.error;
+  const months = forecastData?.months ?? [];
+  const totalDebtCLP = forecastData?.totalDebtCLP ?? 0;
+  const totalDebtUSD = forecastData?.totalDebtUSD ?? 0;
 
   const onRefresh = useCallback(async () => {
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["transactions"] }),
-      queryClient.invalidateQueries({ queryKey: ["billingPeriods"] }),
-      queryClient.invalidateQueries({ queryKey: ["quotas"] }),
-    ]);
+    await queryClient.invalidateQueries({ queryKey: ["debtForecast"] });
   }, [queryClient]);
 
   const handlePayPeriod = (month: MonthBucket) => {
@@ -292,12 +84,8 @@ export default function DebtForecastScreen() {
                 totalPaid += result.paidCount;
               }
               Alert.alert("Éxito", `${totalPaid} cuotas pagadas`);
-              await queryClient.invalidateQueries({ queryKey: ["quotas"] });
               await queryClient.invalidateQueries({
-                queryKey: ["transactions"],
-              });
-              await queryClient.invalidateQueries({
-                queryKey: ["billingPeriods"],
+                queryKey: ["debtForecast"],
               });
             } catch (error) {
               Alert.alert(
@@ -347,9 +135,7 @@ export default function DebtForecastScreen() {
       <ErrorState
         message="No se pudo calcular la proyección de deuda."
         onRetry={() => {
-          queryClient.invalidateQueries({ queryKey: ["creditCards"] });
-          queryClient.invalidateQueries({ queryKey: ["transactions"] });
-          queryClient.invalidateQueries({ queryKey: ["billingPeriods"] });
+          queryClient.invalidateQueries({ queryKey: ["debtForecast"] });
         }}
       />
     );
@@ -363,7 +149,7 @@ export default function DebtForecastScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
+            refreshing={isRefetching}
             onRefresh={onRefresh}
             tintColor={colors.accent}
             colors={[colors.accent]}
