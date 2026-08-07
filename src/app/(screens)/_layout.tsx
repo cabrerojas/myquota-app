@@ -6,26 +6,27 @@ import { colors } from "@/shared/theme/colors";
 export default function ScreensLayout() {
   return (
     <Stack
-      screenOptions={({ navigation }) => ({
+      screenOptions={{
         headerTintColor: colors.accent,
         headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
         headerStyle: { backgroundColor: colors.bg },
-        headerLeft: navigation.canGoBack()
-          ? undefined // default iOS back arrow for inner-stack screens
-          : () => (
-              <Pressable
-                onPress={() => router.back()}
-                style={{ paddingRight: 12 }}
-                hitSlop={8}
-              >
-                <Ionicons
-                  name="chevron-back"
-                  size={24}
-                  color={colors.accent}
-                />
-              </Pressable>
-            ),
-      })}
+        headerLeft: () => (
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => ({
+              paddingRight: 12,
+              opacity: pressed ? 0.6 : 1,
+            })}
+            hitSlop={8}
+          >
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={colors.accent}
+            />
+          </Pressable>
+        ),
+      }}
     />
   );
 }
