@@ -9,6 +9,7 @@ interface FinancialHealthIndicatorProps {
   monthlyBudgetUSD?: number;
   spentCLP?: number;
   spentUSD?: number;
+  daysToClose?: number | null;
 }
 
 type HealthLevel = "excellent" | "good" | "moderate" | "warning" | "critical";
@@ -67,6 +68,7 @@ export default function FinancialHealthIndicator({
   monthlyBudgetUSD,
   spentCLP = 0,
   spentUSD = 0,
+  daysToClose,
 }: FinancialHealthIndicatorProps) {
   const hasCLP = monthlyBudgetCLP && monthlyBudgetCLP > 0;
   const hasUSD = monthlyBudgetUSD && monthlyBudgetUSD > 0;
@@ -165,6 +167,16 @@ export default function FinancialHealthIndicator({
         {remainingLabel} {currencySymbol}
         {Math.abs(remaining).toLocaleString("es-CL")}
       </Text>
+      {daysToClose !== null && daysToClose !== undefined && (
+        <View style={styles.closingRow}>
+          <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+          <Text style={styles.closingText}>
+            {daysToClose === 0
+              ? "Tu facturación cierra hoy"
+              : `Quedan ${daysToClose} día${daysToClose !== 1 ? "s" : ""} para el cierre`}
+          </Text>
+        </View>
+      )}
       <View
         style={styles.progressTrack}
         accessibilityLabel={`${Math.round(usagePercent)}% del presupuesto utilizado`}
@@ -315,5 +327,21 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  closingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: spacing.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderRadius: borderRadius.sm,
+    alignSelf: "flex-start",
+  },
+  closingText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: "500",
   },
 });
