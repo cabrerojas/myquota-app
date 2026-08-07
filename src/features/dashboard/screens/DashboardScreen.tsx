@@ -10,7 +10,7 @@ import {
   RefreshControl,
   Platform,
 } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,6 +24,7 @@ import {
 } from "@/features/transactions/services/transactionsApi";
 import { useMyProfile } from "@/features/profile/services/userApi";
 import { createBillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
+import { useBillingPeriods } from "@/features/billingPeriods/services/billingPeriodsApi";
 import BillingPeriodFormModal from "@/features/billingPeriods/components/BillingPeriodFormModal";
 import CardsSection from "@/features/creditCards/components/CardsSection";
 import MonthlyStats from "../components/MonthlyStats";
@@ -165,6 +166,58 @@ export default function DashboardScreen() {
   const creditCards = creditCardsData || [];
   const { data: debtSummary, isError: debtError } = useDebtSummary();
   const { data: profile } = useMyProfile();
+  const { data: billingPeriodsData } = useBillingPeriods(selectedCardId ?? "");
+
+  const billingPeriods = billingPeriodsData?.items ?? [];
+  const activePeriod = useMemo(() => {
+    if (!billingPeriods.length) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (
+      billingPeriods.find((p) => {
+        const start = new Date(p.startDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(p.endDate);
+        end.setHours(23, 59, 59, 999);
+        return today >= start && today <= end;
+      }) ?? null
+    );
+  }, [billingPeriods]);
+
+  const selectedCard = useMemo(
+    () => creditCards.find((c) => c.id === selectedCardId) ?? null,
+    [creditCards, selectedCardId],
+  );
+
+  const daysToClose: number | null = useMemo(() => {
+    if (activePeriod) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const end = new Date(activePeriod.endDate);
+      end.setHours(23, 59, 59, 999);
+      return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    }
+    // Fallback: use closingDay from the card if configured
+    if (selectedCard?.closingDay) {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = today.getMonth();
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const closingDay = Math.min(selectedCard.closingDay, lastDay);
+      if (today.getDate() >= closingDay) {
+        const nextMonth = month + 1;
+        const nextYear = nextMonth > 11 ? year + 1 : year;
+        const nextMonthIdx = nextMonth > 11 ? 0 : nextMonth;
+        const nextLast = new Date(nextYear, nextMonthIdx + 1, 0).getDate();
+        const nextClosing = Math.min(selectedCard.closingDay, nextLast);
+        const nextClosingDate = new Date(nextYear, nextMonthIdx, nextClosing);
+        return Math.ceil((nextClosingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      const closingDate = new Date(year, month, closingDay);
+      return Math.ceil((closingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    }
+    return null;
+  }, [activePeriod, selectedCard?.closingDay]);
 
   const [refreshKey, setRefreshKey] = useState(0);
   const { count: uncategorizedCount, refreshCount } = useUncategorized();
@@ -407,6 +460,7 @@ export default function DashboardScreen() {
         monthlyBudgetUSD={profile?.monthlyBudgetUSD}
         spentCLP={debtSummary?.nextMonthCLP}
         spentUSD={debtSummary?.nextMonthUSD}
+        daysToClose={daysToClose}
       />
 
       <CardsSection
