@@ -25,9 +25,10 @@ export interface DebtForecastResponse {
   totalDebtUSD: number;
 }
 
-export const getDebtForecast = async (): Promise<DebtForecastResponse> => {
+export const getDebtForecast = async (force = false): Promise<DebtForecastResponse> => {
+  const url = `${API_BASE_URL}/quotas/debt-forecast`;
   const response = await requestWithAuth(
-    `${API_BASE_URL}/quotas/debt-forecast`,
+    force ? `${url}?force=true` : url,
   );
   if (!response.ok) {
     throw new Error("Error al obtener proyección de deuda");
