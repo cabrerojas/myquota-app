@@ -11,6 +11,7 @@ import {
 import { useState, useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
@@ -34,6 +35,7 @@ interface ManualDebtItem extends ManualTransaction {
 
 export default function ManualDebtsScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -109,6 +111,7 @@ export default function ManualDebtsScreen() {
           onPress: async () => {
             try {
               const result = await deleteManualTransaction(debt.creditCardId, debt.id);
+              queryClient.invalidateQueries({ queryKey: ["debtForecast"] });
               Alert.alert("Eliminada", `Se eliminaron ${result.deletedQuotas} cuotas`);
               fetchDebts();
             } catch (error) {

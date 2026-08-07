@@ -13,6 +13,7 @@ import {
 } from "react-native";
 import { useState, useEffect } from "react";
 import { Href, useRouter, useLocalSearchParams } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker, {
   DateTimePickerEvent,
@@ -51,6 +52,7 @@ const MONTHS = [
 
 export default function AddDebtScreen() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useLocalSearchParams<{
     editMode?: string;
     transactionId?: string;
@@ -271,6 +273,8 @@ export default function AddDebtScreen() {
         result = await createManualTransaction(selectedCardId, payload);
       }
 
+      queryClient.invalidateQueries({ queryKey: ["debtForecast"] });
+
       let categoryInfo = "";
       if (chosenCategoryId) categoryInfo = `Categoría asignada`;
 
@@ -330,6 +334,8 @@ export default function AddDebtScreen() {
       } else {
         result = await createManualTransaction(selectedCardId, payload);
       }
+
+      queryClient.invalidateQueries({ queryKey: ["debtForecast"] });
 
       Alert.alert(
         isEdit ? "Deuda actualizada" : "Deuda agregada",
