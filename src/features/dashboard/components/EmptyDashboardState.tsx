@@ -128,7 +128,7 @@ export default function EmptyDashboardState({
       bgColor: "rgba(59,130,246,0.15)",
       title: "Agregar tarjeta",
       description: "Registra tu primera tarjeta de crédito para empezar",
-      onPress: onAddCard ?? (() => router.push("/(drawer)/creditCards" as any)),
+      onPress: onAddCard ?? (() => router.push("/(tabs)/creditCards" as any)),
     },
     {
       id: "import",
@@ -146,7 +146,7 @@ export default function EmptyDashboardState({
       bgColor: "rgba(59,130,246,0.1)",
       title: "Configurar presupuesto",
       description: "Define tus límites mensuales para controlar gastos",
-      route: { pathname: "/(drawer)/profile" },
+      route: { pathname: "/(tabs)/profile" },
     },
   ];
 
