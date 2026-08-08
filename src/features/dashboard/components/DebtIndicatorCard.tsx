@@ -49,7 +49,7 @@ export default function DebtIndicatorCard({
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push("/(drawer)/debtForecast")}
+      onPress={() => router.push("/(tabs)/debtForecast")}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={

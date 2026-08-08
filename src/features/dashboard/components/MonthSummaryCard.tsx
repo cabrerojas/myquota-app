@@ -71,7 +71,7 @@ const MonthSummaryCardComponent = ({
 
   const handleViewTransactions = () => {
     router.push({
-      pathname: "/(drawer)/transactions",
+      pathname: "/(tabs)/transactions",
       params: { creditCardId },
     });
   };
@@ -169,7 +169,7 @@ const MonthSummaryCardComponent = ({
                     ]}
                     onPress={() =>
                       router.push({
-                        pathname: "/(drawer)/transactions",
+                        pathname: "/(tabs)/transactions",
                         params: {
                           creditCardId,
                           categoryId,

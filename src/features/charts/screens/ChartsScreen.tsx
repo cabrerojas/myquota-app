@@ -684,7 +684,7 @@ export default function ChartsScreen() {
                           : {
                               onPress: () =>
                                 router.push({
-                                  pathname: "/(drawer)/transactions",
+                                  pathname: "/(tabs)/transactions",
                                   params: {
                                     creditCardId: selectedCardId,
                                     categoryId: cat.categoryId,
