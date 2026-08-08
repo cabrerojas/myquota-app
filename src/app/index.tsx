@@ -43,7 +43,7 @@ export default function Index() {
 	}
 
 	if (authState === "dashboard") {
-		return <Redirect href="/(drawer)/dashboard" />;
+		return <Redirect href="/(tabs)/dashboard" />;
 	}
 
 	return <Redirect href="/login" />;
