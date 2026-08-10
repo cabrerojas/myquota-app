@@ -139,11 +139,10 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
     return (
       <View style={styles.wrapper}>
         <BlurView
-          tint="systemUltraThinMaterialDark"
-          intensity={80}
+          tint="systemMaterialDark"
+          intensity={95}
           style={styles.blur}
         >
-          <View style={styles.glassOverlay} />
           {barContent}
         </BlurView>
       </View>
@@ -175,10 +174,6 @@ const styles = StyleSheet.create({
   blur: {
     borderRadius: BAR_BORDER_RADIUS,
     overflow: "hidden",
-  },
-  glassOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.glass.background,
   },
   androidFallback: {
     backgroundColor: "rgba(15, 23, 42, 0.94)",
