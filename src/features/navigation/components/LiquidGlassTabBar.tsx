@@ -3,10 +3,12 @@ import {
   View,
   Text,
   Pressable,
-  Animated,
+  Animated as RNAnimated,
   Platform,
   StyleSheet,
+  Dimensions,
 } from "react-native";
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
@@ -44,10 +46,10 @@ function TabButton({
   isActive: boolean;
   onPress: () => void;
 }) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const scale = useRef(new RNAnimated.Value(1)).current;
 
   const handlePressIn = () => {
-    Animated.spring(scale, {
+    RNAnimated.spring(scale, {
       toValue: 0.95,
       useNativeDriver: Platform.OS !== "web",
       friction: 8,
@@ -55,7 +57,7 @@ function TabButton({
   };
 
   const handlePressOut = () => {
-    Animated.spring(scale, {
+    RNAnimated.spring(scale, {
       toValue: 1,
       useNativeDriver: Platform.OS !== "web",
       friction: 8,
@@ -63,7 +65,7 @@ function TabButton({
   };
 
   return (
-    <Animated.View style={{ transform: [{ scale }], flex: 1 }}>
+    <RNAnimated.View style={{ transform: [{ scale }], flex: 1 }}>
       <Pressable
         onPress={onPress}
         onPressIn={handlePressIn}
@@ -77,7 +79,6 @@ function TabButton({
         accessibilityState={{ selected: isActive }}
         hitSlop={8}
       >
-        {isActive && <View style={styles.activePill} />}
         <Ionicons
           name={config.icon}
           size={iconSize.md}
@@ -93,7 +94,7 @@ function TabButton({
           {config.label}
         </Text>
       </Pressable>
-    </Animated.View>
+    </RNAnimated.View>
   );
 }
 
@@ -101,7 +102,23 @@ function TabButton({
 
 export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomPadding = insets.bottom > 0 ? insets.bottom : 8;
+  const bottomPadding = insets.bottom > 0 ? insets.bottom - 4 : 4;
+  const { width: screenWidth } = Dimensions.get("window");
+  const TAB_WIDTH = (screenWidth - 24) / 4;
+
+  const animatedIndex = useSharedValue(state.index);
+
+  useEffect(() => {
+    animatedIndex.value = withSpring(state.index, {
+      damping: 25,
+      stiffness: 170,
+      mass: 0.5,
+    });
+  }, [state.index]);
+
+  const pillStyle = useAnimatedStyle(() => ({
+    left: animatedIndex.value * TAB_WIDTH + TAB_WIDTH * 0.15,
+  }));
 
   const handlePress = (routeName: string, index: number) => {
     if (Platform.OS !== "web") {
@@ -121,6 +138,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
 
   const barContent = (
     <View style={[styles.inner, { paddingBottom: bottomPadding }]}>
+      <Animated.View style={[styles.animatedPill, pillStyle, { width: TAB_WIDTH * 0.7 }]} />
       {TABS.map((tab) => {
         const route = state.routes.find((r) => r.name === tab.routeName);
         const isActive = route ? state.index === state.routes.indexOf(route) : false;
@@ -208,30 +226,29 @@ const styles = StyleSheet.create({
   inner: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 6,
+    paddingTop: 2,
   },
   tab: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
+    paddingVertical: 4,
     position: "relative",
   },
   tabPressed: {
     opacity: 0.5,
   },
-  activePill: {
+  animatedPill: {
     position: "absolute",
     top: 2,
     bottom: 2,
-    width: "70%",
     borderRadius: 20,
-    backgroundColor: colors.accent + "33", // 20% opacity
+    backgroundColor: colors.accent + "33",
   },
   label: {
     fontSize: 10,
     fontFamily: "Inter_500Medium",
-    marginTop: 2,
+    marginTop: 0,
   },
   labelActive: {
     color: colors.accent,

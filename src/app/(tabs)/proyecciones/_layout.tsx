@@ -1,5 +1,5 @@
 import { Stack, router } from "expo-router";
-import { Pressable, Platform, Text } from "react-native";
+import { Pressable, Platform, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
 
@@ -37,15 +37,18 @@ export default function ProyeccionesLayout() {
           title: "Proyecciones",
           headerLargeTitle: true,
           headerLargeTitleShadowVisible: false,
+          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : colors.bg },
           headerRight: () => (
-            <Pressable
-              onPress={() => router.push("/(screens)/addDebt" as any)}
-              hitSlop={8}
-              accessibilityLabel="Agregar deuda"
-              accessibilityRole="button"
-            >
-              <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-            </Pressable>
+            <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
+              <Pressable
+                onPress={() => router.push("/(screens)/addDebt" as any)}
+                hitSlop={8}
+                accessibilityLabel="Agregar deuda"
+                accessibilityRole="button"
+              >
+                <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+              </Pressable>
+            </View>
           ),
         }}
       />

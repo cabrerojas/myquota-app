@@ -308,7 +308,11 @@ export default function TransactionsScreen() {
   useEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={() => setShowFilters(!showFilters)} hitSlop={8}>
+        <Pressable
+          onPress={() => setShowFilters(!showFilters)}
+          hitSlop={8}
+          style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+        >
           <Ionicons
             name="options-outline"
             size={20}

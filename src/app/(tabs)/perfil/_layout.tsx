@@ -1,5 +1,5 @@
 import { Stack, router } from "expo-router";
-import { Pressable, Platform, Text } from "react-native";
+import { Pressable, Platform, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
 
@@ -30,7 +30,7 @@ export default function PerfilLayout() {
         },
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Perfil", headerLargeTitle: true, headerLargeTitleShadowVisible: false }} />
+      <Stack.Screen name="index" options={{ title: "Perfil", headerLargeTitle: true, headerLargeTitleShadowVisible: false, headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : colors.bg } }} />
       <Stack.Screen name="notificationSettings" options={{ title: "Notificaciones", headerLeft: () => <BackButton /> }} />
     </Stack>
   );
