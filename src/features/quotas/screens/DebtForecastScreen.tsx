@@ -22,7 +22,7 @@ import {
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { formatCurrency } from "@/shared/utils/format";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius } from "@/shared/theme/tokens";
+import { borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface } from "@/shared/theme/effects";
 import type { MonthBucket } from "@/features/quotas/types/quota";
@@ -507,17 +507,8 @@ export default function DebtForecastScreen() {
             )}
           </>
         )}
+        <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
       </ScrollView>
-
-      {/* FAB */}
-      <Pressable
-        onPress={() => router.push("/(screens)/addDebt")}
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        accessibilityLabel="Agregar deuda"
-        accessibilityRole="button"
-      >
-        <Ionicons name="add" size={26} color={colors.textPrimary} />
-      </Pressable>
     </View>
   );
 }
@@ -527,7 +518,7 @@ export default function DebtForecastScreen() {
 const styles = StyleSheet.create({
   wrapper: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.bg },
-  contentContainer: { padding: 24, paddingBottom: 80 },
+  contentContainer: { padding: 24 },
   centered: {
     flex: 1,
     justifyContent: "center",
@@ -911,25 +902,4 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  // ── FAB ─────────────────────────────────────────────────
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 28,
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  fabPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.95 }],
-  },
 });

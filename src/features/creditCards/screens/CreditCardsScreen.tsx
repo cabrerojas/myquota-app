@@ -15,7 +15,7 @@ import { CreditCard } from "@/shared/types/creditCard";
 import { formatCLP } from "@/shared/utils/format";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import ErrorState from "@/shared/components/ErrorState";
-import { colors, borderRadius } from "@/shared/theme/tokens";
+import { colors, borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 
@@ -314,6 +314,7 @@ export default function CreditCardsScreen() {
           )}
         </TouchableOpacity>
       )}
+      <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
     </ScrollView>
   );
 }
@@ -325,7 +326,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: 32,
   },
   centered: {
     flex: 1,

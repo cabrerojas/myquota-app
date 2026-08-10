@@ -49,7 +49,7 @@ import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/colors";
-import { spacing, borderRadius, typography } from "@/shared/theme/tokens";
+import { spacing, borderRadius, typography, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
 import { iconContainer } from "@/shared/theme/effects";
 import Svg, { Circle } from "react-native-svg";
 
@@ -728,13 +728,14 @@ export default function DashboardScreen() {
         orphanedCount={orphanedCount}
         isFirstTime
       />
+      <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  contentContainer: { padding: spacing.lg, paddingBottom: 40 },
+  contentContainer: { padding: spacing.lg },
   welcome: {
     fontSize: 22,
     fontWeight: "700",
