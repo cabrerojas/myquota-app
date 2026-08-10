@@ -143,8 +143,6 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
         <GlassView
           style={styles.glassWrapper}
           glassEffectStyle="regular"
-          tintColor="rgba(15,23,42,0.55)"
-          colorScheme="dark"
         >
           {barContent}
         </GlassView>

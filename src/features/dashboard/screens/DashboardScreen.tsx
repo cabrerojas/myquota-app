@@ -423,6 +423,7 @@ export default function DashboardScreen() {
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
+      contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
