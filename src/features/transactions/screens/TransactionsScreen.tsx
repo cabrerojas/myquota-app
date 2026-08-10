@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   RefreshControl,
+  Pressable,
 } from "react-native";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +18,7 @@ import {
   updateTransaction,
 } from "../services/transactionsApi";
 import { exportTransactionsToCSV } from "../services/exportTransactions";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useQueryClient } from "@tanstack/react-query";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
@@ -161,6 +162,7 @@ export default function TransactionsScreen() {
   );
 
   const router = useRouter();
+  const navigation = useNavigation();
   const queryClient = useQueryClient();
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categoryModalMerchant, setCategoryModalMerchant] = useState<
@@ -302,6 +304,34 @@ export default function TransactionsScreen() {
     (onlyUncategorized ? 1 : 0) +
     (categoryFilter ? 1 : 0);
 
+  // Wire native search bar + headerRight filter button
+  useEffect(() => {
+    navigation.setOptions({
+      headerSearchBarOptions: {
+        placeholder: "Buscar transacciones",
+        hideWhenScrolling: false,
+        text: searchQuery,
+        onChangeText: (e: { nativeEvent: { text: string } }) => {
+          setSearchQuery(e.nativeEvent.text);
+        },
+      },
+      headerRight: () => (
+        <Pressable onPress={() => setShowFilters(!showFilters)} hitSlop={8}>
+          <Ionicons
+            name="options-outline"
+            size={20}
+            color={activeFiltersCount > 0 ? colors.textPrimary : colors.textSecondary}
+          />
+          {activeFiltersCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
+            </View>
+          )}
+        </Pressable>
+      ),
+    });
+  }, [navigation, searchQuery, activeFiltersCount, showFilters]);
+
   if (loadingCards) {
     return <TransactionsSkeleton />;
   }
@@ -320,325 +350,6 @@ export default function TransactionsScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Card selector */}
-      <View style={styles.cardSelectorContainer}>
-        <Text style={styles.filterLabel}>Tarjeta</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {creditCards.map((card) => (
-            <TouchableOpacity
-              key={card.id}
-              style={[
-                styles.cardChip,
-                selectedCardId === card.id && styles.cardChipActive,
-              ]}
-              onPress={() => setSelectedCardId(card.id)}
-            >
-              <Ionicons
-                name="card-outline"
-                size={16}
-                color={selectedCardId === card.id ? colors.textPrimary : colors.textMuted}
-              />
-              <Text
-                style={[
-                  styles.cardChipText,
-                  selectedCardId === card.id && styles.cardChipTextActive,
-                ]}
-              >
-                {card.cardType} •{card.cardLastDigits}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Quick-access pill bar */}
-      <View style={styles.pillBar}>
-        <View style={[styles.pillItem, styles.pillActive]}>
-          <Ionicons name="receipt-outline" size={15} color={colors.accent} />
-          <Text style={[styles.pillText, styles.pillTextActive]}>Transacciones</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.pillItem}
-          onPress={() => router.push("/(tabs)/transacciones/manualDebts" as any)}
-          accessibilityLabel="Ver compras en cuotas"
-          accessibilityRole="button"
-        >
-          <Ionicons name="cart-outline" size={15} color={colors.textSecondary} />
-          <Text style={styles.pillText}>Compras en Cuotas</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Search + filter bar */}
-      <View style={styles.searchBar}>
-        <View style={styles.searchInput}>
-          <Ionicons name="search" size={18} color={colors.textMuted} />
-          <TextInput
-            style={styles.searchText}
-            placeholder="Buscar comercio..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            activeFiltersCount > 0 && styles.filterButtonActive,
-          ]}
-          onPress={() => setShowFilters(!showFilters)}
-        >
-          <Ionicons
-            name="options-outline"
-            size={20}
-            color={activeFiltersCount > 0 ? colors.textPrimary : colors.textSecondary}
-          />
-          {activeFiltersCount > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>{activeFiltersCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/* Filters panel */}
-      {showFilters && (
-        <View style={styles.filtersPanel}>
-          {/* Uncategorized filter */}
-          <TouchableOpacity
-            style={[
-              styles.filterChip,
-              onlyUncategorized && styles.filterChipActive,
-              { alignSelf: "flex-start", marginBottom: 12 },
-            ]}
-            onPress={() => setOnlyUncategorized(!onlyUncategorized)}
-          >
-            <Ionicons
-              name={
-                onlyUncategorized ? "checkmark-circle" : "help-circle-outline"
-              }
-              size={16}
-              color={onlyUncategorized ? colors.textPrimary : colors.accent}
-            />
-            <Text
-              style={[
-                styles.filterChipText,
-                onlyUncategorized && styles.filterChipTextActive,
-              ]}
-            >
-              Solo sin categoría
-            </Text>
-          </TouchableOpacity>
-
-          {/* Category drill-down filter */}
-          {categoryFilter && (
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                styles.filterChipActive,
-                { alignSelf: "flex-start", marginBottom: 12 },
-              ]}
-              onPress={() => setCategoryFilter(null)}
-              accessibilityLabel={`Quitar filtro de categoría ${categoryFilter.name}`}
-            >
-              <Ionicons name="close-circle" size={16} color={colors.textPrimary} />
-              <Text style={styles.filterChipTextActive}>{categoryFilter.name}</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Currency filter */}
-          <Text style={styles.filterLabel}>Moneda</Text>
-          <View style={styles.filterRow}>
-            {(["all", "CLP", "USD"] as CurrencyFilter[]).map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[
-                  styles.filterChip,
-                  currencyFilter === c && styles.filterChipActive,
-                ]}
-                onPress={() => setCurrencyFilter(c)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    currencyFilter === c && styles.filterChipTextActive,
-                  ]}
-                >
-                  {c === "all" ? "Todas" : c === "USD" ? "USD" : "CLP"}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Year filter */}
-          <Text style={styles.filterLabel}>Año</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.monthFilterScroll}
-          >
-            <TouchableOpacity
-              style={[
-                styles.filterChip,
-                yearFilter === null && styles.filterChipActive,
-              ]}
-              onPress={() => setYearFilter(null)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  yearFilter === null && styles.filterChipTextActive,
-                ]}
-              >
-                Todos
-              </Text>
-            </TouchableOpacity>
-            {availableYears.map((y) => (
-              <TouchableOpacity
-                key={y}
-                style={[
-                  styles.filterChip,
-                  yearFilter === y && styles.filterChipActive,
-                ]}
-                onPress={() => setYearFilter(y)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    yearFilter === y && styles.filterChipTextActive,
-                  ]}
-                >
-                  {y}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Month filter */}
-          <Text style={styles.filterLabel}>Mes</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.monthFilterScroll}
-          >
-            {MONTH_FILTERS.map((m, idx) => (
-              <TouchableOpacity
-                key={m}
-                style={[
-                  styles.filterChip,
-                  monthFilter === idx && styles.filterChipActive,
-                ]}
-                onPress={() => setMonthFilter(idx)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    monthFilter === idx && styles.filterChipTextActive,
-                  ]}
-                >
-                  {m.substring(0, 3)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Monto mínimo/máximo */}
-          <Text style={styles.filterLabel}>Monto</Text>
-          <View style={styles.filterRow}>
-            <TextInput
-              style={styles.amountInput}
-              placeholder="Mínimo"
-              keyboardType="numeric"
-              value={minAmount}
-              onChangeText={setMinAmount}
-              placeholderTextColor={colors.textMuted}
-            />
-            <Text style={{ marginHorizontal: 8, color: colors.textSecondary }}>—</Text>
-            <TextInput
-              style={styles.amountInput}
-              placeholder="Máximo"
-              keyboardType="numeric"
-              value={maxAmount}
-              onChangeText={setMaxAmount}
-              placeholderTextColor={colors.textMuted}
-            />
-          </View>
-
-          {activeFiltersCount > 0 && (
-            <TouchableOpacity
-              style={styles.clearFilters}
-              onPress={() => {
-                setCurrencyFilter("all");
-                setMonthFilter(0);
-                setYearFilter(null);
-                setMinAmount("");
-                setMaxAmount("");
-                setSearchQuery("");
-                setOnlyUncategorized(false);
-                setCategoryFilter(null);
-                if (creditCards.length > 0) {
-                  setSelectedCardId(creditCards[0].id);
-                }
-              }}
-            >
-              <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      )}
-
-      {/* Summary bar */}
-      <View style={styles.summaryBar}>
-        <Text style={styles.summaryCount}>
-          {totals.count} {totals.count === 1 ? "transacción" : "transacciones"}
-        </Text>
-        <View style={styles.summaryTotals}>
-          {totals.clp > 0 && (
-            <Text style={styles.summaryAmount}>
-              ${totals.clp.toLocaleString("es-CL")}
-            </Text>
-          )}
-          {totals.usd > 0 && (
-            <Text style={styles.summaryAmountUSD}>
-              US$
-              {totals.usd.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
-            </Text>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.exportButton}
-          onPress={async () => {
-            setTimeout(async () => {
-              try {
-                await exportTransactionsToCSV(
-                  filteredTransactions.map((t) => ({
-                    ...t,
-                    cardType: creditCards.find((c) => c.id === selectedCardId)
-                      ?.cardType,
-                    cardLastDigits: creditCards.find(
-                      (c) => c.id === selectedCardId,
-                    )?.cardLastDigits,
-                  })),
-                );
-              } catch {
-                alert("Error al exportar transacciones");
-              }
-            }, 300);
-          }}
-        >
-          <Ionicons name="download-outline" size={20} color={colors.accent} />
-          <Text style={styles.exportButtonText}>Exportar</Text>
-        </TouchableOpacity>
-      </View>
-      <Text style={styles.exportInfo}>
-        Solo se exportarán las transacciones filtradas actualmente.
-      </Text>
-
-      {/* Transactions list */}
       {isFetching && !data ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color={colors.accent} />
@@ -654,26 +365,305 @@ export default function TransactionsScreen() {
         </View>
       ) : (
         <ScrollView
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={isFetching} onRefresh={onRefresh} />
           }
         >
+          {/* Quick-access pill bar */}
+          <View style={styles.pillBar}>
+            <View style={[styles.pillItem, styles.pillActive]}>
+              <Ionicons name="receipt-outline" size={15} color={colors.accent} />
+              <Text style={[styles.pillText, styles.pillTextActive]}>Transacciones</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.pillItem}
+              onPress={() => router.push("/(tabs)/transacciones/manualDebts" as any)}
+              accessibilityLabel="Ver compras en cuotas"
+              accessibilityRole="button"
+            >
+              <Ionicons name="cart-outline" size={15} color={colors.textSecondary} />
+              <Text style={styles.pillText}>Compras en Cuotas</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Card selector */}
+          <View style={styles.cardSelectorContainer}>
+            <Text style={styles.filterLabel}>Tarjeta</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {creditCards.map((card) => (
+                <TouchableOpacity
+                  key={card.id}
+                  style={[
+                    styles.cardChip,
+                    selectedCardId === card.id && styles.cardChipActive,
+                  ]}
+                  onPress={() => setSelectedCardId(card.id)}
+                >
+                  <Ionicons
+                    name="card-outline"
+                    size={16}
+                    color={selectedCardId === card.id ? colors.textPrimary : colors.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.cardChipText,
+                      selectedCardId === card.id && styles.cardChipTextActive,
+                    ]}
+                  >
+                    {card.cardType} •{card.cardLastDigits}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Filters panel */}
+          {showFilters && (
+            <View style={styles.filtersPanel}>
+              {/* Uncategorized filter */}
+              <TouchableOpacity
+                style={[
+                  styles.filterChip,
+                  onlyUncategorized && styles.filterChipActive,
+                  { alignSelf: "flex-start", marginBottom: 12 },
+                ]}
+                onPress={() => setOnlyUncategorized(!onlyUncategorized)}
+              >
+                <Ionicons
+                  name={
+                    onlyUncategorized ? "checkmark-circle" : "help-circle-outline"
+                  }
+                  size={16}
+                  color={onlyUncategorized ? colors.textPrimary : colors.accent}
+                />
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    onlyUncategorized && styles.filterChipTextActive,
+                  ]}
+                >
+                  Solo sin categoría
+                </Text>
+              </TouchableOpacity>
+
+              {/* Category drill-down filter */}
+              {categoryFilter && (
+                <TouchableOpacity
+                  style={[
+                    styles.filterChip,
+                    styles.filterChipActive,
+                    { alignSelf: "flex-start", marginBottom: 12 },
+                  ]}
+                  onPress={() => setCategoryFilter(null)}
+                  accessibilityLabel={`Quitar filtro de categoría ${categoryFilter.name}`}
+                >
+                  <Ionicons name="close-circle" size={16} color={colors.textPrimary} />
+                  <Text style={styles.filterChipTextActive}>{categoryFilter.name}</Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Currency filter */}
+              <Text style={styles.filterLabel}>Moneda</Text>
+              <View style={styles.filterRow}>
+                {(["all", "CLP", "USD"] as CurrencyFilter[]).map((c) => (
+                  <TouchableOpacity
+                    key={c}
+                    style={[
+                      styles.filterChip,
+                      currencyFilter === c && styles.filterChipActive,
+                    ]}
+                    onPress={() => setCurrencyFilter(c)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        currencyFilter === c && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {c === "all" ? "Todas" : c === "USD" ? "USD" : "CLP"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* Year filter */}
+              <Text style={styles.filterLabel}>Año</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.monthFilterScroll}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.filterChip,
+                    yearFilter === null && styles.filterChipActive,
+                  ]}
+                  onPress={() => setYearFilter(null)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      yearFilter === null && styles.filterChipTextActive,
+                    ]}
+                  >
+                    Todos
+                  </Text>
+                </TouchableOpacity>
+                {availableYears.map((y) => (
+                  <TouchableOpacity
+                    key={y}
+                    style={[
+                      styles.filterChip,
+                      yearFilter === y && styles.filterChipActive,
+                    ]}
+                    onPress={() => setYearFilter(y)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        yearFilter === y && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {y}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* Month filter */}
+              <Text style={styles.filterLabel}>Mes</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.monthFilterScroll}
+              >
+                {MONTH_FILTERS.map((m, idx) => (
+                  <TouchableOpacity
+                    key={m}
+                    style={[
+                      styles.filterChip,
+                      monthFilter === idx && styles.filterChipActive,
+                    ]}
+                    onPress={() => setMonthFilter(idx)}
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        monthFilter === idx && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {m.substring(0, 3)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+
+              {/* Monto mínimo/máximo */}
+              <Text style={styles.filterLabel}>Monto</Text>
+              <View style={styles.filterRow}>
+                <TextInput
+                  style={styles.amountInput}
+                  placeholder="Mínimo"
+                  keyboardType="numeric"
+                  value={minAmount}
+                  onChangeText={setMinAmount}
+                  placeholderTextColor={colors.textMuted}
+                />
+                <Text style={{ marginHorizontal: 8, color: colors.textSecondary }}>—</Text>
+                <TextInput
+                  style={styles.amountInput}
+                  placeholder="Máximo"
+                  keyboardType="numeric"
+                  value={maxAmount}
+                  onChangeText={setMaxAmount}
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
+
+              {activeFiltersCount > 0 && (
+                <TouchableOpacity
+                  style={styles.clearFilters}
+                  onPress={() => {
+                    setCurrencyFilter("all");
+                    setMonthFilter(0);
+                    setYearFilter(null);
+                    setMinAmount("");
+                    setMaxAmount("");
+                    setSearchQuery("");
+                    setOnlyUncategorized(false);
+                    setCategoryFilter(null);
+                    if (creditCards.length > 0) {
+                      setSelectedCardId(creditCards[0].id);
+                    }
+                  }}
+                >
+                  <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
+          {/* Summary bar */}
+          <View style={styles.summaryBar}>
+            <Text style={styles.summaryCount}>
+              {totals.count} {totals.count === 1 ? "transacción" : "transacciones"}
+            </Text>
+            <View style={styles.summaryTotals}>
+              {totals.clp > 0 && (
+                <Text style={styles.summaryAmount}>
+                  ${totals.clp.toLocaleString("es-CL")}
+                </Text>
+              )}
+              {totals.usd > 0 && (
+                <Text style={styles.summaryAmountUSD}>
+                  US$
+                  {totals.usd.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.exportButton}
+              onPress={async () => {
+                setTimeout(async () => {
+                  try {
+                    await exportTransactionsToCSV(
+                      filteredTransactions.map((t) => ({
+                        ...t,
+                        cardType: creditCards.find((c) => c.id === selectedCardId)
+                          ?.cardType,
+                        cardLastDigits: creditCards.find(
+                          (c) => c.id === selectedCardId,
+                        )?.cardLastDigits,
+                      })),
+                    );
+                  } catch {
+                    alert("Error al exportar transacciones");
+                  }
+                }, 300);
+              }}
+            >
+              <Ionicons name="download-outline" size={20} color={colors.accent} />
+              <Text style={styles.exportButtonText}>Exportar</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.exportInfo}>
+            Solo se exportarán las transacciones filtradas actualmente.
+          </Text>
+
+          {/* Transaction list */}
           {groupedTransactions.map((group) => (
             <View key={group.day} style={styles.dayGroup}>
               <View style={styles.dayHeader}>
                 <Text style={styles.dayTitle}>
                   {group.day}
-                  {/* Mostrar año al final si no está incluido */}
                   {(() => {
-                    // group.day es como "Viernes, 30 de Enero"
-                    // Tomamos el primer año de las transacciones del grupo
                     if (group.transactions.length > 0) {
                       const date = new Date(
                         group.transactions[0].transactionDate,
                       );
                       const year = date.getFullYear();
-                      // Si el año no está ya en el string, lo agregamos
                       if (!group.day.includes(year.toString())) {
                         return ` ${year}`;
                       }
@@ -769,7 +759,7 @@ export default function TransactionsScreen() {
               ))}
             </View>
           ))}
-          
+
           {/* Load More Button */}
           {hasNextPage && (
             <TouchableOpacity
@@ -787,7 +777,7 @@ export default function TransactionsScreen() {
               )}
             </TouchableOpacity>
           )}
-          
+
           <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
         </ScrollView>
       )}
@@ -834,6 +824,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
+  },
+  scrollView: {
+    flex: 1,
   },
   centered: {
     flex: 1,
@@ -923,41 +916,6 @@ const styles = StyleSheet.create({
   },
   cardChipTextActive: {
     color: colors.textPrimary,
-  },
-  // Search
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: colors.surface,
-    gap: 10,
-  },
-  searchInput: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  searchText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textPrimary,
-  },
-  filterButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.06)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  filterButtonActive: {
-    backgroundColor: colors.accent,
   },
   filterBadge: {
     position: "absolute",

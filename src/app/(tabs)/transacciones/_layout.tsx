@@ -29,7 +29,18 @@ export default function TransaccionesLayout() {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Transacciones", headerLargeTitle: true, headerLargeTitleShadowVisible: false }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: "Transacciones",
+          headerLargeTitle: true,
+          headerLargeTitleShadowVisible: false,
+          headerSearchBarOptions: {
+            placeholder: "Buscar transacciones",
+            hideWhenScrolling: false,
+          },
+        }}
+      />
       <Stack.Screen
         name="manualDebts"
         options={{
