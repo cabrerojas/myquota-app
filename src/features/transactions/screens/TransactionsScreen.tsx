@@ -359,6 +359,7 @@ export default function TransactionsScreen() {
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
+          contentInsetAdjustmentBehavior="automatic"
           refreshControl={
             <RefreshControl refreshing={isFetching} onRefresh={onRefresh} />
           }

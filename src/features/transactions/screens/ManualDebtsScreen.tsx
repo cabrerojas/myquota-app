@@ -162,6 +162,7 @@ export default function ManualDebtsScreen() {
         data={debts}
         keyExtractor={(item) => item.id}
         contentContainerStyle={debts.length === 0 ? styles.emptyList : styles.list}
+        contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
             tintColor={colors.accent} colors={[colors.accent]} />

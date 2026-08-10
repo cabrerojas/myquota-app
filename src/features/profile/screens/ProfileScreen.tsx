@@ -118,6 +118,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
       refreshControl={
         <RefreshControl
           refreshing={isFetching}

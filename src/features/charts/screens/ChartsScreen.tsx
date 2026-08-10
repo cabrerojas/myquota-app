@@ -257,6 +257,7 @@ export default function ChartsScreen() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
       refreshControl={
         <RefreshControl
           refreshing={refreshing}

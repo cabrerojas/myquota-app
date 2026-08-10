@@ -121,6 +121,7 @@ export default function CreditCardsScreen() {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
+      contentInsetAdjustmentBehavior="automatic"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }

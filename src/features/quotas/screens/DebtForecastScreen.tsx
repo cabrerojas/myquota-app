@@ -147,6 +147,7 @@ export default function DebtForecastScreen() {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl
             refreshing={isRefetching}
