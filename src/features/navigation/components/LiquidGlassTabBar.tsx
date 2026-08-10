@@ -26,10 +26,10 @@ interface TabConfig {
 // ─── Tab registry ───────────────────────────────────────────────────────────
 
 const TABS: TabConfig[] = [
-  { routeName: "dashboard", label: "Inicio", icon: "home-outline" },
-  { routeName: "transactions", label: "Transacciones", icon: "receipt-outline" },
-  { routeName: "debtForecast", label: "Proyecciones", icon: "trending-up-outline" },
-  { routeName: "profile", label: "Perfil", icon: "person-outline" },
+  { routeName: "inicio", label: "Inicio", icon: "home-outline" },
+  { routeName: "transacciones", label: "Transacciones", icon: "receipt-outline" },
+  { routeName: "proyecciones", label: "Proyecciones", icon: "trending-up-outline" },
+  { routeName: "perfil", label: "Perfil", icon: "person-outline" },
 ];
 
 // ─── Single tab button ──────────────────────────────────────────────────────

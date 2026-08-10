@@ -245,8 +245,25 @@ export default function DebtForecastScreen() {
               tus finanzas al día!
             </Text>
           </View>
-        ) : (
+          ) : (
           <>
+            {/* Quick-access pill bar */}
+            <View style={styles.pillBar}>
+              <View style={[styles.pillItem, styles.pillActive]}>
+                <Ionicons name="trending-up-outline" size={15} color={colors.accent} />
+                <Text style={[styles.pillText, styles.pillTextActive]}>Proyección</Text>
+              </View>
+              <Pressable
+                style={styles.pillItem}
+                onPress={() => router.push("/(tabs)/proyecciones/charts" as any)}
+                accessibilityLabel="Ver gráficos"
+                accessibilityRole="button"
+              >
+                <Ionicons name="stats-chart" size={15} color={colors.textSecondary} />
+                <Text style={styles.pillText}>Gráficos</Text>
+              </Pressable>
+            </View>
+
             <Text style={styles.sectionTitle}>Proyección mensual</Text>
 
             {months.map((month, idx) => {
@@ -593,6 +610,38 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
   },
 
+  // ── Pill navigation bar ────────────────────────────────
+  pillBar: {
+    flexDirection: "row",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  pillItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
+  pillActive: {
+    backgroundColor: "rgba(59,130,246,0.15)",
+    borderColor: "rgba(59,130,246,0.30)",
+  },
+  pillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  pillTextActive: {
+    color: colors.accent,
+  },
+
   // ── Section title ───────────────────────────────────────
   sectionTitle: {
     fontSize: 11,
@@ -601,6 +650,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
     textTransform: "uppercase",
     marginBottom: 12,
+    marginLeft: 12,
   },
 
   // ── Month card ──────────────────────────────────────────

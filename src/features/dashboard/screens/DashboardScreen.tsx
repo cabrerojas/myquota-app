@@ -600,7 +600,7 @@ export default function DashboardScreen() {
           style={styles.categorizeBanner}
           onPress={() =>
             router.push({
-              pathname: "/(tabs)/transactions",
+              pathname: "/(tabs)/transacciones" as any,
               params: { filter: "uncategorized" },
             })
           }
@@ -627,7 +627,7 @@ export default function DashboardScreen() {
 
       <TouchableOpacity
         style={styles.sectionHeader}
-        onPress={() => router.push("/(tabs)/transactions")}
+        onPress={() => router.push("/(tabs)/transacciones" as any)}
       >
         <Text style={styles.sectionTitle}>Movimientos recientes</Text>
         <View style={styles.seeAllButton}>

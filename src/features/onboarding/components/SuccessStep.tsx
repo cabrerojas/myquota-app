@@ -38,7 +38,7 @@ export default function SuccessStep({ card }: SuccessStepProps) {
 	}, [checkScale, fadeIn]);
 
 	const handleGoToDashboard = () => {
-		router.replace("/(tabs)/dashboard");
+		router.replace("/(tabs)/inicio" as any);
 	};
 
 	const handleAddManual = () => {

@@ -351,6 +351,32 @@ export default function TransactionsScreen() {
         </ScrollView>
       </View>
 
+      {/* Quick-access pill bar */}
+      <View style={styles.pillBar}>
+        <View style={[styles.pillItem, styles.pillActive]}>
+          <Ionicons name="receipt-outline" size={15} color={colors.accent} />
+          <Text style={[styles.pillText, styles.pillTextActive]}>Transacciones</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.pillItem}
+          onPress={() => router.push("/(tabs)/transacciones/quotas" as any)}
+          accessibilityLabel="Ver cuotas"
+          accessibilityRole="button"
+        >
+          <Ionicons name="calendar-number-outline" size={15} color={colors.textSecondary} />
+          <Text style={styles.pillText}>Cuotas</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.pillItem}
+          onPress={() => router.push("/(tabs)/transacciones/manualDebts" as any)}
+          accessibilityLabel="Ver deudas manuales"
+          accessibilityRole="button"
+        >
+          <Ionicons name="document-text-outline" size={15} color={colors.textSecondary} />
+          <Text style={styles.pillText}>Deudas</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Search + filter bar */}
       <View style={styles.searchBar}>
         <View style={styles.searchInput}>
@@ -838,6 +864,37 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
+  },
+  // Pill navigation bar
+  pillBar: {
+    flexDirection: "row",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 8,
+    backgroundColor: "transparent",
+  },
+  pillItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: borderRadius.pill,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.06)",
+  },
+  pillActive: {
+    backgroundColor: "rgba(59,130,246,0.15)",
+    borderColor: "rgba(59,130,246,0.30)",
+  },
+  pillText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
+  pillTextActive: {
+    color: colors.accent,
   },
   cardChip: {
     flexDirection: "row",
