@@ -6,9 +6,11 @@ import {
   Animated,
   Platform,
   StyleSheet,
+  AccessibilityInfo,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import { GlassView, isGlassEffectAPIAvailable } from "expo-glass-effect";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -136,14 +138,28 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   );
 
   if (Platform.OS === "ios") {
+    // Pattern A: Guarded Adaptive Glass — try native GlassView first, fall back to BlurView
+    if (isGlassEffectAPIAvailable()) {
+      return (
+        <View style={styles.wrapper}>
+          <GlassView
+            style={styles.glass}
+            glassEffectStyle="regular"
+            tintColor="rgba(15,23,42,0.55)"
+          >
+            {barContent}
+          </GlassView>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.wrapper}>
         <BlurView
-          tint="systemUltraThinMaterialDark"
-          intensity={80}
+          tint="systemMaterialDark"
+          intensity={95}
           style={styles.blur}
         >
-          <View style={styles.glassOverlay} />
           {barContent}
         </BlurView>
       </View>
@@ -176,9 +192,9 @@ const styles = StyleSheet.create({
     borderRadius: BAR_BORDER_RADIUS,
     overflow: "hidden",
   },
-  glassOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.glass.background,
+  glass: {
+    borderRadius: BAR_BORDER_RADIUS,
+    overflow: "hidden",
   },
   androidFallback: {
     backgroundColor: "rgba(15, 23, 42, 0.94)",
