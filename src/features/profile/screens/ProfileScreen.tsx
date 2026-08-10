@@ -193,6 +193,8 @@ export default function ProfileScreen() {
       {/* App */}
       <Text style={styles.sectionTitle}>Aplicación</Text>
       <View style={styles.card}>
+        <SettingsRow icon="notifications-outline" label="Notificaciones" value="" showChevron
+          onPress={() => router.push("/(tabs)/perfil/notificationSettings" as any)} />
         <SettingsRow icon="information-circle-outline" label="Versión" value={appVersion} />
         <SettingsRow icon="trash-outline" label="Limpiar caché" value="" showChevron onPress={handleClearCache} />
         <SettingsRow icon="bug-outline" label="Reportar problema" value="" showChevron
