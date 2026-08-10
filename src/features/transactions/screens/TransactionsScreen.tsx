@@ -304,19 +304,9 @@ export default function TransactionsScreen() {
     (onlyUncategorized ? 1 : 0) +
     (categoryFilter ? 1 : 0);
 
-  // Wire native search bar + headerRight filter button
+  // Wire headerRight filter button
   useEffect(() => {
     navigation.setOptions({
-      headerSearchBarOptions: {
-        placeholder: "Buscar transacciones",
-        hideWhenScrolling: false,
-        barTintColor: "rgba(15, 23, 42, 0.95)",
-        tintColor: colors.accent,
-        text: searchQuery,
-        onChangeText: (e: { nativeEvent: { text: string } }) => {
-          setSearchQuery(e.nativeEvent.text);
-        },
-      },
       headerRight: () => (
         <Pressable onPress={() => setShowFilters(!showFilters)} hitSlop={8}>
           <Ionicons
@@ -332,7 +322,7 @@ export default function TransactionsScreen() {
         </Pressable>
       ),
     });
-  }, [navigation, searchQuery, activeFiltersCount, showFilters]);
+  }, [navigation, activeFiltersCount, showFilters]);
 
   if (loadingCards) {
     return <TransactionsSkeleton />;
@@ -388,6 +378,24 @@ export default function TransactionsScreen() {
               <Ionicons name="cart-outline" size={15} color={colors.textSecondary} />
               <Text style={styles.pillText}>Compras en Cuotas</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Search bar — iOS-style */}
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={colors.textSecondary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar transacciones"
+              placeholderTextColor={colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCorrect={false}
+            />
+            {searchQuery.length > 0 && (
+              <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
+                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+              </Pressable>
+            )}
           </View>
 
           {/* Card selector */}
@@ -881,6 +889,23 @@ const styles = StyleSheet.create({
   },
   pillTextActive: {
     color: colors.accent,
+  },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 12,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    height: 40,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 10,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: colors.textPrimary,
+    paddingVertical: 0,
   },
   cardChip: {
     flexDirection: "row",

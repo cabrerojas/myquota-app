@@ -35,12 +35,6 @@ export default function TransaccionesLayout() {
           title: "Transacciones",
           headerLargeTitle: true,
           headerLargeTitleShadowVisible: false,
-          headerSearchBarOptions: {
-            placeholder: "Buscar transacciones",
-            hideWhenScrolling: false,
-            barTintColor: "rgba(15, 23, 42, 0.95)",
-            tintColor: colors.accent,
-          },
         }}
       />
       <Stack.Screen

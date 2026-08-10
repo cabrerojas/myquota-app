@@ -36,16 +36,22 @@ const defineConfig = (ctx: ConfigContext): ExpoConfig => {
   const expoUpdatesUrl = process.env.EXPO_PUBLIC_EXPO_UPDATES_URL;
   const googleIosUrlScheme = process.env.EXPO_PUBLIC_GOOGLE_IOS_URL_SCHEME;
 
-  if (!apiBaseUrl || !appScheme || !easProjectId || !expoUpdatesUrl || !googleIosUrlScheme) {
+  if (
+    !apiBaseUrl ||
+    !appScheme ||
+    !easProjectId ||
+    !expoUpdatesUrl ||
+    !googleIosUrlScheme
+  ) {
     throw new Error(
       "[app.config.ts] Missing required environment variables. " +
-        "Copy .env.example to .env and fill in all values."
+        "Copy .env.example to .env and fill in all values.",
     );
   }
 
   return {
-    name: "myquota-app",
-    slug: "myquota-app",
+    name: "myQuota",
+    slug: "myQuota",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
