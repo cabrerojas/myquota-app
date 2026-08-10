@@ -29,7 +29,7 @@ export default function PerfilLayout() {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ title: "Perfil", headerLargeTitle: true, headerLargeTitleShadowVisible: false }} />
       <Stack.Screen name="notificationSettings" options={{ title: "Notificaciones" }} />
     </Stack>
   );

@@ -29,7 +29,7 @@ export default function InicioLayout() {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ title: "Inicio", headerLargeTitle: true, headerLargeTitleShadowVisible: false }} />
       <Stack.Screen name="creditCards" options={{ title: "Mis Tarjetas" }} />
     </Stack>
   );
