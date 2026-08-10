@@ -137,19 +137,17 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   );
 
   if (Platform.OS === "ios") {
-    // Pattern A: Guarded Adaptive Glass — try native GlassView (iOS 26+), fall back to BlurView
+    // Pattern A: GlassView (iOS 26+) or BlurView fallback
     if (isLiquidGlassAvailable()) {
       return (
-        <View style={styles.wrapper}>
-          <GlassView
-            style={styles.glass}
-            glassEffectStyle="regular"
-            tintColor="rgba(15,23,42,0.55)"
-            colorScheme="dark"
-          >
-            {barContent}
-          </GlassView>
-        </View>
+        <GlassView
+          style={styles.wrapper}
+          glassEffectStyle="regular"
+          tintColor="rgba(15,23,42,0.55)"
+          colorScheme="dark"
+        >
+          {barContent}
+        </GlassView>
       );
     }
 
