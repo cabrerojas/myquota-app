@@ -310,6 +310,8 @@ export default function TransactionsScreen() {
       headerSearchBarOptions: {
         placeholder: "Buscar transacciones",
         hideWhenScrolling: false,
+        barTintColor: "rgba(15, 23, 42, 0.95)",
+        tintColor: colors.accent,
         text: searchQuery,
         onChangeText: (e: { nativeEvent: { text: string } }) => {
           setSearchQuery(e.nativeEvent.text);
