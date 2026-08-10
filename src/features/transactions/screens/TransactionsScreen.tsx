@@ -359,21 +359,12 @@ export default function TransactionsScreen() {
         </View>
         <TouchableOpacity
           style={styles.pillItem}
-          onPress={() => router.push("/(tabs)/transacciones/quotas" as any)}
-          accessibilityLabel="Ver cuotas"
-          accessibilityRole="button"
-        >
-          <Ionicons name="calendar-number-outline" size={15} color={colors.textSecondary} />
-          <Text style={styles.pillText}>Cuotas</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.pillItem}
           onPress={() => router.push("/(tabs)/transacciones/manualDebts" as any)}
-          accessibilityLabel="Ver deudas manuales"
+          accessibilityLabel="Ver compras en cuotas"
           accessibilityRole="button"
         >
-          <Ionicons name="document-text-outline" size={15} color={colors.textSecondary} />
-          <Text style={styles.pillText}>Deudas</Text>
+          <Ionicons name="cart-outline" size={15} color={colors.textSecondary} />
+          <Text style={styles.pillText}>Compras en Cuotas</Text>
         </TouchableOpacity>
       </View>
 

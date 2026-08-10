@@ -30,7 +30,6 @@ export default function TransaccionesLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="quotas" options={{ title: "Cuotas Vigentes" }} />
       <Stack.Screen name="manualDebts" options={{ title: "Compras en Cuotas" }} />
     </Stack>
   );
