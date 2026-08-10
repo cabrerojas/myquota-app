@@ -6,11 +6,10 @@ import {
   Animated,
   Platform,
   StyleSheet,
-  AccessibilityInfo,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
-import { GlassView, isGlassEffectAPIAvailable } from "expo-glass-effect";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
@@ -138,14 +137,15 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   );
 
   if (Platform.OS === "ios") {
-    // Pattern A: Guarded Adaptive Glass — try native GlassView first, fall back to BlurView
-    if (isGlassEffectAPIAvailable()) {
+    // Pattern A: Guarded Adaptive Glass — try native GlassView (iOS 26+), fall back to BlurView
+    if (isLiquidGlassAvailable()) {
       return (
         <View style={styles.wrapper}>
           <GlassView
             style={styles.glass}
             glassEffectStyle="regular"
             tintColor="rgba(15,23,42,0.55)"
+            colorScheme="dark"
           >
             {barContent}
           </GlassView>
@@ -153,11 +153,12 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
       );
     }
 
+    // iOS < 26: BlurView fallback
     return (
       <View style={styles.wrapper}>
         <BlurView
-          tint="systemMaterialDark"
-          intensity={95}
+          tint="systemThickMaterialDark"
+          intensity={100}
           style={styles.blur}
         >
           {barContent}
