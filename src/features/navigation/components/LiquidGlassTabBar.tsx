@@ -141,7 +141,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
     if (isLiquidGlassAvailable()) {
       return (
         <GlassView
-          style={styles.wrapper}
+          style={styles.glassWrapper}
           glassEffectStyle="regular"
           tintColor="rgba(15,23,42,0.55)"
           colorScheme="dark"
@@ -177,6 +177,14 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
 const BAR_BORDER_RADIUS = 24;
 
 const styles = StyleSheet.create({
+  glassWrapper: {
+    position: "absolute",
+    bottom: 12,
+    left: 12,
+    right: 12,
+    borderRadius: BAR_BORDER_RADIUS,
+    overflow: "hidden",
+  },
   wrapper: {
     position: "absolute",
     bottom: 12,
