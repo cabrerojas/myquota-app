@@ -30,7 +30,22 @@ export default function TransaccionesLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="manualDebts" options={{ title: "Compras en Cuotas" }} />
+      <Stack.Screen
+        name="manualDebts"
+        options={{
+          title: "Compras en Cuotas",
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push("/(screens)/addDebt" as any)}
+              hitSlop={8}
+              accessibilityLabel="Agregar compra en cuotas"
+              accessibilityRole="button"
+            >
+              <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+            </Pressable>
+          ),
+        }}
+      />
     </Stack>
   );
 }

@@ -29,7 +29,23 @@ export default function ProyeccionesLayout() {
         ),
       }}
     >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: true,
+          title: "Proyección de Deuda",
+          headerRight: () => (
+            <Pressable
+              onPress={() => router.push("/(screens)/addDebt" as any)}
+              hitSlop={8}
+              accessibilityLabel="Agregar deuda"
+              accessibilityRole="button"
+            >
+              <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+            </Pressable>
+          ),
+        }}
+      />
       <Stack.Screen name="charts" options={{ title: "Gráficos" }} />
     </Stack>
   );

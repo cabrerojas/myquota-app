@@ -23,7 +23,7 @@ import { getQuotasByTransaction } from "@/features/quotas/services/quotasApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius } from "@/shared/theme/tokens";
+import { borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 import ErrorState from "@/shared/components/ErrorState";
 
@@ -267,17 +267,8 @@ export default function ManualDebtsScreen() {
             </View>
           );
         }}
+        ListFooterComponent={<View style={{ height: TAB_BAR_SPACER_HEIGHT }} />}
       />
-
-      {/* FAB */}
-      <Pressable
-        onPress={() => router.push("/(screens)/addDebt")}
-        style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
-        accessibilityLabel="Registrar compra en cuotas"
-        accessibilityRole="button"
-      >
-        <Ionicons name="add" size={26} color={colors.textPrimary} />
-      </Pressable>
     </View>
   );
 }
@@ -285,7 +276,7 @@ export default function ManualDebtsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
-  list: { padding: 24, paddingBottom: 80 },
+  list: { padding: 24 },
   emptyList: { flex: 1, justifyContent: "center", alignItems: "center", padding: 24 },
 
   // Empty
@@ -365,25 +356,6 @@ const styles = StyleSheet.create({
   progressFillDone: { backgroundColor: colors.success },
   progressText: { fontSize: 11, color: colors.textMuted, marginTop: 6, textAlign: "right" },
   progressTextDone: { color: colors.success },
-
-  // FAB
-  fab: {
-    position: "absolute",
-    right: 24,
-    bottom: 28,
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  fabPressed: { opacity: 0.85 },
 
   // Source badge
   sourceBadge: {

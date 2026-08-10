@@ -10,7 +10,7 @@ import {
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius } from "@/shared/theme/tokens";
+import { borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 
 const DAYS_OPTIONS = [1, 2, 3, 5];
@@ -180,6 +180,7 @@ export default function NotificationSettingsScreen() {
           Se reprograman cada vez que abrís la app o guardás cambios.
         </Text>
       </View>
+      <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
     </ScrollView>
   );
 }
@@ -196,7 +197,7 @@ function OptionChip({ label, active, onPress }: { label: string; active: boolean
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: 24, paddingBottom: 40 },
+  content: { padding: 24 },
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.bg },
 
   card: { ...glassSurface(false), padding: 18, marginBottom: 14 },
