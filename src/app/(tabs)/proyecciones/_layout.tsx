@@ -33,7 +33,9 @@ export default function ProyeccionesLayout() {
         name="index"
         options={{
           headerShown: true,
-          title: "Proyección de Deuda",
+          title: "Proyecciones",
+          headerLargeTitle: true,
+          headerLargeTitleShadowVisible: false,
           headerRight: () => (
             <Pressable
               onPress={() => router.push("/(screens)/addDebt" as any)}
