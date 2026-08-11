@@ -10,7 +10,7 @@ import {
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
+import { borderRadius } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 
 const DAYS_OPTIONS = [1, 2, 3, 5];
@@ -180,7 +180,6 @@ export default function NotificationSettingsScreen() {
           Se reprograman cada vez que abrís la app o guardás cambios.
         </Text>
       </View>
-      <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
     </ScrollView>
   );
 }

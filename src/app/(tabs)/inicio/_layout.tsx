@@ -1,23 +1,6 @@
-import { Stack, router } from "expo-router";
-import { Pressable, Platform, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Stack } from "expo-router";
+import { Platform } from "react-native";
 import { colors } from "@/shared/theme/colors";
-
-const BackButton = () => (
-  <Pressable
-    onPress={() => router.back()}
-    style={({ pressed }) => ({
-      flexDirection: "row",
-      alignItems: "center",
-      marginLeft: Platform.OS === "ios" ? -8 : 0,
-      opacity: pressed ? 0.5 : 1,
-    })}
-    hitSlop={8}
-  >
-    <Ionicons name="chevron-back" size={Platform.OS === "ios" ? 20 : 24} color={colors.accent} style={{ marginRight: Platform.OS === "ios" ? -3 : 0 }} />
-    {Platform.OS === "ios" && <Text style={{ color: colors.accent, fontSize: 17, fontWeight: "400" }}>Volver</Text>}
-  </Pressable>
-);
 
 export default function InicioLayout() {
   return (
@@ -25,13 +8,30 @@ export default function InicioLayout() {
       screenOptions={{
         headerTintColor: colors.accent,
         headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
+        headerTransparent: Platform.OS === "ios",
+        headerBlurEffect: Platform.OS === "ios" ? "systemChromeMaterialDark" : undefined,
         headerStyle: {
           backgroundColor: Platform.OS === "android" ? colors.bg : undefined,
         },
+        // Native back arrow + swipe-back — zero custom BackButton.
+        // Native large-title collapse on scroll — system handles it.
+        // Reduce Transparency / Reduce Motion — system handles both.
       }}
     >
-      <Stack.Screen name="index" options={{ title: "Inicio", headerLargeTitle: true, headerLargeTitleShadowVisible: false }} />
-      <Stack.Screen name="creditCards" options={{ title: "Mis Tarjetas", headerLeft: () => <BackButton /> }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: "Inicio",
+          headerLargeTitle: true,
+          headerLargeTitleShadowVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="creditCards"
+        options={{
+          title: "Mis Tarjetas",
+        }}
+      />
     </Stack>
   );
 }

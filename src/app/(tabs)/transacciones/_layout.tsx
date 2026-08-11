@@ -1,23 +1,7 @@
 import { Stack, router } from "expo-router";
-import { Pressable, Platform, Text, View } from "react-native";
+import { Pressable, Platform, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
-
-const BackButton = () => (
-  <Pressable
-    onPress={() => router.back()}
-    style={({ pressed }) => ({
-      flexDirection: "row",
-      alignItems: "center",
-      marginLeft: Platform.OS === "ios" ? -8 : 0,
-      opacity: pressed ? 0.5 : 1,
-    })}
-    hitSlop={8}
-  >
-    <Ionicons name="chevron-back" size={Platform.OS === "ios" ? 20 : 24} color={colors.accent} style={{ marginRight: Platform.OS === "ios" ? -3 : 0 }} />
-    {Platform.OS === "ios" && <Text style={{ color: colors.accent, fontSize: 17, fontWeight: "400" }}>Volver</Text>}
-  </Pressable>
-);
 
 export default function TransaccionesLayout() {
   return (
@@ -25,6 +9,8 @@ export default function TransaccionesLayout() {
       screenOptions={{
         headerTintColor: colors.accent,
         headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
+        headerTransparent: Platform.OS === "ios",
+        headerBlurEffect: Platform.OS === "ios" ? "systemChromeMaterialDark" : undefined,
         headerStyle: {
           backgroundColor: Platform.OS === "android" ? colors.bg : undefined,
         },
@@ -42,7 +28,6 @@ export default function TransaccionesLayout() {
         name="manualDebts"
         options={{
           title: "Compras en Cuotas",
-          headerLeft: () => <BackButton />,
           headerRight: () => (
             <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
               <Pressable

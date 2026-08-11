@@ -1,23 +1,7 @@
 import { Stack, router } from "expo-router";
-import { Pressable, Platform, Text, View } from "react-native";
+import { Pressable, Platform, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
-
-const BackButton = () => (
-  <Pressable
-    onPress={() => router.back()}
-    style={({ pressed }) => ({
-      flexDirection: "row",
-      alignItems: "center",
-      marginLeft: Platform.OS === "ios" ? -8 : 0,
-      opacity: pressed ? 0.5 : 1,
-    })}
-    hitSlop={8}
-  >
-    <Ionicons name="chevron-back" size={Platform.OS === "ios" ? 20 : 24} color={colors.accent} style={{ marginRight: Platform.OS === "ios" ? -3 : 0 }} />
-    {Platform.OS === "ios" && <Text style={{ color: colors.accent, fontSize: 17, fontWeight: "400" }}>Volver</Text>}
-  </Pressable>
-);
 
 export default function ProyeccionesLayout() {
   return (
@@ -25,6 +9,8 @@ export default function ProyeccionesLayout() {
       screenOptions={{
         headerTintColor: colors.accent,
         headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
+        headerTransparent: Platform.OS === "ios",
+        headerBlurEffect: Platform.OS === "ios" ? "systemChromeMaterialDark" : undefined,
         headerStyle: {
           backgroundColor: Platform.OS === "android" ? colors.bg : undefined,
         },
@@ -33,11 +19,9 @@ export default function ProyeccionesLayout() {
       <Stack.Screen
         name="index"
         options={{
-          headerShown: true,
           title: "Proyecciones",
           headerLargeTitle: true,
           headerLargeTitleShadowVisible: false,
-          headerStyle: { backgroundColor: Platform.OS === "ios" ? "transparent" : colors.bg },
           headerRight: () => (
             <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
               <Pressable
@@ -52,7 +36,12 @@ export default function ProyeccionesLayout() {
           ),
         }}
       />
-      <Stack.Screen name="charts" options={{ title: "Gráficos", headerLeft: () => <BackButton /> }} />
+      <Stack.Screen
+        name="charts"
+        options={{
+          title: "Gráficos",
+        }}
+      />
     </Stack>
   );
 }

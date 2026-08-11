@@ -25,11 +25,6 @@ export const spacing = {
   xxxl: 48,
 } as const;
 
-/** Height of the floating tab bar zone — bottom inset + tab bar + safe area.
- *  Used as a bottom spacer in scrollable screens so the last item clears the
- *  glass tab bar and is fully tappable. */
-export const TAB_BAR_SPACER_HEIGHT = 100;
-
 export const fontSizes = {
   xs: 11,
   sm: 13,

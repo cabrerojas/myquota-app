@@ -22,7 +22,7 @@ import {
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { formatCurrency } from "@/shared/utils/format";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
+import { borderRadius } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface } from "@/shared/theme/effects";
 import type { MonthBucket } from "@/features/quotas/types/quota";
@@ -508,7 +508,6 @@ export default function DebtForecastScreen() {
             )}
           </>
         )}
-        <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
       </ScrollView>
     </View>
   );
