@@ -182,7 +182,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   }
 
   return (
-    <View style={styles.wrapper}>
+    <View style={styles.androidWrapper}>
       <View style={styles.androidFallback}>{barContent}</View>
     </View>
   );
@@ -200,6 +200,16 @@ const styles = StyleSheet.create({
     right: 12,
     borderRadius: BAR_BORDER_RADIUS,
     overflow: "hidden",
+  },
+  androidWrapper: {
+    position: "absolute",
+    bottom: 4,
+    left: 12,
+    right: 12,
+    borderRadius: BAR_BORDER_RADIUS,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   wrapper: {
     position: "absolute",
