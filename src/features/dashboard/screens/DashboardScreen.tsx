@@ -372,372 +372,340 @@ export default function DashboardScreen() {
     }, [queryClient, refreshCount]),
   );
 
-  if (isLoadingCards) {
-    return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.shortStateContent}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <DashboardSkeleton />
-      </ScrollView>
-    );
-  }
+  const showSkeleton =
+    isLoadingCards || (creditCards.length > 0 && !initialLoadDone);
+  const showError = !showSkeleton && (cardsError || debtError);
+  const showEmpty = !showSkeleton && !showError && creditCards.length === 0;
 
-  // Show skeleton until first transaction load attempt completes
-  if (creditCards.length > 0 && !initialLoadDone) {
-    return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.shortStateContent}
-        contentInsetAdjustmentBehavior="automatic"
-      >
-        <DashboardSkeleton />
-      </ScrollView>
-    );
-  }
-
-  // No cards yet → show unified empty state
-  if (cardsError || debtError) {
-    return (
-      <ErrorState
-        message="No se pudo cargar el dashboard. Verifica tu conexión."
-        onRetry={handlePullRefresh}
-      />
-    );
-  }
-
-  if (creditCards.length === 0) {
-    return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        contentInsetAdjustmentBehavior="automatic"
-        showsVerticalScrollIndicator={false}
-        refreshControl={
+  return (
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={
+        showSkeleton || showError
+          ? styles.shortStateContent
+          : styles.contentContainer
+      }
+      contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        !showSkeleton && !showError ? (
           <RefreshControl
             refreshing={isPullRefreshing}
             onRefresh={handlePullRefresh}
             tintColor={colors.accent}
             colors={[colors.accent]}
           />
-        }
-      >
-        <EmptyDashboardState userName={userName} />
-      </ScrollView>
-    );
-  }
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={isPullRefreshing}
-          onRefresh={handlePullRefresh}
-          tintColor={colors.accent}
-          colors={[colors.accent]}
-        />
+        ) : undefined
       }
     >
-      {/* Decorative top gradient */}
-      <View style={styles.topGradient} pointerEvents="none">
-        <Svg width="100%" height={160} style={StyleSheet.absoluteFill}>
-          <Circle
-            cx={60}
-            cy={-20}
-            r={100}
-            fill={colors.accent}
-            opacity={0.04}
-          />
-          <Circle
-            cx={300}
-            cy={40}
-            r={120}
-            fill={colors.accent}
-            opacity={0.03}
-          />
-        </Svg>
-      </View>
+      {showSkeleton ? <DashboardSkeleton /> : null}
 
-      <Text style={styles.welcome}>Hola, {userName} 👋</Text>
-
-      <FinancialHealthIndicator
-        monthlyBudgetCLP={profile?.monthlyBudgetCLP}
-        monthlyBudgetUSD={profile?.monthlyBudgetUSD}
-        spentCLP={debtSummary?.nextMonthCLP}
-        spentUSD={debtSummary?.nextMonthUSD}
-        daysToClose={daysToClose}
-      />
-
-      <CardsSection
-        creditCards={creditCards}
-        selectedCardId={selectedCardId}
-        onSelectCard={setSelectedCardId}
-      />
-
-      {!alertsDismissed && creditCards.length > 0 && (
-        <CreditCardAlertBanner
-          creditCards={creditCards}
-          onDismiss={() => setAlertsDismissed(true)}
+      {showError ? (
+        <ErrorState
+          message="No se pudo cargar el dashboard. Verifica tu conexión."
+          onRetry={handlePullRefresh}
         />
-      )}
+      ) : null}
 
-      {selectedCardId && (
+      {showEmpty ? <EmptyDashboardState userName={userName} /> : null}
+
+      {!showSkeleton && !showError && !showEmpty ? (
         <>
-          {/*
-           * First-time user with card but no data yet:
-           * Show a cohesive import prompt instead of scattered empty cards.
-           * Once they import, the switches flip and normal dashboard renders.
-           */}
-          {isLoadingTransactions === false && transactions.length === 0 ? (
-            <FirstImportPrompt
-              onImport={handleImportTransactions}
-              isImporting={isRefreshing}
-              cardCount={creditCards.length}
-            />
-          ) : (
-            <>
-              {/* Normal dashboard — data exists */}
-              <PressableScale
-                style={[
-                  styles.importButton,
-                  isRefreshing && styles.buttonDisabled,
-                ]}
-                onPress={handleImportTransactions}
-                disabled={isRefreshing}
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isRefreshing
-                    ? "Sincronizando movimientos"
-                    : "Sincronizar movimientos"
-                }
-              >
-                {isRefreshing ? (
-                  <ActivityIndicator size="small" color={colors.bg} />
-                ) : (
-                  <Ionicons name="sync-outline" size={16} color={colors.bg} />
-                )}
-                <Text style={styles.importButtonText}>
-                  {isRefreshing
-                    ? "Sincronizando..."
-                    : "Sincronizar movimientos"}
-                </Text>
-              </PressableScale>
-
-              {/*
-               * Has transactions but no billing period yet:
-               * show prompt to create one. Stats cards still render
-               * below — they work even without explicit billing periods
-               * (fall back to calendar-month grouping in the backend).
-               */}
-              {!debtSummary ||
-              ((debtSummary.totalCLP ?? 0) === 0 &&
-                (debtSummary.totalUSD ?? 0) === 0 &&
-                !debtSummary.nextMonthCLP) ? (
-                <View style={styles.billingPromptCard}>
-                  <View style={styles.billingPromptIcon}>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={colors.accent}
-                    />
-                  </View>
-                  <View style={styles.billingPromptContent}>
-                    <Text style={styles.billingPromptTitle}>
-                      Crear período de facturación
-                    </Text>
-                    <Text style={styles.billingPromptBody}>
-                      Para ver estadísticas, proyecciones y organizar tus gastos
-                      por mes.
-                    </Text>
-                    <PressableScale
-                      onPress={() => {
-                        const selectedCard = creditCards.find(
-                          (c) => c.id === selectedCardId,
-                        );
-                        if (selectedCard) {
-                          const suggestion =
-                            computeSuggestedPeriod(selectedCard);
-                          if (suggestion) {
-                            setOrphanSuggestion(suggestion);
-                          }
-                        }
-                        setShowOrphanModal(true);
-                      }}
-                      style={styles.billingPromptBtn}
-                      accessibilityLabel="Crear período de facturación"
-                      accessibilityRole="button"
-                    >
-                      <Ionicons
-                        name="add-circle-outline"
-                        size={16}
-                        color={colors.accent}
-                      />
-                      <Text style={styles.billingPromptBtnText}>
-                        Crear período
-                      </Text>
-                    </PressableScale>
-                  </View>
-                </View>
-              ) : null}
-
-              {/* Stats cards — always shown when transactions exist */}
-              <MonthSummaryCard
-                creditCardId={selectedCardId}
-                nextPeriodCLP={debtSummary?.nextMonthCLP}
-                nextPeriodUSD={debtSummary?.nextMonthUSD}
+          {/* Decorative top gradient */}
+          <View style={styles.topGradient} pointerEvents="none">
+            <Svg width="100%" height={160} style={StyleSheet.absoluteFill}>
+              <Circle
+                cx={60}
+                cy={-20}
+                r={100}
+                fill={colors.accent}
+                opacity={0.04}
               />
-              {debtSummary &&
-                ((debtSummary.totalCLP ?? 0) > 0 ||
-                  (debtSummary.totalUSD ?? 0) > 0) && (
-                  <DebtIndicatorCard
-                    refreshKey={refreshKey}
-                    summary={debtSummary}
-                  />
-                )}
-              <MonthlyStats creditCardId={selectedCardId} />
-            </>
-          )}
-        </>
-      )}
-
-      {uncategorizedCount > 0 && (
-        <TouchableOpacity
-          style={styles.categorizeBanner}
-          onPress={() =>
-            router.push({
-              pathname: "/(tabs)/transacciones" as any,
-              params: { filter: "uncategorized" },
-            })
-          }
-          activeOpacity={0.85}
-        >
-          <View style={styles.categorizeAccent} />
-          <View style={styles.categorizeIconWrap}>
-            <Ionicons name="pricetag" size={17} color={colors.accent} />
+              <Circle
+                cx={300}
+                cy={40}
+                r={120}
+                fill={colors.accent}
+                opacity={0.03}
+              />
+            </Svg>
           </View>
-          <View style={styles.categorizeTextBlock}>
-            <Text style={styles.categorizeCount}>{uncategorizedCount}</Text>
-            <Text style={styles.categorizeLabel}>
-              {uncategorizedCount === 1
-                ? "transacción sin categorizar"
-                : "Transacciones sin categorizar"}
-            </Text>
-            <Text style={styles.categorizeSubtitle}>
-              Toca para asignar categorías
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.accent} />
-        </TouchableOpacity>
-      )}
 
-      <TouchableOpacity
-        style={styles.sectionHeader}
-        onPress={() => router.push("/(tabs)/transacciones" as any)}
-      >
-        <Text style={styles.sectionTitle}>Movimientos recientes</Text>
-        <View style={styles.seeAllButton}>
-          <Text style={styles.seeAllText}>Ver todas</Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.accent} />
-        </View>
-      </TouchableOpacity>
-      {isLoadingTransactions ? (
-        <ActivityIndicator
-          size="small"
-          color={colors.accent}
-          style={{ marginVertical: 10 }}
-        />
-      ) : transactions.length === 0 ? (
-        <View style={styles.emptyTransactions}>
-          <View style={styles.emptyTxIconWrap}>
-            <Ionicons
-              name="receipt-outline"
-              size={28}
-              color={colors.textMuted}
+          <Text style={styles.welcome}>Hola, {userName} 👋</Text>
+
+          <FinancialHealthIndicator
+            monthlyBudgetCLP={profile?.monthlyBudgetCLP}
+            monthlyBudgetUSD={profile?.monthlyBudgetUSD}
+            spentCLP={debtSummary?.nextMonthCLP}
+            spentUSD={debtSummary?.nextMonthUSD}
+            daysToClose={daysToClose}
+          />
+
+          <CardsSection
+            creditCards={creditCards}
+            selectedCardId={selectedCardId}
+            onSelectCard={setSelectedCardId}
+          />
+
+          {!alertsDismissed && creditCards.length > 0 && (
+            <CreditCardAlertBanner
+              creditCards={creditCards}
+              onDismiss={() => setAlertsDismissed(true)}
             />
-          </View>
-          <Text style={styles.emptyTxTitle}>Sin movimientos recientes</Text>
-          <Text style={styles.emptyTxBody}>
-            Usa "Sincronizar movimientos" para importar tus gastos bancarios.
-          </Text>
-          <TouchableOpacity
-            style={styles.emptyTxCta}
-            onPress={handleImportTransactions}
-          >
-            <Ionicons name="sync-outline" size={14} color={colors.accent} />
-            <Text style={styles.emptyTxCtaText}>Sincronizar ahora</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={styles.transactionsContainer}>
-          <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false}>
-            {transactions.map((item) => (
-              <View key={item.id} style={styles.transaction}>
-                <View style={styles.transactionLeft}>
-                  <Text style={styles.merchant} numberOfLines={1}>
-                    {item.merchant}
-                  </Text>
-                  <View style={styles.txMeta}>
-                    <Text style={styles.transactionDate}>
-                      {formatTransactionDate(item.transactionDate)}
-                    </Text>
-                    {item.categoryId ? (
-                      <View
-                        style={[
-                          styles.txCategoryPill,
-                          {
-                            backgroundColor:
-                              item.categoryColor || colors.surface,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.txCategoryEmoji}>
-                          {item.categoryIcon || "🏷️"}
-                        </Text>
-                        <Text style={styles.txCategoryName} numberOfLines={1}>
-                          {item.categoryName}
-                        </Text>
-                      </View>
+          )}
+
+          {selectedCardId && (
+            <>
+              {/*
+               * First-time user with card but no data yet:
+               * Show a cohesive import prompt instead of scattered empty cards.
+               * Once they import, the switches flip and normal dashboard renders.
+               */}
+              {isLoadingTransactions === false && transactions.length === 0 ? (
+                <FirstImportPrompt
+                  onImport={handleImportTransactions}
+                  isImporting={isRefreshing}
+                  cardCount={creditCards.length}
+                />
+              ) : (
+                <>
+                  {/* Normal dashboard — data exists */}
+                  <PressableScale
+                    style={[
+                      styles.importButton,
+                      isRefreshing && styles.buttonDisabled,
+                    ]}
+                    onPress={handleImportTransactions}
+                    disabled={isRefreshing}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      isRefreshing
+                        ? "Sincronizando movimientos"
+                        : "Sincronizar movimientos"
+                    }
+                  >
+                    {isRefreshing ? (
+                      <ActivityIndicator size="small" color={colors.bg} />
                     ) : (
-                      <View style={styles.txUncategorized}>
+                      <Ionicons name="sync-outline" size={16} color={colors.bg} />
+                    )}
+                    <Text style={styles.importButtonText}>
+                      {isRefreshing
+                        ? "Sincronizando..."
+                        : "Sincronizar movimientos"}
+                    </Text>
+                  </PressableScale>
+
+                  {/*
+                   * Has transactions but no billing period yet:
+                   * show prompt to create one. Stats cards still render
+                   * below — they work even without explicit billing periods
+                   * (fall back to calendar-month grouping in the backend).
+                   */}
+                  {!debtSummary ||
+                  ((debtSummary.totalCLP ?? 0) === 0 &&
+                    (debtSummary.totalUSD ?? 0) === 0 &&
+                    !debtSummary.nextMonthCLP) ? (
+                    <View style={styles.billingPromptCard}>
+                      <View style={styles.billingPromptIcon}>
                         <Ionicons
-                          name="pricetag-outline"
-                          size={10}
+                          name="calendar-outline"
+                          size={20}
                           color={colors.accent}
                         />
-                        <Text style={styles.txUncategorizedText}>
-                          Sin categoría
-                        </Text>
                       </View>
+                      <View style={styles.billingPromptContent}>
+                        <Text style={styles.billingPromptTitle}>
+                          Crear período de facturación
+                        </Text>
+                        <Text style={styles.billingPromptBody}>
+                          Para ver estadísticas, proyecciones y organizar tus gastos
+                          por mes.
+                        </Text>
+                        <PressableScale
+                          onPress={() => {
+                            const selectedCard = creditCards.find(
+                              (c) => c.id === selectedCardId,
+                            );
+                            if (selectedCard) {
+                              const suggestion =
+                                computeSuggestedPeriod(selectedCard);
+                              if (suggestion) {
+                                setOrphanSuggestion(suggestion);
+                              }
+                            }
+                            setShowOrphanModal(true);
+                          }}
+                          style={styles.billingPromptBtn}
+                          accessibilityLabel="Crear período de facturación"
+                          accessibilityRole="button"
+                        >
+                          <Ionicons
+                            name="add-circle-outline"
+                            size={16}
+                            color={colors.accent}
+                          />
+                          <Text style={styles.billingPromptBtnText}>
+                            Crear período
+                          </Text>
+                        </PressableScale>
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {/* Stats cards — always shown when transactions exist */}
+                  <MonthSummaryCard
+                    creditCardId={selectedCardId}
+                    nextPeriodCLP={debtSummary?.nextMonthCLP}
+                    nextPeriodUSD={debtSummary?.nextMonthUSD}
+                  />
+                  {debtSummary &&
+                    ((debtSummary.totalCLP ?? 0) > 0 ||
+                      (debtSummary.totalUSD ?? 0) > 0) && (
+                      <DebtIndicatorCard
+                        refreshKey={refreshKey}
+                        summary={debtSummary}
+                      />
                     )}
+                  <MonthlyStats creditCardId={selectedCardId} />
+                </>
+              )}
+            </>
+          )}
+
+          {uncategorizedCount > 0 && (
+            <TouchableOpacity
+              style={styles.categorizeBanner}
+              onPress={() =>
+                router.push({
+                  pathname: "/(tabs)/transacciones" as any,
+                  params: { filter: "uncategorized" },
+                })
+              }
+              activeOpacity={0.85}
+            >
+              <View style={styles.categorizeAccent} />
+              <View style={styles.categorizeIconWrap}>
+                <Ionicons name="pricetag" size={17} color={colors.accent} />
+              </View>
+              <View style={styles.categorizeTextBlock}>
+                <Text style={styles.categorizeCount}>{uncategorizedCount}</Text>
+                <Text style={styles.categorizeLabel}>
+                  {uncategorizedCount === 1
+                    ? "transacción sin categorizar"
+                    : "Transacciones sin categorizar"}
+                </Text>
+                <Text style={styles.categorizeSubtitle}>
+                  Toca para asignar categorías
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={styles.sectionHeader}
+            onPress={() => router.push("/(tabs)/transacciones" as any)}
+          >
+            <Text style={styles.sectionTitle}>Movimientos recientes</Text>
+            <View style={styles.seeAllButton}>
+              <Text style={styles.seeAllText}>Ver todas</Text>
+              <Ionicons name="chevron-forward" size={14} color={colors.accent} />
+            </View>
+          </TouchableOpacity>
+          {isLoadingTransactions ? (
+            <ActivityIndicator
+              size="small"
+              color={colors.accent}
+              style={{ marginVertical: 10 }}
+            />
+          ) : transactions.length === 0 ? (
+            <View style={styles.emptyTransactions}>
+              <View style={styles.emptyTxIconWrap}>
+                <Ionicons
+                  name="receipt-outline"
+                  size={28}
+                  color={colors.textMuted}
+                />
+              </View>
+              <Text style={styles.emptyTxTitle}>Sin movimientos recientes</Text>
+              <Text style={styles.emptyTxBody}>
+                Usa "Sincronizar movimientos" para importar tus gastos bancarios.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyTxCta}
+                onPress={handleImportTransactions}
+              >
+                <Ionicons name="sync-outline" size={14} color={colors.accent} />
+                <Text style={styles.emptyTxCtaText}>Sincronizar ahora</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.transactionsContainer}>
+              {transactions.map((item) => (
+                <View key={item.id} style={styles.transaction}>
+                  <View style={styles.transactionLeft}>
+                    <Text style={styles.merchant} numberOfLines={1}>
+                      {item.merchant}
+                    </Text>
+                    <View style={styles.txMeta}>
+                      <Text style={styles.transactionDate}>
+                        {formatTransactionDate(item.transactionDate)}
+                      </Text>
+                      {item.categoryId ? (
+                        <View
+                          style={[
+                            styles.txCategoryPill,
+                            {
+                              backgroundColor:
+                                item.categoryColor || colors.surface,
+                            },
+                          ]}
+                        >
+                          <Text style={styles.txCategoryEmoji}>
+                            {item.categoryIcon || "🏷️"}
+                          </Text>
+                          <Text style={styles.txCategoryName} numberOfLines={1}>
+                            {item.categoryName}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.txUncategorized}>
+                          <Ionicons
+                            name="pricetag-outline"
+                            size={10}
+                            color={colors.accent}
+                          />
+                          <Text style={styles.txUncategorizedText}>
+                            Sin categoría
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.transactionRight}>
+                    <Text style={styles.amount}>
+                      {item.currency === "USD" ? "US$" : "$"}
+                      {item.amount.toLocaleString("es-CL")}
+                    </Text>
                   </View>
                 </View>
-                <View style={styles.transactionRight}>
-                  <Text style={styles.amount}>
-                    {item.currency === "USD" ? "US$" : "$"}
-                    {item.amount.toLocaleString("es-CL")}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+              ))}
+            </View>
+          )}
 
-      <BillingPeriodFormModal
-        visible={showOrphanModal}
-        onClose={() => setShowOrphanModal(false)}
-        onSubmit={handleCreateSuggestedPeriod}
-        initialData={orphanSuggestion ?? undefined}
-        title="Crear Período de Facturación"
-        isOrphanSuggestion
-        orphanedCount={orphanedCount}
-        isFirstTime
-      />
+          <BillingPeriodFormModal
+            visible={showOrphanModal}
+            onClose={() => setShowOrphanModal(false)}
+            onSubmit={handleCreateSuggestedPeriod}
+            initialData={orphanSuggestion ?? undefined}
+            title="Crear Período de Facturación"
+            isOrphanSuggestion
+            orphanedCount={orphanedCount}
+            isFirstTime
+          />
+        </>
+      ) : null}
     </ScrollView>
   );
 }
@@ -785,7 +753,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   transactionsContainer: {
-    maxHeight: 240,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.sm2,
