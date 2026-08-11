@@ -102,7 +102,7 @@ function TabButton({
 
 export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomPadding = Math.max(insets.bottom, 0);
+  const wrapperBottom = Math.max(12, insets.bottom);
   const { width: screenWidth } = Dimensions.get("window");
   const TAB_WIDTH = (screenWidth - 24) / 4;
 
@@ -137,7 +137,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   };
 
   const barContent = (
-    <View style={[styles.inner, { paddingTop: 6, paddingBottom: bottomPadding + 6 }]}>
+    <View style={styles.inner}>
       <Animated.View style={[styles.animatedPill, pillStyle, { width: TAB_WIDTH * 0.7 }]} />
       {TABS.map((tab) => {
         const route = state.routes.find((r) => r.name === tab.routeName);
@@ -159,7 +159,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
     if (isLiquidGlassAvailable()) {
       return (
         <GlassView
-          style={styles.glassWrapper}
+          style={[styles.glassWrapper, { bottom: wrapperBottom }]}
           glassEffectStyle="regular"
         >
           {barContent}
@@ -169,7 +169,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
 
     // iOS < 26: BlurView fallback
     return (
-      <View style={styles.wrapper}>
+      <View style={[styles.wrapper, { bottom: wrapperBottom }]}>
         <BlurView
           tint="systemThickMaterialDark"
           intensity={100}
@@ -183,7 +183,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
 
   // Android: BlurView with fallback to semi-transparent surface
   return (
-    <View style={styles.androidWrapper}>
+    <View style={[styles.androidWrapper, { bottom: wrapperBottom }]}>
       <BlurView
         tint="dark"
         intensity={60}
@@ -202,7 +202,6 @@ const BAR_BORDER_RADIUS = 24;
 const styles = StyleSheet.create({
   glassWrapper: {
     position: "absolute",
-    bottom: 12,
     left: 12,
     right: 12,
     borderRadius: BAR_BORDER_RADIUS,
@@ -210,7 +209,6 @@ const styles = StyleSheet.create({
   },
   androidWrapper: {
     position: "absolute",
-    bottom: 0,
     left: 12,
     right: 12,
     borderRadius: BAR_BORDER_RADIUS,
@@ -218,7 +216,6 @@ const styles = StyleSheet.create({
   },
   wrapper: {
     position: "absolute",
-    bottom: 12,
     left: 12,
     right: 12,
     borderRadius: BAR_BORDER_RADIUS,
@@ -246,6 +243,7 @@ const styles = StyleSheet.create({
   inner: {
     flexDirection: "row",
     alignItems: "center",
+    paddingVertical: 6,
   },
   tab: {
     flex: 1,
@@ -259,15 +257,15 @@ const styles = StyleSheet.create({
   },
   animatedPill: {
     position: "absolute",
-    top: 2,
-    bottom: 2,
+    top: 6,
+    height: 38,
     borderRadius: 20,
     backgroundColor: colors.accent + "33",
   },
   label: {
     fontSize: 10,
     fontFamily: "Inter_500Medium",
-    marginTop: 0,
+    marginTop: 2,
   },
   labelActive: {
     color: colors.accent,
