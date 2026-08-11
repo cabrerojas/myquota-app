@@ -25,9 +25,6 @@ export default function TransaccionesLayout() {
       screenOptions={{
         headerTintColor: colors.accent,
         headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
-        headerStyle: {
-          backgroundColor: Platform.OS === "ios" ? "rgba(15, 23, 42, 0.85)" : colors.bg,
-        },
       }}
     >
       <Stack.Screen

@@ -102,7 +102,7 @@ function TabButton({
 
 export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomPadding = insets.bottom > 0 ? insets.bottom - 4 : 4;
+  const bottomPadding = Math.max(insets.bottom, 0);
   const { width: screenWidth } = Dimensions.get("window");
   const TAB_WIDTH = (screenWidth - 24) / 4;
 
@@ -137,7 +137,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   };
 
   const barContent = (
-    <View style={[styles.inner, { paddingBottom: bottomPadding }]}>
+    <View style={[styles.inner, { paddingTop: 6, paddingBottom: bottomPadding + 6 }]}>
       <Animated.View style={[styles.animatedPill, pillStyle, { width: TAB_WIDTH * 0.7 }]} />
       {TABS.map((tab) => {
         const route = state.routes.find((r) => r.name === tab.routeName);
@@ -226,7 +226,6 @@ const styles = StyleSheet.create({
   inner: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 2,
   },
   tab: {
     flex: 1,
