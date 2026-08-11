@@ -25,7 +25,7 @@ import CategorySuggestModal from "@/features/categories/components/CategorySugge
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
-import { colors, borderRadius, spacing, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
+import { colors, borderRadius, spacing } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import TransactionsSkeleton from "../components/TransactionsSkeleton";
@@ -793,7 +793,6 @@ export default function TransactionsScreen() {
             </TouchableOpacity>
           )}
 
-          <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
         </ScrollView>
       )}
       <CategorySuggestModal

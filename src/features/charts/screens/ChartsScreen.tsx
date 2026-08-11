@@ -26,7 +26,7 @@ import {
 import { CreditCardBasic } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
+import { borderRadius } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import ErrorState from "@/shared/components/ErrorState";
@@ -728,7 +728,6 @@ export default function ChartsScreen() {
           )}
         </View>
       )}
-      <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
     </ScrollView>
   );
 }

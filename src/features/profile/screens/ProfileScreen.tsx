@@ -18,7 +18,7 @@ import { CreditCardSummary } from "@/shared/types/creditCard";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { colors } from "@/shared/theme/colors";
-import { borderRadius, TAB_BAR_SPACER_HEIGHT } from "@/shared/theme/tokens";
+import { borderRadius } from "@/shared/theme/tokens";
 import { glassSurface } from "@/shared/theme/effects";
 
 function SettingsRow({ icon, label, value, detail, showChevron, onPress }: {
@@ -211,7 +211,6 @@ export default function ProfileScreen() {
       </Pressable>
 
       <Text style={s.footer}>MyQuota v{appVersion}</Text>
-      <View style={{ height: TAB_BAR_SPACER_HEIGHT }} />
     </ScrollView>
   );
 }
