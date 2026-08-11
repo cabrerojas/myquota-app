@@ -181,9 +181,16 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
     );
   }
 
+  // Android: BlurView with fallback to semi-transparent surface
   return (
     <View style={styles.androidWrapper}>
-      <View style={styles.androidFallback}>{barContent}</View>
+      <BlurView
+        tint="dark"
+        intensity={60}
+        style={styles.androidBlur}
+      >
+        {barContent}
+      </BlurView>
     </View>
   );
 }
@@ -203,13 +210,11 @@ const styles = StyleSheet.create({
   },
   androidWrapper: {
     position: "absolute",
-    bottom: 4,
+    bottom: 0,
     left: 12,
     right: 12,
     borderRadius: BAR_BORDER_RADIUS,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   wrapper: {
     position: "absolute",
@@ -228,6 +233,11 @@ const styles = StyleSheet.create({
   glass: {
     borderRadius: BAR_BORDER_RADIUS,
     overflow: "hidden",
+  },
+  androidBlur: {
+    borderRadius: BAR_BORDER_RADIUS,
+    overflow: "hidden",
+    backgroundColor: "rgba(15, 23, 42, 0.92)",
   },
   androidFallback: {
     backgroundColor: "rgba(15, 23, 42, 0.94)",
