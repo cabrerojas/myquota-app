@@ -1,5 +1,5 @@
 import { Stack, router } from "expo-router";
-import { Pressable, Platform, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "@/shared/theme/colors";
 
@@ -9,11 +9,7 @@ export default function TransaccionesLayout() {
       screenOptions={{
         headerTintColor: colors.accent,
         headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
-        headerTransparent: Platform.OS === "ios",
-        headerBlurEffect: Platform.OS === "ios" ? "systemChromeMaterialDark" : undefined,
-        headerStyle: {
-          backgroundColor: Platform.OS === "android" ? colors.bg : undefined,
-        },
+        headerStyle: { backgroundColor: colors.bg },
       }}
     >
       <Stack.Screen
@@ -21,6 +17,7 @@ export default function TransaccionesLayout() {
         options={{
           title: "Transacciones",
           headerLargeTitle: true,
+          headerLargeStyle: { backgroundColor: colors.bg },
           headerLargeTitleShadowVisible: false,
         }}
       />

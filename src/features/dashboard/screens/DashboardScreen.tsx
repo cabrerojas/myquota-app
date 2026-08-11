@@ -374,7 +374,10 @@ export default function DashboardScreen() {
 
   if (isLoadingCards) {
     return (
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <DashboardSkeleton />
       </ScrollView>
     );
@@ -383,7 +386,10 @@ export default function DashboardScreen() {
   // Show skeleton until first transaction load attempt completes
   if (creditCards.length > 0 && !initialLoadDone) {
     return (
-      <ScrollView style={styles.container}>
+      <ScrollView
+        style={styles.container}
+        contentInsetAdjustmentBehavior="automatic"
+      >
         <DashboardSkeleton />
       </ScrollView>
     );
@@ -404,6 +410,7 @@ export default function DashboardScreen() {
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
+        contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
