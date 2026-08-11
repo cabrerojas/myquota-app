@@ -102,7 +102,7 @@ function TabButton({
 
 export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const wrapperBottom = Math.max(12, insets.bottom);
+  const wrapperBottom = insets.bottom + 12;
   const { width: screenWidth } = Dimensions.get("window");
   const TAB_WIDTH = (screenWidth - 24) / 4;
 
@@ -183,7 +183,7 @@ export function LiquidGlassTabBar({ state, navigation }: BottomTabBarProps) {
 
   // Android: BlurView with fallback to semi-transparent surface
   return (
-    <View style={[styles.androidWrapper, { bottom: wrapperBottom }]}>
+    <View style={[styles.androidWrapper, { bottom: insets.bottom }]}>
       <BlurView
         tint="dark"
         intensity={60}
