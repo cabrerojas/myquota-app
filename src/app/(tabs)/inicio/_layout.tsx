@@ -1,5 +1,4 @@
 import { Stack } from "expo-router";
-import { Platform } from "react-native";
 import { colors } from "@/shared/theme/colors";
 
 export default function InicioLayout() {
@@ -8,11 +7,7 @@ export default function InicioLayout() {
       screenOptions={{
         headerTintColor: colors.accent,
         headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
-        headerTransparent: Platform.OS === "ios",
-        headerBlurEffect: Platform.OS === "ios" ? "systemChromeMaterialDark" : undefined,
-        headerStyle: {
-          backgroundColor: Platform.OS === "android" ? colors.bg : undefined,
-        },
+        headerStyle: { backgroundColor: colors.bg },
         // Native back arrow + swipe-back — zero custom BackButton.
         // Native large-title collapse on scroll — system handles it.
         // Reduce Transparency / Reduce Motion — system handles both.
@@ -23,6 +18,7 @@ export default function InicioLayout() {
         options={{
           title: "Inicio",
           headerLargeTitle: true,
+          headerLargeStyle: { backgroundColor: colors.bg },
           headerLargeTitleShadowVisible: false,
         }}
       />
