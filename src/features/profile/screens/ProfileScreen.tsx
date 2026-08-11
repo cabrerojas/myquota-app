@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: {},
+  content: { flexGrow: 1 },
   profileHeader: {
     backgroundColor: colors.surfaceElevated, paddingTop: 40, paddingBottom: 24,
     alignItems: "center", borderBottomWidth: 1, borderBottomColor: colors.border,

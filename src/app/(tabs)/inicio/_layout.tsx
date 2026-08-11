@@ -18,6 +18,7 @@ export default function InicioLayout() {
         options={{
           title: "Inicio",
           headerLargeTitle: true,
+          headerLargeTitleEnabled: true,
           headerLargeStyle: { backgroundColor: colors.bg },
           headerLargeTitleShadowVisible: false,
         }}

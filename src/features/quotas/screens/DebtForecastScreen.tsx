@@ -518,7 +518,7 @@ export default function DebtForecastScreen() {
 const styles = StyleSheet.create({
   wrapper: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.bg },
-  contentContainer: { padding: 24 },
+  contentContainer: { flexGrow: 1, padding: 24 },
   centered: {
     flex: 1,
     justifyContent: "center",
