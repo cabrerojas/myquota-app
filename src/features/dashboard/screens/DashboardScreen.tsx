@@ -376,6 +376,7 @@ export default function DashboardScreen() {
     return (
       <ScrollView
         style={styles.container}
+        contentContainerStyle={styles.shortStateContent}
         contentInsetAdjustmentBehavior="automatic"
       >
         <DashboardSkeleton />
@@ -388,6 +389,7 @@ export default function DashboardScreen() {
     return (
       <ScrollView
         style={styles.container}
+        contentContainerStyle={styles.shortStateContent}
         contentInsetAdjustmentBehavior="automatic"
       >
         <DashboardSkeleton />
@@ -742,7 +744,8 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  contentContainer: { padding: spacing.lg },
+  contentContainer: { flexGrow: 1, padding: spacing.lg },
+  shortStateContent: { flexGrow: 1 },
   welcome: {
     fontSize: 22,
     fontWeight: "700",

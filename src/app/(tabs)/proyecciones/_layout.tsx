@@ -17,6 +17,7 @@ export default function ProyeccionesLayout() {
         options={{
           title: "Proyecciones",
           headerLargeTitle: true,
+          headerLargeTitleEnabled: true,
           headerLargeStyle: { backgroundColor: colors.bg },
           headerLargeTitleShadowVisible: false,
           headerRight: () => (

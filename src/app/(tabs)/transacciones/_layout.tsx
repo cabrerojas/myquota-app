@@ -17,6 +17,7 @@ export default function TransaccionesLayout() {
         options={{
           title: "Transacciones",
           headerLargeTitle: true,
+          headerLargeTitleEnabled: true,
           headerLargeStyle: { backgroundColor: colors.bg },
           headerLargeTitleShadowVisible: false,
         }}

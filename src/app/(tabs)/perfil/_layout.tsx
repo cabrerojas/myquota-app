@@ -15,6 +15,7 @@ export default function PerfilLayout() {
         options={{
           title: "Perfil",
           headerLargeTitle: true,
+          headerLargeTitleEnabled: true,
           headerLargeStyle: { backgroundColor: colors.bg },
           headerLargeTitleShadowVisible: false,
         }}

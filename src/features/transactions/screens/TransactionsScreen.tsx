@@ -329,7 +329,15 @@ export default function TransactionsScreen() {
   }, [navigation, activeFiltersCount, showFilters]);
 
   if (loadingCards) {
-    return <TransactionsSkeleton />;
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.centered}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        <TransactionsSkeleton />
+      </ScrollView>
+    );
   }
 
   if (cardsError) {
@@ -347,21 +355,30 @@ export default function TransactionsScreen() {
   return (
     <View style={styles.container}>
       {isFetching && !data ? (
-        <View style={styles.centered}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.centered}
+          contentInsetAdjustmentBehavior="automatic"
+        >
           <ActivityIndicator size="large" color={colors.accent} />
-        </View>
+        </ScrollView>
       ) : groupedTransactions.length === 0 ? (
-        <View style={styles.centered}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.centered}
+          contentInsetAdjustmentBehavior="automatic"
+        >
           <Ionicons name="receipt-outline" size={48} color={colors.textSubtle} />
           <Text style={styles.emptyText}>
             {searchQuery || activeFiltersCount > 0
               ? "Sin resultados para estos filtros"
               : "No hay transacciones"}
           </Text>
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView
           style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           contentInsetAdjustmentBehavior="automatic"
           refreshControl={
@@ -842,8 +859,11 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    flexGrow: 1,
+  },
   centered: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
