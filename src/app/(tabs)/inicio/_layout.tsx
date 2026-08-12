@@ -1,13 +1,14 @@
+import { StyleSheet } from "react-native";
 import { Stack } from "expo-router";
-import { colors } from "@/shared/theme/colors";
+import { colors } from "@/shared/theme/tokens";
 
 export default function InicioLayout() {
   return (
     <Stack
       screenOptions={{
         headerTintColor: colors.accent,
-        headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
-        headerStyle: { backgroundColor: colors.bg },
+        headerTitleStyle: styles.headerTitle,
+        headerStyle: styles.header,
         // Native back arrow + swipe-back — zero custom BackButton.
         // Native large-title collapse on scroll — system handles it.
         // Reduce Transparency / Reduce Motion — system handles both.
@@ -18,11 +19,8 @@ export default function InicioLayout() {
         options={{
           title: "Inicio",
           headerLargeTitleEnabled: true,
-          headerLargeStyle: { backgroundColor: colors.bg },
-          headerLargeTitleStyle: {
-            color: colors.textPrimary,
-            fontWeight: "700",
-          },
+          headerLargeStyle: styles.header,
+          headerLargeTitleStyle: styles.headerLargeTitle,
           headerLargeTitleShadowVisible: false,
         }}
       />
@@ -35,3 +33,18 @@ export default function InicioLayout() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    backgroundColor: colors.bg,
+  },
+  headerTitle: {
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  headerLargeTitle: {
+    color: colors.textPrimary,
+    fontSize: 34,
+    fontWeight: "700",
+  },
+});
