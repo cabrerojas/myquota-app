@@ -283,7 +283,7 @@ export const createRefund = async (
 
   if (!response.ok) {
     const error = await parseJsonSafely(response);
-    throw new Error(getErrorMessage(error, "Error al registrar refund"));
+    throw new Error(getErrorMessage(error, "Error al registrar el reembolso"));
   }
 
   return response.json();
