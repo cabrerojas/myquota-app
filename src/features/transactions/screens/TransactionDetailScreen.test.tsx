@@ -3,6 +3,7 @@ import renderer, { act } from "react-test-renderer";
 import { Platform, Text } from "react-native";
 import TransactionDetailScreen from "./TransactionDetailScreen";
 
+const mockGoBack = jest.fn();
 const mockSetOptions = jest.fn();
 const mockUseTransactionDetail = jest.fn();
 const mockUseCreateRefundMutation = jest.fn();
@@ -26,7 +27,7 @@ jest.mock("react-native-safe-area-context", () => ({
 }));
 
 jest.mock("expo-router", () => ({
-  useNavigation: () => ({ setOptions: mockSetOptions }),
+  useNavigation: () => ({ goBack: mockGoBack, setOptions: mockSetOptions }),
 }));
 
 jest.mock("@/features/transactions/services/transactionsApi", () => ({
@@ -229,15 +230,7 @@ describe("TransactionDetailScreen", () => {
 
     const latestHeaderRight =
       mockSetOptions.mock.calls.at(-1)?.[0]?.headerRight;
-    let headerTree!: renderer.ReactTestRenderer;
-
-    act(() => {
-      headerTree = renderer.create(latestHeaderRight());
-    });
-
-    expect(
-      headerTree.root.findAllByProps({ accessibilityLabel: "Más acciones" }),
-    ).toHaveLength(0);
+    expect(latestHeaderRight).toBeUndefined();
 
     currentDetailData = {
       ...currentDetailData,
@@ -256,12 +249,29 @@ describe("TransactionDetailScreen", () => {
     });
 
     const childHeaderRight = mockSetOptions.mock.calls.at(-1)?.[0]?.headerRight;
+    expect(childHeaderRight).toBeUndefined();
+  });
+
+  it("provides an accessible native-feeling back action", () => {
+    renderScreen();
+    const headerLeft = mockSetOptions.mock.calls.at(-1)?.[0]?.headerLeft;
+
+    let headerTree!: renderer.ReactTestRenderer;
     act(() => {
-      headerTree = renderer.create(childHeaderRight());
+      headerTree = renderer.create(headerLeft());
     });
 
-    expect(
-      headerTree.root.findAllByProps({ accessibilityLabel: "Más acciones" }),
-    ).toHaveLength(0);
+    const backButton = headerTree.root.findByProps({
+      accessibilityLabel: "Volver",
+    });
+
+    expect(backButton.props.accessibilityRole).toBe("button");
+    expect(headerTree.root.findByProps({ name: "arrow-back" })).toBeTruthy();
+
+    act(() => {
+      backButton.props.onPress();
+    });
+
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
 });
