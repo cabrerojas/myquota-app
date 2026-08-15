@@ -1,28 +1,13 @@
 import { Stack } from "expo-router";
-import { colors } from "@/shared/theme/colors";
+import {
+  largeTitleScreenOptions,
+  stackScreenOptions,
+} from "@/shared/utils/routeOptions";
 
 export default function PerfilLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerTintColor: colors.accent,
-        headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
-        headerStyle: { backgroundColor: colors.bg },
-      }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: "Perfil",
-          headerLargeTitleEnabled: true,
-          headerLargeStyle: { backgroundColor: colors.bg },
-          headerLargeTitleStyle: {
-            color: colors.textPrimary,
-            fontWeight: "700",
-          },
-          headerLargeTitleShadowVisible: false,
-        }}
-      />
+    <Stack screenOptions={stackScreenOptions}>
+      <Stack.Screen name="index" options={largeTitleScreenOptions("Perfil")} />
       <Stack.Screen
         name="notificationSettings"
         options={{

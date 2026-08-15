@@ -1,34 +1,37 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
-  TextInput,
-  ScrollView,
-  RefreshControl,
+  Alert,
   Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
+import { useFocusEffect } from "@react-navigation/native";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
+import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
   useInfiniteTransactions,
-  Transaction,
-  updateTransaction,
-} from "../services/transactionsApi";
-import { exportTransactionsToCSV } from "../services/exportTransactions";
-import { useRouter, useLocalSearchParams, useNavigation } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
-import { useQueryClient } from "@tanstack/react-query";
-import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
-import { CreditCardBasic } from "@/shared/types/creditCard";
-import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
+  useUpdateTransactionMutation,
+} from "@/features/transactions/services/transactionsApi";
+import { exportTransactionsToCSV } from "@/features/transactions/services/exportTransactions";
+import type { Transaction } from "@/shared/types/transaction";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
-import { colors, borderRadius, spacing } from "@/shared/theme/tokens";
+import { glassSurface } from "@/shared/theme/effects";
+import {
+  borderRadius,
+  colors,
+  fontSizes,
+  spacing,
+} from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
-import { glassSurface, glassSubtle } from "@/shared/theme/effects";
-import TransactionsSkeleton from "../components/TransactionsSkeleton";
+import { formatDate, getDayKey, getMonthIndex } from "@/shared/utils/format";
+import TransactionsSkeleton from "@/features/transactions/components/TransactionsSkeleton";
 import ErrorState from "@/shared/components/ErrorState";
 
 type CurrencyFilter = "all" | "CLP" | "USD";
@@ -50,6 +53,12 @@ const MONTH_FILTERS = [
 ];
 
 const MAX_ITEMS_IN_MEMORY = 200;
+const TOUCH_TARGET_SIZE = spacing.xxl + spacing.xs;
+const PILL_ITEM_GAP = spacing.xs + 1;
+const PILL_ITEM_VERTICAL_PADDING = spacing.sm - 1;
+const CATEGORY_PILL_VERTICAL_PADDING = spacing.xxs + 1;
+const CATEGORY_LABEL_MAX_WIDTH = 90;
+const FILTER_BADGE_SIZE = 18;
 
 /** Derive YYYY-MM-DD strings from month (1–12) and year filters for backend queries. */
 function dateRangeFromFilters(
@@ -87,12 +96,9 @@ export default function TransactionsScreen() {
     categoryName?: string;
   }>();
   const { decrementCount } = useUncategorized();
-  const [creditCards, setCreditCards] = useState<CreditCardBasic[]>([]);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(
     params.creditCardId ?? null,
   );
-  const [loadingCards, setLoadingCards] = useState(true);
-  const [cardsError, setCardsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [currencyFilter, setCurrencyFilter] = useState<CurrencyFilter>("all");
   const [monthFilter, setMonthFilter] = useState(0);
@@ -116,6 +122,12 @@ export default function TransactionsScreen() {
 
   // Derive date range from month/year filters → pushed to backend SQL
   const { startDate, endDate } = dateRangeFromFilters(monthFilter, yearFilter);
+  const {
+    data: creditCards = [],
+    isLoading: loadingCards,
+    error: cardsError,
+    refetch: refetchCards,
+  } = useCreditCards();
 
   // React Query infinite pagination (auto-cached, auto-refetched on filter change)
   const {
@@ -124,8 +136,15 @@ export default function TransactionsScreen() {
     hasNextPage,
     isFetchingNextPage,
     isFetching,
+    isError: transactionsError,
+    error: transactionQueryError,
     refetch,
-  } = useInfiniteTransactions(selectedCardId, startDate, endDate, categoryFilter?.id);
+  } = useInfiniteTransactions(
+    selectedCardId,
+    startDate,
+    endDate,
+    categoryFilter?.id,
+  );
 
   // Flat list from all pages, deduplicated by id, capped at MAX_ITEMS_IN_MEMORY
   const transactions = useMemo(() => {
@@ -145,8 +164,14 @@ export default function TransactionsScreen() {
   const filterParamRef = useRef(params.filter);
   filterParamRef.current = params.filter;
 
-  const categoryParamRef = useRef({ categoryId: params.categoryId, categoryName: params.categoryName });
-  categoryParamRef.current = { categoryId: params.categoryId, categoryName: params.categoryName };
+  const categoryParamRef = useRef({
+    categoryId: params.categoryId,
+    categoryName: params.categoryName,
+  });
+  categoryParamRef.current = {
+    categoryId: params.categoryId,
+    categoryName: params.categoryName,
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -163,7 +188,7 @@ export default function TransactionsScreen() {
 
   const router = useRouter();
   const navigation = useNavigation();
-  const queryClient = useQueryClient();
+  const updateTransactionMutation = useUpdateTransactionMutation();
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
   const [categoryModalMerchant, setCategoryModalMerchant] = useState<
     string | null
@@ -184,26 +209,23 @@ export default function TransactionsScreen() {
     return Array.from(years).sort((a, b) => b - a);
   }, [transactions]);
 
-  const loadCreditCards = useCallback(async () => {
-    try {
-      setCardsError(null);
-      setLoadingCards(true);
-      const cardsResponse = await getCreditCards();
-      setCreditCards(cardsResponse.items);
-      if (cardsResponse.items.length > 0) {
-        setSelectedCardId((prev) => prev ?? cardsResponse.items[0].id);
-      }
-    } catch (error) {
-      setCardsError(error instanceof Error ? error.message : "Error al cargar las tarjetas");
-    } finally {
-      setLoadingCards(false);
-    }
-  }, []);
-
-  // Load credit cards
   useEffect(() => {
-    loadCreditCards();
-  }, [loadCreditCards]);
+    if (creditCards.length === 0) {
+      setSelectedCardId(null);
+      return;
+    }
+
+    setSelectedCardId((currentSelectedCardId) => {
+      if (
+        currentSelectedCardId &&
+        creditCards.some((card) => card.id === currentSelectedCardId)
+      ) {
+        return currentSelectedCardId;
+      }
+
+      return creditCards[0].id;
+    });
+  }, [creditCards]);
 
   const onRefresh = useCallback(() => {
     refetch();
@@ -304,6 +326,22 @@ export default function TransactionsScreen() {
     (onlyUncategorized ? 1 : 0) +
     (categoryFilter ? 1 : 0);
 
+  const getRefundListBadge = (transaction: Transaction) => {
+    if (transaction.source === "refund") {
+      return { label: "Refund", tone: "success" as const };
+    }
+    if (transaction.refundStatus === "full") {
+      return { label: "Refund total", tone: "success" as const };
+    }
+    if (transaction.refundStatus === "partial") {
+      return { label: "Refund parcial", tone: "warning" as const };
+    }
+    if (transaction.canRefund) {
+      return { label: "Admite refund", tone: "secondary" as const };
+    }
+    return null;
+  };
+
   // Wire headerRight filter button
   useEffect(() => {
     navigation.setOptions({
@@ -311,12 +349,16 @@ export default function TransactionsScreen() {
         <Pressable
           onPress={() => setShowFilters(!showFilters)}
           hitSlop={8}
-          style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}
+          style={styles.headerIconButton}
+          accessibilityRole="button"
+          accessibilityLabel="Mostrar filtros"
         >
           <Ionicons
             name="options-outline"
             size={20}
-            color={activeFiltersCount > 0 ? colors.textPrimary : colors.textSecondary}
+            color={
+              activeFiltersCount > 0 ? colors.textPrimary : colors.textSecondary
+            }
           />
           {activeFiltersCount > 0 && (
             <View style={styles.filterBadge}>
@@ -343,10 +385,28 @@ export default function TransactionsScreen() {
   if (cardsError) {
     return (
       <ErrorState
-        message="No se pudo cargar las transacciones. Verifica tu conexión."
+        message={
+          cardsError instanceof Error
+            ? cardsError.message
+            : "No se pudo cargar las tarjetas. Verifica tu conexión."
+        }
         onRetry={() => {
-          setCardsError(null);
-          loadCreditCards();
+          refetchCards();
+        }}
+      />
+    );
+  }
+
+  if (transactionsError) {
+    return (
+      <ErrorState
+        message={
+          transactionQueryError instanceof Error
+            ? transactionQueryError.message
+            : "No se pudo cargar las transacciones. Verifica tu conexión."
+        }
+        onRetry={() => {
+          refetch();
         }}
       />
     );
@@ -368,7 +428,11 @@ export default function TransactionsScreen() {
           contentContainerStyle={styles.centered}
           contentInsetAdjustmentBehavior="automatic"
         >
-          <Ionicons name="receipt-outline" size={48} color={colors.textSubtle} />
+          <Ionicons
+            name="receipt-outline"
+            size={48}
+            color={colors.textSubtle}
+          />
           <Text style={styles.emptyText}>
             {searchQuery || activeFiltersCount > 0
               ? "Sin resultados para estos filtros"
@@ -388,18 +452,28 @@ export default function TransactionsScreen() {
           {/* Quick-access pill bar */}
           <View style={styles.pillBar}>
             <View style={[styles.pillItem, styles.pillActive]}>
-              <Ionicons name="receipt-outline" size={15} color={colors.accent} />
-              <Text style={[styles.pillText, styles.pillTextActive]}>Transacciones</Text>
+              <Ionicons
+                name="receipt-outline"
+                size={15}
+                color={colors.accent}
+              />
+              <Text style={[styles.pillText, styles.pillTextActive]}>
+                Transacciones
+              </Text>
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.pillItem}
-              onPress={() => router.push("/(tabs)/transacciones/manualDebts" as any)}
+              onPress={() => router.push("/(tabs)/transacciones/manualDebts")}
               accessibilityLabel="Ver compras en cuotas"
               accessibilityRole="button"
             >
-              <Ionicons name="cart-outline" size={15} color={colors.textSecondary} />
+              <Ionicons
+                name="cart-outline"
+                size={15}
+                color={colors.textSecondary}
+              />
               <Text style={styles.pillText}>Compras en Cuotas</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
 
           {/* Search bar — iOS-style */}
@@ -415,7 +489,11 @@ export default function TransactionsScreen() {
             />
             {searchQuery.length > 0 && (
               <Pressable onPress={() => setSearchQuery("")} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                <Ionicons
+                  name="close-circle"
+                  size={18}
+                  color={colors.textMuted}
+                />
               </Pressable>
             )}
           </View>
@@ -425,18 +503,24 @@ export default function TransactionsScreen() {
             <Text style={styles.filterLabel}>Tarjeta</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {creditCards.map((card) => (
-                <TouchableOpacity
+                <Pressable
                   key={card.id}
                   style={[
                     styles.cardChip,
                     selectedCardId === card.id && styles.cardChipActive,
                   ]}
                   onPress={() => setSelectedCardId(card.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Seleccionar tarjeta ${card.cardType} terminada en ${card.cardLastDigits}`}
                 >
                   <Ionicons
                     name="card-outline"
                     size={16}
-                    color={selectedCardId === card.id ? colors.textPrimary : colors.textMuted}
+                    color={
+                      selectedCardId === card.id
+                        ? colors.textPrimary
+                        : colors.textMuted
+                    }
                   />
                   <Text
                     style={[
@@ -446,7 +530,7 @@ export default function TransactionsScreen() {
                   >
                     {card.cardType} •{card.cardLastDigits}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               ))}
             </ScrollView>
           </View>
@@ -455,17 +539,20 @@ export default function TransactionsScreen() {
           {showFilters && (
             <View style={styles.filtersPanel}>
               {/* Uncategorized filter */}
-              <TouchableOpacity
+              <Pressable
                 style={[
                   styles.filterChip,
                   onlyUncategorized && styles.filterChipActive,
-                  { alignSelf: "flex-start", marginBottom: 12 },
+                  styles.inlineFilterChip,
                 ]}
                 onPress={() => setOnlyUncategorized(!onlyUncategorized)}
+                accessibilityRole="button"
               >
                 <Ionicons
                   name={
-                    onlyUncategorized ? "checkmark-circle" : "help-circle-outline"
+                    onlyUncategorized
+                      ? "checkmark-circle"
+                      : "help-circle-outline"
                   }
                   size={16}
                   color={onlyUncategorized ? colors.textPrimary : colors.accent}
@@ -478,35 +565,43 @@ export default function TransactionsScreen() {
                 >
                   Solo sin categoría
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
 
               {/* Category drill-down filter */}
               {categoryFilter && (
-                <TouchableOpacity
+                <Pressable
                   style={[
                     styles.filterChip,
                     styles.filterChipActive,
-                    { alignSelf: "flex-start", marginBottom: 12 },
+                    styles.inlineFilterChip,
                   ]}
                   onPress={() => setCategoryFilter(null)}
                   accessibilityLabel={`Quitar filtro de categoría ${categoryFilter.name}`}
+                  accessibilityRole="button"
                 >
-                  <Ionicons name="close-circle" size={16} color={colors.textPrimary} />
-                  <Text style={styles.filterChipTextActive}>{categoryFilter.name}</Text>
-                </TouchableOpacity>
+                  <Ionicons
+                    name="close-circle"
+                    size={16}
+                    color={colors.textPrimary}
+                  />
+                  <Text style={styles.filterChipTextActive}>
+                    {categoryFilter.name}
+                  </Text>
+                </Pressable>
               )}
 
               {/* Currency filter */}
               <Text style={styles.filterLabel}>Moneda</Text>
               <View style={styles.filterRow}>
                 {(["all", "CLP", "USD"] as CurrencyFilter[]).map((c) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={c}
                     style={[
                       styles.filterChip,
                       currencyFilter === c && styles.filterChipActive,
                     ]}
                     onPress={() => setCurrencyFilter(c)}
+                    accessibilityRole="button"
                   >
                     <Text
                       style={[
@@ -516,7 +611,7 @@ export default function TransactionsScreen() {
                     >
                       {c === "all" ? "Todas" : c === "USD" ? "USD" : "CLP"}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </View>
 
@@ -527,12 +622,13 @@ export default function TransactionsScreen() {
                 showsHorizontalScrollIndicator={false}
                 style={styles.monthFilterScroll}
               >
-                <TouchableOpacity
+                <Pressable
                   style={[
                     styles.filterChip,
                     yearFilter === null && styles.filterChipActive,
                   ]}
                   onPress={() => setYearFilter(null)}
+                  accessibilityRole="button"
                 >
                   <Text
                     style={[
@@ -542,15 +638,16 @@ export default function TransactionsScreen() {
                   >
                     Todos
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
                 {availableYears.map((y) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={y}
                     style={[
                       styles.filterChip,
                       yearFilter === y && styles.filterChipActive,
                     ]}
                     onPress={() => setYearFilter(y)}
+                    accessibilityRole="button"
                   >
                     <Text
                       style={[
@@ -560,7 +657,7 @@ export default function TransactionsScreen() {
                     >
                       {y}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </ScrollView>
 
@@ -572,13 +669,14 @@ export default function TransactionsScreen() {
                 style={styles.monthFilterScroll}
               >
                 {MONTH_FILTERS.map((m, idx) => (
-                  <TouchableOpacity
+                  <Pressable
                     key={m}
                     style={[
                       styles.filterChip,
                       monthFilter === idx && styles.filterChipActive,
                     ]}
                     onPress={() => setMonthFilter(idx)}
+                    accessibilityRole="button"
                   >
                     <Text
                       style={[
@@ -588,7 +686,7 @@ export default function TransactionsScreen() {
                     >
                       {m.substring(0, 3)}
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
                 ))}
               </ScrollView>
 
@@ -603,7 +701,7 @@ export default function TransactionsScreen() {
                   onChangeText={setMinAmount}
                   placeholderTextColor={colors.textMuted}
                 />
-                <Text style={{ marginHorizontal: 8, color: colors.textSecondary }}>—</Text>
+                <Text style={styles.amountRangeSeparator}>—</Text>
                 <TextInput
                   style={styles.amountInput}
                   placeholder="Máximo"
@@ -615,7 +713,7 @@ export default function TransactionsScreen() {
               </View>
 
               {activeFiltersCount > 0 && (
-                <TouchableOpacity
+                <Pressable
                   style={styles.clearFilters}
                   onPress={() => {
                     setCurrencyFilter("all");
@@ -630,9 +728,10 @@ export default function TransactionsScreen() {
                       setSelectedCardId(creditCards[0].id);
                     }
                   }}
+                  accessibilityRole="button"
                 >
                   <Text style={styles.clearFiltersText}>Limpiar filtros</Text>
-                </TouchableOpacity>
+                </Pressable>
               )}
             </View>
           )}
@@ -640,7 +739,8 @@ export default function TransactionsScreen() {
           {/* Summary bar */}
           <View style={styles.summaryBar}>
             <Text style={styles.summaryCount}>
-              {totals.count} {totals.count === 1 ? "transacción" : "transacciones"}
+              {totals.count}{" "}
+              {totals.count === 1 ? "transacción" : "transacciones"}
             </Text>
             <View style={styles.summaryTotals}>
               {totals.clp > 0 && (
@@ -651,11 +751,13 @@ export default function TransactionsScreen() {
               {totals.usd > 0 && (
                 <Text style={styles.summaryAmountUSD}>
                   US$
-                  {totals.usd.toLocaleString("es-CL", { minimumFractionDigits: 2 })}
+                  {totals.usd.toLocaleString("es-CL", {
+                    minimumFractionDigits: 2,
+                  })}
                 </Text>
               )}
             </View>
-            <TouchableOpacity
+            <Pressable
               style={styles.exportButton}
               onPress={async () => {
                 setTimeout(async () => {
@@ -663,8 +765,9 @@ export default function TransactionsScreen() {
                     await exportTransactionsToCSV(
                       filteredTransactions.map((t) => ({
                         ...t,
-                        cardType: creditCards.find((c) => c.id === selectedCardId)
-                          ?.cardType,
+                        cardType: creditCards.find(
+                          (c) => c.id === selectedCardId,
+                        )?.cardType,
                         cardLastDigits: creditCards.find(
                           (c) => c.id === selectedCardId,
                         )?.cardLastDigits,
@@ -675,10 +778,16 @@ export default function TransactionsScreen() {
                   }
                 }, 300);
               }}
+              accessibilityRole="button"
+              accessibilityLabel="Exportar transacciones filtradas"
             >
-              <Ionicons name="download-outline" size={20} color={colors.accent} />
+              <Ionicons
+                name="download-outline"
+                size={20}
+                color={colors.accent}
+              />
               <Text style={styles.exportButtonText}>Exportar</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           <Text style={styles.exportInfo}>
             Solo se exportarán las transacciones filtradas actualmente.
@@ -719,36 +828,80 @@ export default function TransactionsScreen() {
                   )}
                 </View>
               </View>
-              {group.transactions.map((t) => (
-                <TouchableOpacity
-                  key={t.id}
-                  style={styles.transaction}
-                  activeOpacity={0.7}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/(screens)/transactionDetail",
-                      params: {
-                        creditCardId: selectedCardId!,
-                        transactionId: t.id,
-                      },
-                    })
-                  }
-                >
-                  <View style={styles.transactionLeft}>
-                    <Text style={styles.merchant} numberOfLines={1}>
-                      {t.merchant}
-                    </Text>
-                    <Text style={styles.transactionMeta}>
-                      {formatDate(t.transactionDate)}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: "flex-end" }}>
-                    <Text style={styles.amount}>
-                      {t.currency === "USD"
-                        ? `US$${t.amount.toFixed(2)}`
-                        : `$${t.amount.toLocaleString("es-CL")}`}
-                    </Text>
-                    <TouchableOpacity
+              {group.transactions.map((t) => {
+                const refundBadge = getRefundListBadge(t);
+
+                return (
+                  <View key={t.id} style={styles.transaction}>
+                    <Pressable
+                      style={styles.transactionMainAction}
+                      onPress={() => {
+                        if (!selectedCardId) {
+                          return;
+                        }
+
+                        router.push({
+                          pathname: "/(screens)/transactionDetail",
+                          params: {
+                            creditCardId: selectedCardId,
+                            transactionId: t.id,
+                          },
+                        });
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Ver detalle de ${t.merchant}`}
+                    >
+                      <View style={styles.transactionLeft}>
+                        <Text style={styles.merchant} numberOfLines={1}>
+                          {t.merchant}
+                        </Text>
+                        <View style={styles.transactionMetaRow}>
+                          <Text style={styles.transactionMeta}>
+                            {formatDate(t.transactionDate)}
+                          </Text>
+                          {refundBadge && (
+                            <View
+                              style={[
+                                styles.transactionBadge,
+                                refundBadge.tone === "secondary" &&
+                                  styles.transactionBadgeSecondary,
+                                refundBadge.tone === "warning" &&
+                                  styles.transactionBadgeWarning,
+                                refundBadge.tone === "success" &&
+                                  styles.transactionBadgeSuccess,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.transactionBadgeText,
+                                  refundBadge.tone === "secondary" &&
+                                    styles.transactionBadgeTextPrimary,
+                                  refundBadge.tone === "warning" &&
+                                    styles.transactionBadgeTextWarning,
+                                  refundBadge.tone === "success" &&
+                                    styles.transactionBadgeTextSuccess,
+                                ]}
+                              >
+                                {refundBadge.label}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                      <View style={styles.transactionAmountWrap}>
+                        <Text
+                          style={[
+                            styles.amount,
+                            t.source === "refund" && styles.amountRefund,
+                          ]}
+                        >
+                          {t.currency === "USD"
+                            ? `US$${t.amount.toFixed(2)}`
+                            : `$${t.amount.toLocaleString("es-CL")}`}
+                        </Text>
+                      </View>
+                    </Pressable>
+                    <Pressable
                       style={styles.categoryBtn}
                       onPress={() => {
                         setCategoryModalMerchant(t.merchant);
@@ -756,13 +909,20 @@ export default function TransactionsScreen() {
                         setCategoryModalCreditCardId(selectedCardId);
                         setCategoryModalVisible(true);
                       }}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        t.categoryId
+                          ? `Cambiar categoría de ${t.merchant}`
+                          : `Categorizar ${t.merchant}`
+                      }
                     >
                       {t.categoryId ? (
                         <View
                           style={[
                             styles.categoryPill,
                             {
-                              backgroundColor: t.categoryColor || colors.surface,
+                              backgroundColor:
+                                t.categoryColor || colors.surface,
                             },
                           ]}
                         >
@@ -785,31 +945,37 @@ export default function TransactionsScreen() {
                           </Text>
                         </View>
                       )}
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
-                </TouchableOpacity>
-              ))}
+                );
+              })}
             </View>
           ))}
 
           {/* Load More Button */}
           {hasNextPage && (
-            <TouchableOpacity
+            <Pressable
               style={styles.loadMoreButton}
               onPress={loadMore}
               disabled={isFetchingNextPage}
+              accessibilityRole="button"
             >
               {isFetchingNextPage ? (
                 <ActivityIndicator size="small" color={colors.accent} />
               ) : (
                 <View style={styles.loadMoreContent}>
-                  <Ionicons name="download-outline" size={18} color={colors.accent} />
-                  <Text style={styles.loadMoreText}>Cargar más transacciones</Text>
+                  <Ionicons
+                    name="download-outline"
+                    size={18}
+                    color={colors.accent}
+                  />
+                  <Text style={styles.loadMoreText}>
+                    Cargar más transacciones
+                  </Text>
                 </View>
               )}
-            </TouchableOpacity>
+            </Pressable>
           )}
-
         </ScrollView>
       )}
       <CategorySuggestModal
@@ -830,17 +996,24 @@ export default function TransactionsScreen() {
                 (t) => t.id === transactionId && !t.categoryId,
               );
 
-              const res = await updateTransaction(creditCardId, transactionId, {
-                categoryId: category.id,
+              await updateTransactionMutation.mutateAsync({
+                creditCardId,
+                transactionId,
+                data: {
+                  categoryId: category.id,
+                },
               });
 
-              // Invalidate to refresh the list (React Query re-fetches)
-              queryClient.invalidateQueries({ queryKey: ["transactions"] });
               if (wasMissingCategory) {
                 decrementCount();
               }
             } catch (e) {
-              console.error("Error updating transaction category", e);
+              Alert.alert(
+                "Error",
+                e instanceof Error
+                  ? e.message
+                  : "No se pudo actualizar la categoría",
+              );
             } finally {
               setCategoryModalVisible(false);
             }
@@ -866,19 +1039,25 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: spacing.md2,
+  },
+  headerIconButton: {
+    width: TOUCH_TARGET_SIZE,
+    height: TOUCH_TARGET_SIZE,
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyText: {
     fontSize: 15,
     color: colors.textMuted,
-    marginTop: 12,
+    marginTop: spacing.sm2,
     textAlign: "center",
   },
   // Card selector
   cardSelectorContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm2,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
@@ -886,28 +1065,27 @@ const styles = StyleSheet.create({
   // Pill navigation bar
   pillBar: {
     flexDirection: "row",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-    backgroundColor: "transparent",
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.md,
+    gap: spacing.sm,
   },
   pillItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+    gap: PILL_ITEM_GAP,
+    paddingVertical: PILL_ITEM_VERTICAL_PADDING,
+    paddingHorizontal: spacing.md - 2,
     borderRadius: borderRadius.pill,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
+    borderColor: colors.border,
   },
   pillActive: {
-    backgroundColor: "rgba(59,130,246,0.15)",
-    borderColor: "rgba(59,130,246,0.30)",
+    backgroundColor: colors.glass.background,
+    borderColor: colors.secondary,
   },
   pillText: {
-    fontSize: 12,
+    fontSize: fontSizes.sm - 1,
     fontWeight: "600",
     color: colors.textSecondary,
   },
@@ -917,13 +1095,13 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    marginHorizontal: 12,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    height: 40,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 10,
-    gap: 8,
+    marginHorizontal: spacing.sm2,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.sm2,
+    minHeight: spacing.xxl,
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.md,
+    gap: spacing.sm,
   },
   searchInput: {
     flex: 1,
@@ -936,9 +1114,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    minHeight: 44,
+    minHeight: TOUCH_TARGET_SIZE,
     borderRadius: borderRadius.pill,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.border,
     marginRight: spacing.sm,
     gap: spacing.sm,
   },
@@ -949,17 +1127,17 @@ const styles = StyleSheet.create({
   categoryPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: CATEGORY_PILL_VERTICAL_PADDING,
     borderRadius: borderRadius.card,
-    gap: 4,
+    gap: spacing.xs,
   },
-  categoryEmoji: { fontSize: 12 },
+  categoryEmoji: { fontSize: fontSizes.sm - 1 },
   categoryName: {
-    fontSize: 11,
+    fontSize: fontSizes.xs,
     fontWeight: "600",
     color: colors.textPrimary,
-    maxWidth: 90,
+    maxWidth: CATEGORY_LABEL_MAX_WIDTH,
   },
   cardChipText: {
     ...typography.presets.label,
@@ -970,25 +1148,25 @@ const styles = StyleSheet.create({
   },
   filterBadge: {
     position: "absolute",
-    top: -4,
-    right: -4,
+    top: -spacing.xs,
+    right: -spacing.xs,
     backgroundColor: colors.accent,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: FILTER_BADGE_SIZE,
+    height: FILTER_BADGE_SIZE,
+    borderRadius: borderRadius.full,
     justifyContent: "center",
     alignItems: "center",
   },
   filterBadgeText: {
-    fontSize: 10,
+    fontSize: fontSizes.xs - 1,
     fontWeight: "700",
     color: colors.textPrimary,
   },
   // Filters panel
   filtersPanel: {
     backgroundColor: colors.surface,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm2,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -1007,7 +1185,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   monthFilterScroll: {
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   filterChip: {
     flexDirection: "row",
@@ -1017,11 +1195,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     minHeight: 44,
     borderRadius: borderRadius.pill,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: colors.border,
     gap: spacing.xs,
   },
   filterChipActive: {
     backgroundColor: colors.secondary,
+  },
+  inlineFilterChip: {
+    alignSelf: "flex-start",
+    marginBottom: spacing.sm2,
   },
   filterChipText: {
     ...typography.presets.tab,
@@ -1031,20 +1213,24 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   clearFilters: {
-    marginTop: 8,
+    marginTop: spacing.sm,
     alignSelf: "flex-start",
   },
   clearFiltersText: {
     ...typography.presets.label,
     color: colors.accent,
   },
+  amountRangeSeparator: {
+    marginHorizontal: spacing.sm,
+    color: colors.textSecondary,
+  },
   // Summary bar
   summaryBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     ...glassSurface(false),
   },
   summaryCount: {
@@ -1053,7 +1239,7 @@ const styles = StyleSheet.create({
   },
   summaryTotals: {
     flexDirection: "row",
-    gap: 12,
+    gap: spacing.sm2,
   },
   summaryAmount: {
     ...typography.presets.cardTitle,
@@ -1066,11 +1252,11 @@ const styles = StyleSheet.create({
   exportButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(59,130,246,0.1)",
+    backgroundColor: colors.glass.background,
     borderRadius: borderRadius.input,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginLeft: 10,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: spacing.sm - 2,
+    marginLeft: spacing.md - 6,
     minHeight: 44,
   },
   exportButtonText: {
@@ -1082,26 +1268,26 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textMuted,
     textAlign: "center",
-    marginBottom: 2,
-    marginTop: -8,
+    marginBottom: spacing.xxs,
+    marginTop: -spacing.sm,
   },
   // Day groups
   dayGroup: {
-    marginHorizontal: 16,
-    marginBottom: 12,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm2,
     ...glassSurface(),
   },
   dayHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md - 2,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
-    backgroundColor: "rgba(255,255,255,0.03)",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: colors.borderLight,
+    borderTopLeftRadius: borderRadius.glass,
+    borderTopRightRadius: borderRadius.glass,
   },
   dayTitle: {
     ...typography.presets.label,
@@ -1110,7 +1296,7 @@ const styles = StyleSheet.create({
   },
   dayTotals: {
     flexDirection: "row",
-    gap: 10,
+    gap: borderRadius.md,
   },
   dayTotal: {
     fontSize: 13,
@@ -1123,47 +1309,72 @@ const styles = StyleSheet.create({
     color: colors.accent,
   },
   transaction: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md - 2,
+    paddingVertical: spacing.sm2,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
+  transactionMainAction: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   transactionLeft: {
     flex: 1,
-    marginRight: 12,
+    marginRight: spacing.sm2,
   },
+  transactionAmountWrap: { alignItems: "flex-end", maxWidth: "46%" },
   merchant: {
     fontSize: 14,
     fontWeight: "500",
     color: colors.textPrimary,
   },
+  transactionMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm - 2,
+    marginTop: spacing.xxs,
+  },
   transactionMeta: {
     fontSize: 12,
     color: colors.textMuted,
-    marginTop: 2,
   },
+  transactionBadge: {
+    minHeight: 22,
+    justifyContent: "center",
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.pill,
+  },
+  transactionBadgeSecondary: { backgroundColor: colors.secondary },
+  transactionBadgeWarning: { backgroundColor: colors.warningBg },
+  transactionBadgeSuccess: { backgroundColor: colors.successBg },
+  transactionBadgeText: { fontSize: 10, fontWeight: "700" },
+  transactionBadgeTextPrimary: { color: colors.textPrimary },
+  transactionBadgeTextWarning: { color: colors.warning },
+  transactionBadgeTextSuccess: { color: colors.success },
   amount: {
     fontSize: 15,
     fontWeight: "700",
     color: colors.textPrimary,
   },
+  amountRefund: { color: colors.success },
   categoryBtn: {
-    marginTop: 4,
+    marginTop: spacing.xs,
+    alignSelf: "flex-end",
   },
   uncategorizedPill: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 16,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs + 1,
+    borderRadius: borderRadius.glass,
     borderWidth: 1,
     borderColor: colors.accent,
     borderStyle: "dashed",
-    backgroundColor: "rgba(59,130,246,0.08)",
-    gap: 4,
+    backgroundColor: colors.glass.background,
+    gap: spacing.xs,
   },
   uncategorizedText: {
     fontSize: 11,
@@ -1175,7 +1386,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: borderRadius.input,
-    padding: 8,
+    padding: spacing.sm,
     fontSize: 15,
     backgroundColor: colors.surface,
     color: colors.textPrimary,
@@ -1183,9 +1394,9 @@ const styles = StyleSheet.create({
     textAlign: "right",
   },
   loadMoreButton: {
-    marginHorizontal: 14,
+    marginHorizontal: spacing.md - 2,
     marginVertical: 16,
-    paddingVertical: 12,
+    paddingVertical: spacing.sm2,
     backgroundColor: colors.surface,
     borderRadius: borderRadius.input,
     alignItems: "center",
@@ -1193,7 +1404,7 @@ const styles = StyleSheet.create({
   loadMoreContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: spacing.sm,
   },
   loadMoreText: {
     fontSize: 14,

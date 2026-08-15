@@ -10,7 +10,21 @@ interface MonthlyStatsProps {
   creditCardId: string;
 }
 
-const MONTH_NAMES_LONG = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+const MONTH_NAMES_LONG = [
+  "",
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
 
 /** Spanish display name from YYYY-MM key, e.g. "2026-08" → "Agosto 2026". */
 function formatMonthDisplay(key: string): string {
@@ -74,7 +88,7 @@ const styles = StyleSheet.create({
     ...glassSurface(false),
     marginTop: spacing.md,
     padding: spacing.md,
-  } as any,
+  },
   title: {
     ...typography.presets.cardTitle,
     color: colors.textPrimary,

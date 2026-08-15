@@ -1,45 +1,95 @@
-import { requestWithAuth } from "@/features/auth/hooks/useAuth";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { API_BASE_URL } from "@/config/api";
 import { PaginatedResponse } from "@/features/creditCards/services/creditCardsApi";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { requestWithAuth } from "@/features/auth/hooks/useAuth";
+import {
+  getQuotasByTransaction,
+  splitQuotas,
+} from "@/features/quotas/services/quotasApi";
+import { ImportResult, Transaction } from "@/shared/types/transaction";
 
 export type { PaginatedResponse };
+export type { ImportResult, Transaction };
 
-export interface ImportResult {
-  message: string;
-  importedCount: number;
-  quotasCreated: number;
-  orphanedCount: number;
-  orphanedTransactions: {
-    id: string;
-    merchant: string;
-    amount: number;
-    currency: string;
-    transactionDate: string;
-  }[];
-  suggestedPeriod: {
-    month: string;
-    startDate: string;
-    endDate: string;
-  } | null;
-}
-
-export interface Transaction {
-  id: string;
+export interface CreateRefundDto {
   amount: number;
-  currency: string;
-  cardType: string;
-  cardLastDigits: string;
-  merchant: string;
-  transactionDate: string;
-  bank: string;
-  creditCardId: string;
-  // Optional category fields
-  categoryId?: string;
-  categoryName?: string;
-  categoryIcon?: string;
-  categoryColor?: string;
+  reason?: string;
+  transactionDate?: string;
 }
+
+export interface CreateRefundResult {
+  refund: Transaction;
+  transaction: Transaction;
+}
+
+export interface TransactionDetail {
+  transaction: Transaction;
+  quotas: Awaited<ReturnType<typeof getQuotasByTransaction>>;
+}
+
+interface CreateRefundResponse {
+  message?: string;
+  data?: CreateRefundResult;
+}
+
+export const transactionKeys = {
+  all: ["transactions"] as const,
+  details: () => [...transactionKeys.all, "detail"] as const,
+  detail: (creditCardId: string, transactionId: string) =>
+    [...transactionKeys.details(), creditCardId, transactionId] as const,
+};
+
+const parseJsonSafely = async (response: Response): Promise<unknown> => {
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
+};
+
+const getErrorMessage = (payload: unknown, fallback: string): string => {
+  if (
+    payload &&
+    typeof payload === "object" &&
+    "message" in payload &&
+    typeof payload.message === "string"
+  ) {
+    return payload.message;
+  }
+
+  return fallback;
+};
+
+const isPaginationMetadata = (
+  metadata: unknown,
+): metadata is PaginatedResponse<Transaction>["metadata"] => {
+  return (
+    !!metadata &&
+    typeof metadata === "object" &&
+    "hasMore" in metadata &&
+    typeof metadata.hasMore === "boolean" &&
+    "nextCursor" in metadata &&
+    (typeof metadata.nextCursor === "string" || metadata.nextCursor === null)
+  );
+};
+
+const isPaginatedTransactionResponse = (
+  payload: unknown,
+): payload is PaginatedResponse<Transaction> => {
+  return (
+    !!payload &&
+    typeof payload === "object" &&
+    "items" in payload &&
+    Array.isArray(payload.items) &&
+    "metadata" in payload &&
+    isPaginationMetadata(payload.metadata)
+  );
+};
 
 export const getTransactionsByCreditCard = async (
   creditCardId: string,
@@ -62,20 +112,22 @@ export const getTransactionsByCreditCard = async (
   if (!response.ok) {
     throw new Error("Error al obtener transacciones");
   }
-  
+
   const data = await response.json();
-  
+
   // Handle both array (legacy) and paginated response
-  if (data && typeof data === "object" && "items" in data && "metadata" in data) {
-    return data as PaginatedResponse<Transaction>;
+  if (isPaginatedTransactionResponse(data)) {
+    return data;
   }
+
   // Legacy: wrap array response
   if (Array.isArray(data)) {
     return {
-      items: data as Transaction[],
+      items: data,
       metadata: { hasMore: false, nextCursor: null },
     };
   }
+
   return { items: [], metadata: { hasMore: false, nextCursor: null } };
 };
 
@@ -87,7 +139,8 @@ export const getTransactionById = async (
     `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}`,
   );
   if (!response.ok) {
-    throw new Error("Error al obtener transacción");
+    const error = await parseJsonSafely(response);
+    throw new Error(getErrorMessage(error, "Error al obtener transacción"));
   }
   return response.json();
 };
@@ -209,11 +262,161 @@ export const updateTransaction = async (
     },
   );
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Error updating transaction");
+    const error = await parseJsonSafely(response);
+    throw new Error(getErrorMessage(error, "Error updating transaction"));
   }
   return response.json();
 };
+
+export const createRefund = async (
+  creditCardId: string,
+  transactionId: string,
+  data: CreateRefundDto,
+): Promise<CreateRefundResponse> => {
+  const response = await requestWithAuth(
+    `${API_BASE_URL}/creditCards/${creditCardId}/transactions/${transactionId}/refunds`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    },
+  );
+
+  if (!response.ok) {
+    const error = await parseJsonSafely(response);
+    throw new Error(getErrorMessage(error, "Error al registrar refund"));
+  }
+
+  return response.json();
+};
+
+const sortQuotasByDueDate = (
+  quotas: Awaited<ReturnType<typeof getQuotasByTransaction>>,
+) => {
+  return [...quotas].sort(
+    (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+  );
+};
+
+export function useTransactionDetail(
+  creditCardId: string,
+  transactionId: string,
+) {
+  return useQuery({
+    queryKey: transactionKeys.detail(creditCardId, transactionId),
+    queryFn: async (): Promise<TransactionDetail> => {
+      const [transaction, quotas] = await Promise.all([
+        getTransactionById(creditCardId, transactionId),
+        getQuotasByTransaction(creditCardId, transactionId),
+      ]);
+
+      return {
+        transaction,
+        quotas: sortQuotasByDueDate(quotas),
+      };
+    },
+  });
+}
+
+export function useUpdateTransactionMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      creditCardId,
+      transactionId,
+      data,
+    }: {
+      creditCardId: string;
+      transactionId: string;
+      data: Partial<{ categoryId?: string }>;
+    }) => updateTransaction(creditCardId, transactionId, data),
+    onSuccess: (response, variables) => {
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all });
+
+      if (!response.data) {
+        queryClient.invalidateQueries({
+          queryKey: transactionKeys.detail(
+            variables.creditCardId,
+            variables.transactionId,
+          ),
+        });
+        return;
+      }
+
+      queryClient.setQueryData(
+        transactionKeys.detail(variables.creditCardId, variables.transactionId),
+        (current: TransactionDetail | undefined) => {
+          if (!current) return current;
+
+          return {
+            ...current,
+            transaction: response.data ?? current.transaction,
+          };
+        },
+      );
+    },
+  });
+}
+
+export function useCreateRefundMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      creditCardId,
+      transactionId,
+      data,
+    }: {
+      creditCardId: string;
+      transactionId: string;
+      data: CreateRefundDto;
+    }) => createRefund(creditCardId, transactionId, data),
+    onSuccess: async (_response, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: transactionKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: transactionKeys.detail(
+            variables.creditCardId,
+            variables.transactionId,
+          ),
+        }),
+        queryClient.invalidateQueries({ queryKey: ["debtSummary"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["debtForecast"] }),
+      ]);
+    },
+  });
+}
+
+export function useSplitQuotasMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      creditCardId,
+      transactionId,
+      numberOfQuotas,
+    }: {
+      creditCardId: string;
+      transactionId: string;
+      numberOfQuotas: number;
+    }) => splitQuotas(creditCardId, transactionId, numberOfQuotas),
+    onSuccess: async (_response, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: transactionKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: transactionKeys.detail(
+            variables.creditCardId,
+            variables.transactionId,
+          ),
+        }),
+        queryClient.invalidateQueries({ queryKey: ["debtSummary"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["debtForecast"] }),
+      ]);
+    },
+  });
+}
 
 // ─── React Query infinite hook ────────────────────────────────────────
 

@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import type { CreditCard } from "@/shared/types/creditCard";
 import { borderRadius } from "@/shared/theme/tokens";
+import { addDebtRoute, homeRoute } from "@/shared/utils/routes";
 
 interface SuccessStepProps {
 	card: CreditCard;
@@ -38,11 +39,11 @@ export default function SuccessStep({ card }: SuccessStepProps) {
 	}, [checkScale, fadeIn]);
 
 	const handleGoToDashboard = () => {
-		router.replace("/(tabs)/inicio" as any);
+		router.replace(homeRoute);
 	};
 
 	const handleAddManual = () => {
-		router.push("/(screens)/addDebt");
+		router.push(addDebtRoute);
 	};
 
 	const handleImportGmail = () => {

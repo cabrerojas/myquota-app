@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { BarChart, PieChart } from "react-native-chart-kit";
 import { WebChart } from "@/shared/components/charts/WebChart";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
@@ -30,6 +30,7 @@ import { borderRadius } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface, glassSubtle } from "@/shared/theme/effects";
 import ErrorState from "@/shared/components/ErrorState";
+import { buildTransactionsRoute } from "@/shared/utils/routes";
 
 type ChartTab = "monthly" | "categories" | "usd";
 const ALL_PERIODS = "__all__";
@@ -683,15 +684,16 @@ export default function ChartsScreen() {
                         {...(isOthers
                           ? {}
                           : {
-                              onPress: () =>
-                                router.push({
-                                  pathname: "/(tabs)/transacciones" as any,
-                                  params: {
+                              onPress: () => {
+                                const categoryTransactionsRoute: Href =
+                                  buildTransactionsRoute({
                                     creditCardId: selectedCardId,
                                     categoryId: cat.categoryId,
                                     categoryName: cat.fullName,
-                                  },
-                                }),
+                                  });
+
+                                router.push(categoryTransactionsRoute);
+                              },
                               style: ({ pressed }: { pressed: boolean }) => [
                                 styles.categoryRow,
                                 pressed && styles.categoryRowPressed,

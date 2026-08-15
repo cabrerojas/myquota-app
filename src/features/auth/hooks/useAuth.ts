@@ -5,9 +5,14 @@ import {
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
 import * as WebBrowser from "expo-web-browser";
-import { makeRedirectUri } from "expo-auth-session";
 import { Router } from "expo-router";
 import { API_BASE_URL } from "@/config/api";
+import {
+  buildGoogleAuthUrl,
+  getGoogleAuthRedirectUri,
+  googleAuthConfig,
+  googleAuthRuntimeConfig,
+} from "@/config/auth";
 import {
   clearSession,
   getAccessToken,
@@ -19,14 +24,7 @@ import {
   isSessionExpired,
   resetSessionExpired,
 } from "@/shared/utils/authEvents";
-import {
-  parseIdTokenFromFragment,
-  shouldUseRedirectFallback,
-} from "./useAuth.utils";
-
-const webClientId = process.env.EXPO_PUBLIC_WEB_CLIENT_ID;
-
-const iosClientId = process.env.EXPO_PUBLIC_IOS_CLIENT_ID;
+import { parseIdTokenFromFragment } from "./useAuth.utils";
 
 // ── PKCE helpers ───────────────────────────────────────────────────────────
 
@@ -47,17 +45,15 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
 // ── Native-only configuration ──────────────────────────────────────────────
 if (Platform.OS !== "web") {
   GoogleSignin.configure({
-    webClientId: webClientId,
-    scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
+    webClientId: googleAuthConfig.webClientId,
+    scopes: [...googleAuthConfig.scopes],
     offlineAccess: true,
     forceCodeForRefreshToken: true,
-    iosClientId: iosClientId,
+    iosClientId: googleAuthConfig.iosClientId,
   });
 }
 
 WebBrowser.maybeCompleteAuthSession();
-
-const redirectUri = makeRedirectUri();
 
 /**
  * Authenticates with the backend. Supports two flows:
@@ -67,7 +63,12 @@ const redirectUri = makeRedirectUri();
 async function authenticateWithBackend(
   idToken: string | null,
   serverAuthCode: string | undefined,
-  user: { givenName?: string | null; familyName?: string | null; email?: string | null; photo?: string | null },
+  user: {
+    givenName?: string | null;
+    familyName?: string | null;
+    email?: string | null;
+    photo?: string | null;
+  },
   router: Router,
   nonce?: string,
   code?: string,
@@ -131,27 +132,25 @@ export const useGoogleSignIn = (router: Router) => {
         // ── Web OAuth: Authorization Code + PKCE (OAuth 2.1, modern flow) ──
         console.log("Iniciando sesión con Google (web)...");
 
-        const redirectUri = window.location.origin + "/login";
-        const codeVerifier = Math.random().toString(36).substring(2, 15) +
+        const codeVerifier =
+          Math.random().toString(36).substring(2, 15) +
           Math.random().toString(36).substring(2, 15);
         const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-        sessionStorage.setItem("oauth_code_verifier", codeVerifier);
+        sessionStorage.setItem(
+          googleAuthRuntimeConfig.storageKeys.codeVerifier,
+          codeVerifier,
+        );
 
-        const authUrl =
-          "https://accounts.google.com/o/oauth2/v2/auth?" +
-          new URLSearchParams({
-            client_id: webClientId ?? "",
-            redirect_uri: redirectUri,
-            response_type: "code",
-            scope: "openid profile email https://www.googleapis.com/auth/gmail.readonly",
-            code_challenge: codeChallenge,
-            code_challenge_method: "S256",
-            access_type: "offline",
-            prompt: "consent",
-          }).toString();
+        const authUrl = buildGoogleAuthUrl({
+          origin: window.location.origin,
+          codeChallenge,
+        });
 
-        sessionStorage.setItem("oauth_return", "1");
+        sessionStorage.setItem(
+          googleAuthRuntimeConfig.storageKeys.returnFlag,
+          "1",
+        );
         window.location.href = authUrl;
         return;
       } else {
@@ -167,8 +166,16 @@ export const useGoogleSignIn = (router: Router) => {
             return;
           }
           console.log("idToken obtenido:", idToken);
-          console.log("serverAuthCode obtenido:", serverAuthCode ? "✅" : "❌ no disponible");
-          await authenticateWithBackend(idToken, serverAuthCode ?? undefined, user, router);
+          console.log(
+            "serverAuthCode obtenido:",
+            serverAuthCode ? "✅" : "❌ no disponible",
+          );
+          await authenticateWithBackend(
+            idToken,
+            serverAuthCode ?? undefined,
+            user,
+            router,
+          );
         }
       }
     } catch (error) {
@@ -190,7 +197,9 @@ export const useGoogleSignIn = (router: Router) => {
  * and cleans the URL.
  */
 export async function parseOAuthReturn(router: Router): Promise<void> {
-  const isReturn = sessionStorage.getItem("oauth_return") === "1";
+  const isReturn =
+    sessionStorage.getItem(googleAuthRuntimeConfig.storageKeys.returnFlag) ===
+    "1";
   if (!isReturn) return;
 
   const params = new URLSearchParams(window.location.search);
@@ -216,13 +225,15 @@ export async function parseOAuthReturn(router: Router): Promise<void> {
       nonce,
     );
 
-    sessionStorage.removeItem("oauth_return");
+    sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.returnFlag);
     window.history.replaceState(null, "", "/");
     return;
   }
 
-  const codeVerifier = sessionStorage.getItem("oauth_code_verifier") ?? undefined;
-  const redirectUri = window.location.origin + "/login";
+  const codeVerifier =
+    sessionStorage.getItem(googleAuthRuntimeConfig.storageKeys.codeVerifier) ??
+    undefined;
+  const redirectUri = getGoogleAuthRedirectUri(window.location.origin);
 
   await authenticateWithBackend(
     null,
@@ -236,8 +247,8 @@ export async function parseOAuthReturn(router: Router): Promise<void> {
   );
 
   // Clean up
-  sessionStorage.removeItem("oauth_return");
-  sessionStorage.removeItem("oauth_code_verifier");
+  sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.returnFlag);
+  sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.codeVerifier);
   window.history.replaceState(null, "", "/");
 }
 

@@ -1,18 +1,33 @@
 import { Stack } from "expo-router";
-import { colors } from "@/shared/theme/colors";
+import { modalStackScreenOptions } from "@/shared/utils/routeOptions";
 
 export default function ScreensLayout() {
   return (
-    <Stack
-      screenOptions={{
-        presentation: "modal",
-        headerTintColor: colors.accent,
-        headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
-        headerBlurEffect: "systemChromeMaterialDark",
-        headerStyle: { backgroundColor: colors.bg },
-        // Native dismiss gesture + back — zero custom headerLeft.
-        // Reduce Transparency / Reduce Motion — system handles both.
-      }}
-    />
+    <Stack screenOptions={modalStackScreenOptions}>
+      <Stack.Screen
+        name="addDebt"
+        options={{
+          title: "Deuda Manual",
+        }}
+      />
+      <Stack.Screen
+        name="billingPeriods"
+        options={{
+          title: "Períodos de Facturación",
+        }}
+      />
+      <Stack.Screen
+        name="billingPeriodDetail"
+        options={{
+          title: "Detalle del Período",
+        }}
+      />
+      <Stack.Screen
+        name="transactionDetail"
+        options={{
+          title: "Detalle de Transacción",
+        }}
+      />
+    </Stack>
   );
 }

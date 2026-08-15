@@ -1,23 +1,23 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import BillingPeriodsScreen from "@/features/billingPeriods/screens/BillingPeriodsScreen";
+import {
+  BillingPeriodsRouteParams,
+  pickBillingPeriodsRouteParams,
+} from "@/shared/types/routeParams";
 
 export default function BillingPeriods() {
-  const { creditCardId, creditCardLabel } = useLocalSearchParams<{
-    creditCardId: string;
-    creditCardLabel: string;
-  }>();
+  const params = pickBillingPeriodsRouteParams(
+    useLocalSearchParams<BillingPeriodsRouteParams>(),
+  );
 
-  if (!creditCardId) {
+  if (!params.creditCardId) {
     return null;
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: "Períodos de Facturación" }} />
-      <BillingPeriodsScreen
-        creditCardId={creditCardId}
-        creditCardLabel={creditCardLabel || ""}
-      />
-    </>
+    <BillingPeriodsScreen
+      creditCardId={params.creditCardId}
+      creditCardLabel={params.creditCardLabel ?? ""}
+    />
   );
 }

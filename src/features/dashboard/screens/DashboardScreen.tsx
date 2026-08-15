@@ -2,7 +2,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Pressable,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -12,19 +11,20 @@ import {
 } from "react-native";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
 import {
   importBankTransactions,
-  ImportResult,
-  getTransactionsByCreditCard,
-  Transaction,
+  transactionKeys,
 } from "@/features/transactions/services/transactionsApi";
+import { useRecentTransactions } from "@/features/dashboard/services/recentTransactionsApi";
 import { useMyProfile } from "@/features/profile/services/userApi";
-import { createBillingPeriod } from "@/features/billingPeriods/services/billingPeriodsApi";
-import { useBillingPeriods } from "@/features/billingPeriods/services/billingPeriodsApi";
+import {
+  createBillingPeriod,
+  useBillingPeriods,
+} from "@/features/billingPeriods/services/billingPeriodsApi";
 import BillingPeriodFormModal from "@/features/billingPeriods/components/BillingPeriodFormModal";
 import CardsSection from "@/features/creditCards/components/CardsSection";
 import MonthlyStats from "../components/MonthlyStats";
@@ -43,14 +43,14 @@ import {
   setupAndroidChannel,
   scheduleCardNotifications,
 } from "@/features/notifications/services/notificationService";
-import { CreditCardWithLimits, CreditCard } from "@/shared/types/creditCard";
+import { CreditCard } from "@/shared/types/creditCard";
+import type { ImportResult } from "@/shared/types/transaction";
 import { formatShortDate, toISODateString } from "@/shared/utils/format";
 import { getSessionUser } from "@/features/auth/services/sessionStorage";
 import { useQueryClient } from "@tanstack/react-query";
 import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/colors";
 import { spacing, borderRadius, typography } from "@/shared/theme/tokens";
-import { iconContainer } from "@/shared/theme/effects";
 import Svg, { Circle } from "react-native-svg";
 
 const formatTransactionDate = formatShortDate;
@@ -149,9 +149,6 @@ function computeSuggestedPeriod(card: CreditCard): {
 export default function DashboardScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
-  const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -163,12 +160,28 @@ export default function DashboardScreen() {
     isLoading: isLoadingCards,
     isError: cardsError,
   } = useCreditCards();
-  const creditCards = creditCardsData || [];
+  const creditCards = useMemo(() => creditCardsData ?? [], [creditCardsData]);
   const { data: debtSummary, isError: debtError } = useDebtSummary();
   const { data: profile } = useMyProfile();
   const { data: billingPeriodsData } = useBillingPeriods(selectedCardId ?? "");
+  const {
+    data: transactions = [],
+    isLoading: isLoadingTransactions,
+    isFetched: hasLoadedRecentTransactions,
+    error: recentTransactionsError,
+  } = useRecentTransactions(selectedCardId, 10);
 
-  const billingPeriods = billingPeriodsData?.items ?? [];
+  const billingPeriods = useMemo(
+    () => billingPeriodsData?.items ?? [],
+    [billingPeriodsData],
+  );
+
+  const transactionsRoute: Href = "/(tabs)/transacciones";
+  const uncategorizedTransactionsRoute: Href = {
+    pathname: "/(tabs)/transacciones",
+    params: { filter: "uncategorized" },
+  };
+
   const activePeriod = useMemo(() => {
     if (!billingPeriods.length) return null;
     const today = new Date();
@@ -195,7 +208,9 @@ export default function DashboardScreen() {
       today.setHours(0, 0, 0, 0);
       const end = new Date(activePeriod.endDate);
       end.setHours(23, 59, 59, 999);
-      return Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.ceil(
+        (end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
     }
     // Fallback: use closingDay from the card if configured
     if (selectedCard?.closingDay) {
@@ -211,15 +226,18 @@ export default function DashboardScreen() {
         const nextLast = new Date(nextYear, nextMonthIdx + 1, 0).getDate();
         const nextClosing = Math.min(selectedCard.closingDay, nextLast);
         const nextClosingDate = new Date(nextYear, nextMonthIdx, nextClosing);
-        return Math.ceil((nextClosingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return Math.ceil(
+          (nextClosingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+        );
       }
       const closingDate = new Date(year, month, closingDay);
-      return Math.ceil((closingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return Math.ceil(
+        (closingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
     }
     return null;
   }, [activePeriod, selectedCard?.closingDay]);
 
-  const [refreshKey, setRefreshKey] = useState(0);
   const { count: uncategorizedCount, refreshCount } = useUncategorized();
 
   // Initialize selectedCardId when creditCards loads
@@ -236,8 +254,8 @@ export default function DashboardScreen() {
       await queryClient.invalidateQueries({ queryKey: ["creditCards"] });
       await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
       await queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
+      await queryClient.invalidateQueries({ queryKey: transactionKeys.all });
       await refreshCount();
-      setRefreshKey((prev) => prev + 1);
       setAlertsDismissed(false);
     } catch (error) {
       if (!isSessionExpired()) console.error("Error refreshing:", error);
@@ -251,32 +269,11 @@ export default function DashboardScreen() {
     useState<ImportResult["suggestedPeriod"]>(null);
   const [orphanedCount, setOrphanedCount] = useState(0);
 
-  const loadTransactions = useCallback(async () => {
-    if (!selectedCardId) return;
-    setIsLoadingTransactions(true);
-    try {
-      const dataResponse = await getTransactionsByCreditCard(selectedCardId);
-      const data = dataResponse.items;
-      const sorted = data
-        .sort(
-          (a, b) =>
-            new Date(b.transactionDate).getTime() -
-            new Date(a.transactionDate).getTime(),
-        )
-        .slice(0, 10);
-      setTransactions(sorted);
-    } catch (error) {
-      if (!isSessionExpired())
-        console.error("Error loading transactions:", error);
-    } finally {
-      setIsLoadingTransactions(false);
-      setInitialLoadDone(true);
-    }
-  }, [selectedCardId]);
-
   useEffect(() => {
-    loadTransactions();
-  }, [selectedCardId, refreshKey]);
+    if (recentTransactionsError && !isSessionExpired()) {
+      console.error("Error loading transactions:", recentTransactionsError);
+    }
+  }, [recentTransactionsError]);
 
   const handleImportTransactions = useCallback(async () => {
     if (!selectedCardId) {
@@ -286,8 +283,8 @@ export default function DashboardScreen() {
     setIsRefreshing(true);
     try {
       const result = await importBankTransactions(selectedCardId);
-      setRefreshKey((prev) => prev + 1);
       await refreshCount();
+      await queryClient.invalidateQueries({ queryKey: transactionKeys.all });
       await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
       await queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
 
@@ -322,7 +319,7 @@ export default function DashboardScreen() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedCardId, refreshCount]);
+  }, [queryClient, refreshCount, selectedCardId]);
 
   const handleCreateSuggestedPeriod = async (data: {
     creditCardId: string;
@@ -336,11 +333,13 @@ export default function DashboardScreen() {
       ...data,
       creditCardId: selectedCardId, // Override with actual card ID
     });
+    await queryClient.invalidateQueries({
+      queryKey: ["billingPeriods", selectedCardId],
+    });
     await queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
     await queryClient.invalidateQueries({ queryKey: ["creditCards"] });
     await queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
     await refreshCount();
-    setRefreshKey((prev) => prev + 1);
     Alert.alert("Éxito", "Período de facturación creado correctamente.");
   };
 
@@ -368,12 +367,15 @@ export default function DashboardScreen() {
     useCallback(() => {
       queryClient.invalidateQueries({ queryKey: ["debtSummary"] });
       queryClient.invalidateQueries({ queryKey: ["monthlyStats"] });
+      queryClient.invalidateQueries({ queryKey: transactionKeys.all });
       refreshCount();
     }, [queryClient, refreshCount]),
   );
 
   const showSkeleton =
-    isLoadingCards || (creditCards.length > 0 && !initialLoadDone);
+    isLoadingCards ||
+    (creditCards.length > 0 &&
+      (!selectedCardId || !hasLoadedRecentTransactions));
   const showError = !showSkeleton && (cardsError || debtError);
   const showEmpty = !showSkeleton && !showError && creditCards.length === 0;
 
@@ -487,7 +489,11 @@ export default function DashboardScreen() {
                     {isRefreshing ? (
                       <ActivityIndicator size="small" color={colors.bg} />
                     ) : (
-                      <Ionicons name="sync-outline" size={16} color={colors.bg} />
+                      <Ionicons
+                        name="sync-outline"
+                        size={16}
+                        color={colors.bg}
+                      />
                     )}
                     <Text style={styles.importButtonText}>
                       {isRefreshing
@@ -519,8 +525,8 @@ export default function DashboardScreen() {
                           Crear período de facturación
                         </Text>
                         <Text style={styles.billingPromptBody}>
-                          Para ver estadísticas, proyecciones y organizar tus gastos
-                          por mes.
+                          Para ver estadísticas, proyecciones y organizar tus
+                          gastos por mes.
                         </Text>
                         <PressableScale
                           onPress={() => {
@@ -562,10 +568,7 @@ export default function DashboardScreen() {
                   {debtSummary &&
                     ((debtSummary.totalCLP ?? 0) > 0 ||
                       (debtSummary.totalUSD ?? 0) > 0) && (
-                      <DebtIndicatorCard
-                        refreshKey={refreshKey}
-                        summary={debtSummary}
-                      />
+                      <DebtIndicatorCard summary={debtSummary} />
                     )}
                   <MonthlyStats creditCardId={selectedCardId} />
                 </>
@@ -576,12 +579,7 @@ export default function DashboardScreen() {
           {uncategorizedCount > 0 && (
             <TouchableOpacity
               style={styles.categorizeBanner}
-              onPress={() =>
-                router.push({
-                  pathname: "/(tabs)/transacciones" as any,
-                  params: { filter: "uncategorized" },
-                })
-              }
+              onPress={() => router.push(uncategorizedTransactionsRoute)}
               activeOpacity={0.85}
             >
               <View style={styles.categorizeAccent} />
@@ -599,18 +597,26 @@ export default function DashboardScreen() {
                   Toca para asignar categorías
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.accent}
+              />
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
             style={styles.sectionHeader}
-            onPress={() => router.push("/(tabs)/transacciones" as any)}
+            onPress={() => router.push(transactionsRoute)}
           >
             <Text style={styles.sectionTitle}>Movimientos recientes</Text>
             <View style={styles.seeAllButton}>
               <Text style={styles.seeAllText}>Ver todas</Text>
-              <Ionicons name="chevron-forward" size={14} color={colors.accent} />
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={colors.accent}
+              />
             </View>
           </TouchableOpacity>
           {isLoadingTransactions ? (
@@ -630,7 +636,8 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.emptyTxTitle}>Sin movimientos recientes</Text>
               <Text style={styles.emptyTxBody}>
-                Usa "Sincronizar movimientos" para importar tus gastos bancarios.
+                Usa el botón Sincronizar movimientos para importar tus gastos
+                bancarios.
               </Text>
               <TouchableOpacity
                 style={styles.emptyTxCta}

@@ -1,3 +1,4 @@
+import type { ImpactFeedbackStyle } from "expo-haptics";
 import {
   Pressable,
   Animated,
@@ -5,13 +6,13 @@ import {
   ViewStyle,
   Platform,
 } from "react-native";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, type ReactNode } from "react";
 
 interface PressableScaleProps {
   scale?: number;
-  haptic?: string | false;
+  haptic?: ImpactFeedbackStyle | false;
   style?: StyleProp<ViewStyle>;
-  children: React.ReactNode;
+  children: ReactNode;
   onPress?: () => void;
   disabled?: boolean;
   accessibilityLabel?: string;
@@ -35,17 +36,20 @@ export default function PressableScale({
   accessibilityRole,
 }: PressableScaleProps) {
   const anim = useRef(new Animated.Value(1)).current;
+  const animatedStyle: Animated.WithAnimatedValue<ViewStyle> = {
+    transform: [{ scale: anim }],
+  };
 
   const handlePressIn = useCallback(() => {
     if (haptic !== false && Platform.OS !== "web") {
-      // Dynamic import avoids module-level crash on web
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const Haptics = require("expo-haptics");
-        Haptics.impactAsync(haptic ?? Haptics.ImpactFeedbackStyle.Light);
-      } catch {
-        // expo-haptics not available — silent no-op
-      }
+      // Dynamic import avoids module-level crash on web.
+      void import("expo-haptics")
+        .then((Haptics) =>
+          Haptics.impactAsync(haptic ?? Haptics.ImpactFeedbackStyle.Light),
+        )
+        .catch(() => {
+          // expo-haptics not available — silent no-op
+        });
     }
     Animated.spring(anim, {
       toValue: scale,
@@ -73,9 +77,7 @@ export default function PressableScale({
       accessibilityLabel={accessibilityLabel}
       accessibilityRole={accessibilityRole}
     >
-      <Animated.View style={[{ transform: [{ scale: anim }] }, style as any]}>
-        {children}
-      </Animated.View>
+      <Animated.View style={[animatedStyle, style]}>{children}</Animated.View>
     </Pressable>
   );
 }

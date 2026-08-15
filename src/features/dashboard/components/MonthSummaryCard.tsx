@@ -1,6 +1,12 @@
-import { View, Text, StyleSheet, TouchableOpacity, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Pressable,
+} from "react-native";
 import { memo, useMemo } from "react";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { glassSurface, iconContainer } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
@@ -20,7 +26,21 @@ function toMonthKey(date: Date): string {
   return `${y}-${m}`;
 }
 
-const MONTH_NAMES_LONG = ["", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+const MONTH_NAMES_LONG = [
+  "",
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
 
 /** Spanish display name from YYYY-MM key, e.g. "2026-08" → "Agosto". */
 function monthDisplayName(key: string): string {
@@ -35,7 +55,7 @@ function monthDisplayName(key: string): string {
 const MonthSummaryCardComponent = ({
   creditCardId,
   nextPeriodCLP,
-  nextPeriodUSD,
+  nextPeriodUSD: _nextPeriodUSD,
 }: MonthSummaryCardProps) => {
   const router = useRouter();
   const { data: stats = [], isLoading } = useMonthlyStats(creditCardId);
@@ -70,10 +90,12 @@ const MonthSummaryCardComponent = ({
   const hasEstimatedBill = nextPeriodCLP !== undefined && nextPeriodCLP > 0;
 
   const handleViewTransactions = () => {
-    router.push({
-      pathname: "/(tabs)/transacciones" as any,
+    const transactionsRoute: Href = {
+      pathname: "/(tabs)/transacciones",
       params: { creditCardId },
-    });
+    };
+
+    router.push(transactionsRoute);
   };
 
   return (
@@ -167,24 +189,23 @@ const MonthSummaryCardComponent = ({
                       styles.categoryRow,
                       pressed && styles.categoryRowPressed,
                     ]}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(tabs)/transacciones" as any,
+                    onPress={() => {
+                      const categoryTransactionsRoute: Href = {
+                        pathname: "/(tabs)/transacciones",
                         params: {
                           creditCardId,
                           categoryId,
                           categoryName: data.categoryName,
                         },
-                      })
-                    }
+                      };
+
+                      router.push(categoryTransactionsRoute);
+                    }}
                     accessibilityRole="button"
                     accessibilityLabel={`Ver transacciones de ${data.categoryName}`}
                   >
                     <View style={styles.categoryLeft}>
-                      <Text
-                        style={styles.categoryName}
-                        numberOfLines={1}
-                      >
+                      <Text style={styles.categoryName} numberOfLines={1}>
                         {data.categoryName}
                       </Text>
                     </View>
@@ -232,7 +253,7 @@ const styles = StyleSheet.create({
     ...glassSurface(false),
     padding: 16,
     marginTop: 16,
-  } as any,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
