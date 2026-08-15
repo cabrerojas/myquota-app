@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,13 +12,21 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "expo-router";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
+import { RefundEntrySheet } from "@/features/transactions/components/RefundEntrySheet";
+import { TransactionMoreActionsMenu } from "@/features/transactions/components/TransactionMoreActionsMenu";
 import {
   useCreateRefundMutation,
   useSplitQuotasMutation,
   useTransactionDetail,
   useUpdateTransactionMutation,
 } from "@/features/transactions/services/transactionsApi";
+import {
+  canShowRefundAction,
+  getRefundStatusChip,
+  hasTransactionRefunds,
+} from "@/features/transactions/utils/refundPresentation";
 import ErrorState from "@/shared/components/ErrorState";
 import {
   borderRadius,
@@ -56,13 +64,10 @@ export default function TransactionDetailScreen({
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [numQuotas, setNumQuotas] = useState("3");
 
-  // Refund modal
-  const [showRefundModal, setShowRefundModal] = useState(false);
-  const [refundAmount, setRefundAmount] = useState("");
-  const [refundReason, setRefundReason] = useState("");
-  const [refundError, setRefundError] = useState<string | null>(null);
+  const [showRefundSheet, setShowRefundSheet] = useState(false);
   const transaction = data?.transaction ?? null;
   const quotas = data?.quotas ?? [];
+  const navigation = useNavigation();
 
   const onRefresh = async () => {
     await refetch();
@@ -127,6 +132,53 @@ export default function TransactionDetailScreen({
     }
   };
 
+  const paidCount = quotas.filter((q) => q.status === "paid").length;
+  const pendingCount = quotas.length - paidCount;
+  const refundedAmount = transaction?.refundedAmount ?? 0;
+  const refundableAmount = transaction?.refundableAmount ?? 0;
+  const refundChip = transaction ? getRefundStatusChip(transaction) : null;
+  const refunds = useMemo(
+    () =>
+      [...(transaction?.refunds ?? [])].sort(
+        (a, b) =>
+          new Date(b.createdAt || b.transactionDate).getTime() -
+          new Date(a.createdAt || a.transactionDate).getTime(),
+      ),
+    [transaction?.refunds],
+  );
+  const hasRefunds = transaction ? hasTransactionRefunds(transaction) : false;
+  const isRefundChild = transaction?.source === "refund";
+  const canRegisterRefund = transaction
+    ? canShowRefundAction(transaction)
+    : false;
+  const refunding = createRefundMutation.isPending;
+  const splitting = splitQuotasMutation.isPending;
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TransactionMoreActionsMenu
+          onRegisterRefund={() => setShowRefundSheet(true)}
+          submitting={refunding}
+          visible={canRegisterRefund}
+        />
+      ),
+    });
+  }, [canRegisterRefund, navigation, refunding]);
+
+  const handleCreateRefund = async (input: {
+    amount: number;
+    reason?: string;
+  }) => {
+    await createRefundMutation.mutateAsync({
+      creditCardId,
+      transactionId,
+      data: input,
+    });
+
+    await refetch();
+  };
+
   if (isLoading) {
     return (
       <View style={styles.centered}>
@@ -149,97 +201,6 @@ export default function TransactionDetailScreen({
       />
     );
   }
-
-  const paidCount = quotas.filter((q) => q.status === "paid").length;
-  const pendingCount = quotas.length - paidCount;
-  const refundStatus = transaction.refundStatus ?? "none";
-  const refundedAmount = transaction.refundedAmount ?? 0;
-  const refundableAmount = transaction.refundableAmount ?? 0;
-  const refunds = [...(transaction.refunds ?? [])].sort(
-    (a, b) =>
-      new Date(b.createdAt || b.transactionDate).getTime() -
-      new Date(a.createdAt || a.transactionDate).getTime(),
-  );
-  const isRefundChild = transaction.source === "refund";
-  const isImportedParent =
-    transaction.source === "email" && !transaction.parentTransactionId;
-  const canRefund = Boolean(transaction.canRefund);
-  const refunding = createRefundMutation.isPending;
-  const splitting = splitQuotasMutation.isPending;
-  const parsedRefundAmount = Number(refundAmount.replace(",", "."));
-  const refundValidationError = (() => {
-    if (!showRefundModal) return null;
-    if (!refundAmount.trim()) return "Ingresa el monto a reintegrar.";
-    if (!Number.isFinite(parsedRefundAmount) || parsedRefundAmount <= 0) {
-      return "Ingresa un monto válido mayor a cero.";
-    }
-    if (parsedRefundAmount > refundableAmount) {
-      return `Máximo disponible: ${formatCurrency(refundableAmount, transaction.currency)}`;
-    }
-    return null;
-  })();
-  const refundAvailabilityMessage = (() => {
-    if (isRefundChild) {
-      return "Este movimiento ya es un refund vinculado y no admite nuevos refunds.";
-    }
-    if (!isImportedParent) {
-      return "Solo las compras importadas y padres admiten refunds.";
-    }
-    if (
-      (transaction.totalInstallments ?? quotas.length) > 1 ||
-      quotas.length > 1
-    ) {
-      return "Solo las compras importadas de una sola cuota admiten refunds.";
-    }
-    if (refundStatus === "full" || refundableAmount <= 0) {
-      return "Esta compra ya fue reintegrada por completo.";
-    }
-    if (!canRefund) {
-      return "Esta compra ya no está disponible para registrar refunds.";
-    }
-    return "Disponible mientras la compra siga siendo una sola cuota activa.";
-  })();
-
-  const openRefundModal = () => {
-    setRefundAmount(String(refundableAmount));
-    setRefundReason("");
-    setRefundError(null);
-    setShowRefundModal(true);
-  };
-
-  const handleCreateRefund = async () => {
-    if (refundValidationError) {
-      setRefundError(refundValidationError);
-      return;
-    }
-
-    setRefundError(null);
-
-    try {
-      await createRefundMutation.mutateAsync({
-        creditCardId,
-        transactionId,
-        data: {
-          amount: parsedRefundAmount,
-          reason: refundReason.trim() || undefined,
-        },
-      });
-
-      await refetch();
-      setShowRefundModal(false);
-      Alert.alert(
-        "Refund registrado",
-        `Disponible restante: ${formatCurrency(
-          Math.max(refundableAmount - parsedRefundAmount, 0),
-          transaction.currency,
-        )}`,
-      );
-    } catch (e) {
-      setRefundError(
-        e instanceof Error ? e.message : "No se pudo registrar el refund",
-      );
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -286,11 +247,11 @@ export default function TransactionDetailScreen({
                 <Text
                   style={[styles.sourceBadgeText, styles.sourceBadgeRefundText]}
                 >
-                  Refund vinculado
+                  Reembolso vinculado
                 </Text>
               </View>
             )}
-            {refundStatus === "partial" && (
+            {refundChip?.tone === "warning" && (
               <View style={[styles.sourceBadge, styles.sourceBadgeWarning]}>
                 <Text
                   style={[
@@ -298,11 +259,11 @@ export default function TransactionDetailScreen({
                     styles.sourceBadgeWarningText,
                   ]}
                 >
-                  Refund parcial
+                  {refundChip.label}
                 </Text>
               </View>
             )}
-            {refundStatus === "full" && (
+            {refundChip?.tone === "success" && (
               <View style={[styles.sourceBadge, styles.sourceBadgeSuccess]}>
                 <Text
                   style={[
@@ -310,7 +271,7 @@ export default function TransactionDetailScreen({
                     styles.sourceBadgeSuccessText,
                   ]}
                 >
-                  Refund total
+                  {refundChip.label}
                 </Text>
               </View>
             )}
@@ -340,74 +301,39 @@ export default function TransactionDetailScreen({
           </View>
         </View>
 
-        {/* Refund Section */}
-        <View style={styles.sectionCard}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleBlock}>
-              <Text style={styles.sectionTitle}>Refunds</Text>
-              <Text style={styles.sectionSubtitle}>
-                {refundAvailabilityMessage}
-              </Text>
+        {hasRefunds && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleBlock}>
+                <Text style={styles.sectionTitle}>Reembolsos</Text>
+                <Text style={styles.sectionSubtitle}>
+                  Historial de movimientos vinculados a esta compra.
+                </Text>
+              </View>
             </View>
-            {canRefund && (
-              <Pressable
-                style={styles.refundButton}
-                onPress={openRefundModal}
-                accessibilityRole="button"
-                accessibilityLabel="Registrar refund"
-              >
-                <Ionicons
-                  name="arrow-undo-outline"
-                  size={16}
-                  color={colors.textPrimary}
-                />
-                <Text style={styles.refundButtonText}>Registrar</Text>
-              </Pressable>
-            )}
-          </View>
 
-          <View style={styles.refundSummaryRow}>
-            <View style={styles.refundSummaryItem}>
-              <Text style={styles.refundSummaryLabel}>Estado</Text>
-              <Text style={styles.refundSummaryValue}>
-                {refundStatus === "full"
-                  ? "Completo"
-                  : refundStatus === "partial"
-                    ? "Parcial"
-                    : "Sin refunds"}
-              </Text>
+            <View style={styles.refundSummaryRow}>
+              <View style={styles.refundSummaryItem}>
+                <Text style={styles.refundSummaryLabel}>Monto reembolsado</Text>
+                <Text
+                  style={[
+                    styles.refundSummaryValue,
+                    styles.refundSummaryValueSuccess,
+                  ]}
+                >
+                  {formatCurrency(refundedAmount, transaction.currency)}
+                </Text>
+              </View>
+              <View style={styles.refundSummaryItem}>
+                <Text style={styles.refundSummaryLabel}>
+                  Disponible para reembolso
+                </Text>
+                <Text style={styles.refundSummaryValue}>
+                  {formatCurrency(refundableAmount, transaction.currency)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.refundSummaryItem}>
-              <Text style={styles.refundSummaryLabel}>Refundado</Text>
-              <Text
-                style={[
-                  styles.refundSummaryValue,
-                  styles.refundSummaryValueSuccess,
-                ]}
-              >
-                {formatCurrency(refundedAmount, transaction.currency)}
-              </Text>
-            </View>
-            <View style={styles.refundSummaryItem}>
-              <Text style={styles.refundSummaryLabel}>Disponible</Text>
-              <Text style={styles.refundSummaryValue}>
-                {formatCurrency(refundableAmount, transaction.currency)}
-              </Text>
-            </View>
-          </View>
 
-          {refunds.length === 0 ? (
-            <View style={styles.refundEmptyState}>
-              <Ionicons
-                name="receipt-outline"
-                size={16}
-                color={colors.textSubtle}
-              />
-              <Text style={styles.refundEmptyText}>
-                Aún no hay refunds vinculados a esta compra.
-              </Text>
-            </View>
-          ) : (
             <View style={styles.refundHistoryList}>
               {refunds.map((refund, index) => (
                 <View
@@ -420,7 +346,7 @@ export default function TransactionDetailScreen({
                 >
                   <View style={styles.refundHistoryLeft}>
                     <Text style={styles.refundHistoryTitle}>
-                      Refund {index + 1}
+                      Reembolso vinculado
                     </Text>
                     <Text style={styles.refundHistoryMeta}>
                       {formatDate(refund.transactionDate)}
@@ -437,8 +363,8 @@ export default function TransactionDetailScreen({
                 </View>
               ))}
             </View>
-          )}
-        </View>
+          </View>
+        )}
 
         {/* Category */}
         <View style={styles.sectionCard}>
@@ -696,106 +622,14 @@ export default function TransactionDetailScreen({
         </View>
       </Modal>
 
-      {/* Refund Modal */}
-      <Modal
-        visible={showRefundModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowRefundModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Registrar refund</Text>
-            <Text style={styles.modalSubtitle}>
-              Disponible:{" "}
-              {formatCurrency(refundableAmount, transaction.currency)}
-            </Text>
-
-            <Text style={styles.modalLabel}>Monto a reintegrar</Text>
-            <TextInput
-              style={styles.modalInput}
-              keyboardType="decimal-pad"
-              value={refundAmount}
-              onChangeText={(value) => {
-                setRefundAmount(value);
-                if (refundError) setRefundError(null);
-              }}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              accessibilityLabel="Monto del refund"
-            />
-            <Pressable
-              style={styles.useAvailableButton}
-              onPress={() => setRefundAmount(String(refundableAmount))}
-              accessibilityRole="button"
-              accessibilityLabel="Usar el monto disponible"
-            >
-              <Text style={styles.useAvailableButtonText}>
-                Usar monto disponible
-              </Text>
-            </Pressable>
-
-            <Text style={styles.modalLabel}>Motivo (opcional)</Text>
-            <TextInput
-              style={[styles.modalInput, styles.modalTextarea]}
-              value={refundReason}
-              onChangeText={setRefundReason}
-              placeholder="Ej. devolución parcial del comercio"
-              placeholderTextColor={colors.textMuted}
-              multiline
-              maxLength={140}
-              textAlignVertical="top"
-              accessibilityLabel="Motivo del refund"
-            />
-
-            {(refundError || refundValidationError) && (
-              <Text style={styles.modalErrorText}>
-                {refundError || refundValidationError}
-              </Text>
-            )}
-
-            <View style={styles.refundHelperCard}>
-              <Ionicons
-                name="information-circle-outline"
-                size={16}
-                color={colors.textMuted}
-              />
-              <Text style={styles.refundHelperText}>
-                Se registrará como una transacción negativa vinculada. Si
-                divides esta compra en cuotas, dejará de admitir nuevos refunds.
-              </Text>
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable
-                style={styles.modalCancelButton}
-                onPress={() => setShowRefundModal(false)}
-                disabled={refunding}
-                accessibilityRole="button"
-              >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.modalConfirmButton,
-                  styles.refundConfirmButton,
-                  (refunding || !!refundValidationError) &&
-                    styles.modalButtonDisabled,
-                ]}
-                onPress={handleCreateRefund}
-                disabled={refunding || !!refundValidationError}
-                accessibilityRole="button"
-              >
-                {refunding ? (
-                  <ActivityIndicator size="small" color={colors.textPrimary} />
-                ) : (
-                  <Text style={styles.modalConfirmText}>Confirmar</Text>
-                )}
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <RefundEntrySheet
+        currency={transaction.currency}
+        onClose={() => setShowRefundSheet(false)}
+        onSubmit={handleCreateRefund}
+        refundableAmount={refundableAmount}
+        submitting={refunding}
+        visible={showRefundSheet}
+      />
 
       {/* Category Modal */}
       <CategorySuggestModal

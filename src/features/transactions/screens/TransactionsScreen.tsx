@@ -19,6 +19,7 @@ import {
   useInfiniteTransactions,
   useUpdateTransactionMutation,
 } from "@/features/transactions/services/transactionsApi";
+import { getRefundStatusChip } from "@/features/transactions/utils/refundPresentation";
 import { exportTransactionsToCSV } from "@/features/transactions/services/exportTransactions";
 import type { Transaction } from "@/shared/types/transaction";
 import { useUncategorized } from "@/shared/contexts/UncategorizedContext";
@@ -325,22 +326,6 @@ export default function TransactionsScreen() {
     (searchQuery ? 1 : 0) +
     (onlyUncategorized ? 1 : 0) +
     (categoryFilter ? 1 : 0);
-
-  const getRefundListBadge = (transaction: Transaction) => {
-    if (transaction.source === "refund") {
-      return { label: "Refund", tone: "success" as const };
-    }
-    if (transaction.refundStatus === "full") {
-      return { label: "Refund total", tone: "success" as const };
-    }
-    if (transaction.refundStatus === "partial") {
-      return { label: "Refund parcial", tone: "warning" as const };
-    }
-    if (transaction.canRefund) {
-      return { label: "Admite refund", tone: "secondary" as const };
-    }
-    return null;
-  };
 
   // Wire headerRight filter button
   useEffect(() => {
@@ -829,7 +814,7 @@ export default function TransactionsScreen() {
                 </View>
               </View>
               {group.transactions.map((t) => {
-                const refundBadge = getRefundListBadge(t);
+                const refundBadge = getRefundStatusChip(t);
 
                 return (
                   <View key={t.id} style={styles.transaction}>
@@ -863,8 +848,6 @@ export default function TransactionsScreen() {
                             <View
                               style={[
                                 styles.transactionBadge,
-                                refundBadge.tone === "secondary" &&
-                                  styles.transactionBadgeSecondary,
                                 refundBadge.tone === "warning" &&
                                   styles.transactionBadgeWarning,
                                 refundBadge.tone === "success" &&
@@ -874,8 +857,6 @@ export default function TransactionsScreen() {
                               <Text
                                 style={[
                                   styles.transactionBadgeText,
-                                  refundBadge.tone === "secondary" &&
-                                    styles.transactionBadgeTextPrimary,
                                   refundBadge.tone === "warning" &&
                                     styles.transactionBadgeTextWarning,
                                   refundBadge.tone === "success" &&
@@ -1347,11 +1328,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.pill,
   },
-  transactionBadgeSecondary: { backgroundColor: colors.secondary },
   transactionBadgeWarning: { backgroundColor: colors.warningBg },
   transactionBadgeSuccess: { backgroundColor: colors.successBg },
   transactionBadgeText: { fontSize: 10, fontWeight: "700" },
-  transactionBadgeTextPrimary: { color: colors.textPrimary },
   transactionBadgeTextWarning: { color: colors.warning },
   transactionBadgeTextSuccess: { color: colors.success },
   amount: {
