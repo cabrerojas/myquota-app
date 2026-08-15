@@ -19,23 +19,8 @@ import {
 } from "@/features/categories/services/categoryApi";
 import ErrorState from "@/shared/components/ErrorState";
 import { colors } from "@/shared/theme/colors";
-import { spacing, borderRadius } from "@/shared/theme/tokens";
-
-interface DebtRouteParams {
-  editMode?: string;
-  transactionId?: string;
-  creditCardId?: string;
-  merchant?: string;
-  quotaAmount?: string;
-  totalInstallments?: string;
-  paidInstallments?: string;
-  currency?: string;
-  purchaseDate?: string;
-  lastPaidMonth?: string;
-  lastPaidYear?: string;
-  selectedCategoryId?: string;
-  selectedCategoryName?: string;
-}
+import { borderRadius } from "@/shared/theme/tokens";
+import { DebtRouteParams } from "@/shared/types/routeParams";
 
 interface CategorySelectScreenProps {
   merchant: string;
@@ -186,7 +171,11 @@ export default function CategorySelectScreen({
                   ) : null}
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.textMuted}
+              />
             </TouchableOpacity>
           );
         }}

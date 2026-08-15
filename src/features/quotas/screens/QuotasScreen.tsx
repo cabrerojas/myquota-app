@@ -13,10 +13,7 @@ import {
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { getCreditCards } from "@/features/creditCards/services/creditCardsApi";
-import {
-  getTransactionsByCreditCard,
-  Transaction,
-} from "@/features/transactions/services/transactionsApi";
+import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
 import {
   getQuotasByTransaction,
   splitQuotas,
@@ -24,6 +21,7 @@ import {
   QuotaWithTransaction,
 } from "@/features/quotas/services/quotasApi";
 import { CreditCardBasic } from "@/shared/types/creditCard";
+import type { Transaction } from "@/shared/types/transaction";
 import QuotasSkeleton from "../components/QuotasSkeleton";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import ErrorState from "@/shared/components/ErrorState";

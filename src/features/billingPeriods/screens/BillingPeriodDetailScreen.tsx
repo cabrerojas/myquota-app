@@ -9,10 +9,8 @@ import {
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import ErrorState from "@/shared/components/ErrorState";
-import {
-  getTransactionsByCreditCard,
-  Transaction,
-} from "@/features/transactions/services/transactionsApi";
+import { getTransactionsByCreditCard } from "@/features/transactions/services/transactionsApi";
+import type { Transaction } from "@/shared/types/transaction";
 import { isSessionExpired } from "@/shared/utils/authEvents";
 import { colors } from "@/shared/theme/colors";
 import { spacing, borderRadius } from "@/shared/theme/tokens";

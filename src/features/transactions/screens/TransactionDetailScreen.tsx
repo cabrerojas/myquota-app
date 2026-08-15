@@ -1,31 +1,36 @@
+import { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   ActivityIndicator,
-  ScrollView,
-  RefreshControl,
   Alert,
   Modal,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
   TextInput,
+  View,
 } from "react-native";
-import { useState, useCallback, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  getTransactionById,
-  Transaction,
-  updateTransaction,
-} from "../services/transactionsApi";
-import {
-  getQuotasByTransaction,
-  splitQuotas,
-  Quota,
-} from "@/features/quotas/services/quotasApi";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
+import {
+  useCreateRefundMutation,
+  useSplitQuotasMutation,
+  useTransactionDetail,
+  useUpdateTransactionMutation,
+} from "@/features/transactions/services/transactionsApi";
+import ErrorState from "@/shared/components/ErrorState";
+import {
+  borderRadius,
+  colors,
+  fontSizes,
+  spacing,
+} from "@/shared/theme/tokens";
 import { formatCurrency, formatDate } from "@/shared/utils/format";
-import { colors } from "@/shared/theme/colors";
-import { spacing, borderRadius } from "@/shared/theme/tokens";
+
+const STATUS_DOT_SIZE = 3;
+const STATUS_META_GAP = spacing.sm - spacing.xxs;
+const BUTTON_VERTICAL_PADDING = 10;
 
 interface Props {
   creditCardId: string;
@@ -36,11 +41,13 @@ export default function TransactionDetailScreen({
   creditCardId,
   transactionId,
 }: Props) {
-  const [transaction, setTransaction] = useState<Transaction | null>(null);
-  const [quotas, setQuotas] = useState<Quota[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data, isLoading, isFetching, error, refetch } = useTransactionDetail(
+    creditCardId,
+    transactionId,
+  );
+  const updateTransactionMutation = useUpdateTransactionMutation();
+  const createRefundMutation = useCreateRefundMutation();
+  const splitQuotasMutation = useSplitQuotasMutation();
 
   // Category modal
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
@@ -48,36 +55,17 @@ export default function TransactionDetailScreen({
   // Split modal
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [numQuotas, setNumQuotas] = useState("3");
-  const [splitting, setSplitting] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setError(null);
-      const [tx, txQuotas] = await Promise.all([
-        getTransactionById(creditCardId, transactionId),
-        getQuotasByTransaction(creditCardId, transactionId),
-      ]);
-      setTransaction(tx);
-      const sorted = [...txQuotas].sort(
-        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
-      );
-      setQuotas(sorted);
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Error al cargar la transacción",
-      );
-    }
-  }, [creditCardId, transactionId]);
-
-  useEffect(() => {
-    setLoading(true);
-    fetchData().finally(() => setLoading(false));
-  }, [fetchData]);
+  // Refund modal
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundReason, setRefundReason] = useState("");
+  const [refundError, setRefundError] = useState<string | null>(null);
+  const transaction = data?.transaction ?? null;
+  const quotas = data?.quotas ?? [];
 
   const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
+    await refetch();
   };
 
   const isDueSoon = (dateStr: string) => {
@@ -97,20 +85,21 @@ export default function TransactionDetailScreen({
       Alert.alert("Error", "Ingresa un número de cuotas entre 2 y 48");
       return;
     }
-    setSplitting(true);
+
     try {
-      await splitQuotas(creditCardId, transactionId, n);
+      await splitQuotasMutation.mutateAsync({
+        creditCardId,
+        transactionId,
+        numberOfQuotas: n,
+      });
       Alert.alert("Éxito", `Transacción dividida en ${n} cuotas`);
       setShowSplitModal(false);
       setNumQuotas("3");
-      await fetchData();
     } catch (e) {
       Alert.alert(
         "Error",
         e instanceof Error ? e.message : "No se pudieron crear las cuotas",
       );
-    } finally {
-      setSplitting(false);
     }
   };
 
@@ -121,23 +110,24 @@ export default function TransactionDetailScreen({
     color?: string;
   }) => {
     try {
-      const res = await updateTransaction(creditCardId, transactionId, {
-        categoryId: category.id,
+      await updateTransactionMutation.mutateAsync({
+        creditCardId,
+        transactionId,
+        data: {
+          categoryId: category.id,
+        },
       });
-      const updated = res?.data;
-      if (updated) {
-        setTransaction(updated);
-      } else {
-        await fetchData();
-      }
     } catch (e) {
-      console.error("Error updating transaction category", e);
+      Alert.alert(
+        "Error",
+        e instanceof Error ? e.message : "No se pudo actualizar la categoría",
+      );
     } finally {
       setCategoryModalVisible(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.secondary} />
@@ -147,20 +137,109 @@ export default function TransactionDetailScreen({
 
   if (error || !transaction) {
     return (
-      <View style={styles.centered}>
-        <Ionicons name="alert-circle-outline" size={48} color={colors.destructive} />
-        <Text style={styles.errorText}>
-          {error || "No se encontró la transacción"}
-        </Text>
-        <TouchableOpacity style={styles.retryButton} onPress={onRefresh}>
-          <Text style={styles.retryButtonText}>Reintentar</Text>
-        </TouchableOpacity>
-      </View>
+      <ErrorState
+        message={
+          error instanceof Error
+            ? error.message
+            : "No se encontró la transacción"
+        }
+        onRetry={() => {
+          refetch();
+        }}
+      />
     );
   }
 
   const paidCount = quotas.filter((q) => q.status === "paid").length;
   const pendingCount = quotas.length - paidCount;
+  const refundStatus = transaction.refundStatus ?? "none";
+  const refundedAmount = transaction.refundedAmount ?? 0;
+  const refundableAmount = transaction.refundableAmount ?? 0;
+  const refunds = [...(transaction.refunds ?? [])].sort(
+    (a, b) =>
+      new Date(b.createdAt || b.transactionDate).getTime() -
+      new Date(a.createdAt || a.transactionDate).getTime(),
+  );
+  const isRefundChild = transaction.source === "refund";
+  const isImportedParent =
+    transaction.source === "email" && !transaction.parentTransactionId;
+  const canRefund = Boolean(transaction.canRefund);
+  const refunding = createRefundMutation.isPending;
+  const splitting = splitQuotasMutation.isPending;
+  const parsedRefundAmount = Number(refundAmount.replace(",", "."));
+  const refundValidationError = (() => {
+    if (!showRefundModal) return null;
+    if (!refundAmount.trim()) return "Ingresa el monto a reintegrar.";
+    if (!Number.isFinite(parsedRefundAmount) || parsedRefundAmount <= 0) {
+      return "Ingresa un monto válido mayor a cero.";
+    }
+    if (parsedRefundAmount > refundableAmount) {
+      return `Máximo disponible: ${formatCurrency(refundableAmount, transaction.currency)}`;
+    }
+    return null;
+  })();
+  const refundAvailabilityMessage = (() => {
+    if (isRefundChild) {
+      return "Este movimiento ya es un refund vinculado y no admite nuevos refunds.";
+    }
+    if (!isImportedParent) {
+      return "Solo las compras importadas y padres admiten refunds.";
+    }
+    if (
+      (transaction.totalInstallments ?? quotas.length) > 1 ||
+      quotas.length > 1
+    ) {
+      return "Solo las compras importadas de una sola cuota admiten refunds.";
+    }
+    if (refundStatus === "full" || refundableAmount <= 0) {
+      return "Esta compra ya fue reintegrada por completo.";
+    }
+    if (!canRefund) {
+      return "Esta compra ya no está disponible para registrar refunds.";
+    }
+    return "Disponible mientras la compra siga siendo una sola cuota activa.";
+  })();
+
+  const openRefundModal = () => {
+    setRefundAmount(String(refundableAmount));
+    setRefundReason("");
+    setRefundError(null);
+    setShowRefundModal(true);
+  };
+
+  const handleCreateRefund = async () => {
+    if (refundValidationError) {
+      setRefundError(refundValidationError);
+      return;
+    }
+
+    setRefundError(null);
+
+    try {
+      await createRefundMutation.mutateAsync({
+        creditCardId,
+        transactionId,
+        data: {
+          amount: parsedRefundAmount,
+          reason: refundReason.trim() || undefined,
+        },
+      });
+
+      await refetch();
+      setShowRefundModal(false);
+      Alert.alert(
+        "Refund registrado",
+        `Disponible restante: ${formatCurrency(
+          Math.max(refundableAmount - parsedRefundAmount, 0),
+          transaction.currency,
+        )}`,
+      );
+    } catch (e) {
+      setRefundError(
+        e instanceof Error ? e.message : "No se pudo registrar el refund",
+      );
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -168,7 +247,7 @@ export default function TransactionDetailScreen({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={isFetching} onRefresh={onRefresh} />
         }
       >
         {/* Header */}
@@ -180,10 +259,61 @@ export default function TransactionDetailScreen({
               {transaction.cardType} •{transaction.cardLastDigits}
             </Text>
             <View style={styles.dot} />
-            <Ionicons name="calendar-outline" size={14} color={colors.textMuted} />
+            <Ionicons
+              name="calendar-outline"
+              size={14}
+              color={colors.textMuted}
+            />
             <Text style={styles.headerMetaText}>
               {formatDate(transaction.transactionDate)}
             </Text>
+          </View>
+          <View style={styles.metaBadgeRow}>
+            {transaction.source === "email" && (
+              <View style={[styles.sourceBadge, styles.sourceBadgeImported]}>
+                <Text
+                  style={[
+                    styles.sourceBadgeText,
+                    styles.sourceBadgeImportedText,
+                  ]}
+                >
+                  Importada
+                </Text>
+              </View>
+            )}
+            {transaction.source === "refund" && (
+              <View style={[styles.sourceBadge, styles.sourceBadgeRefund]}>
+                <Text
+                  style={[styles.sourceBadgeText, styles.sourceBadgeRefundText]}
+                >
+                  Refund vinculado
+                </Text>
+              </View>
+            )}
+            {refundStatus === "partial" && (
+              <View style={[styles.sourceBadge, styles.sourceBadgeWarning]}>
+                <Text
+                  style={[
+                    styles.sourceBadgeText,
+                    styles.sourceBadgeWarningText,
+                  ]}
+                >
+                  Refund parcial
+                </Text>
+              </View>
+            )}
+            {refundStatus === "full" && (
+              <View style={[styles.sourceBadge, styles.sourceBadgeSuccess]}>
+                <Text
+                  style={[
+                    styles.sourceBadgeText,
+                    styles.sourceBadgeSuccessText,
+                  ]}
+                >
+                  Refund total
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -191,7 +321,13 @@ export default function TransactionDetailScreen({
         <View style={styles.amountCard}>
           <View style={styles.amountRow}>
             <Text style={styles.amountLabel}>Monto Total</Text>
-            <Text style={styles.amountValue}>
+            <Text
+              style={[
+                styles.amountValue,
+                (transaction.amount < 0 || isRefundChild) &&
+                  styles.amountValueRefund,
+              ]}
+            >
               {formatCurrency(transaction.amount, transaction.currency)}
             </Text>
           </View>
@@ -204,17 +340,123 @@ export default function TransactionDetailScreen({
           </View>
         </View>
 
+        {/* Refund Section */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleBlock}>
+              <Text style={styles.sectionTitle}>Refunds</Text>
+              <Text style={styles.sectionSubtitle}>
+                {refundAvailabilityMessage}
+              </Text>
+            </View>
+            {canRefund && (
+              <Pressable
+                style={styles.refundButton}
+                onPress={openRefundModal}
+                accessibilityRole="button"
+                accessibilityLabel="Registrar refund"
+              >
+                <Ionicons
+                  name="arrow-undo-outline"
+                  size={16}
+                  color={colors.textPrimary}
+                />
+                <Text style={styles.refundButtonText}>Registrar</Text>
+              </Pressable>
+            )}
+          </View>
+
+          <View style={styles.refundSummaryRow}>
+            <View style={styles.refundSummaryItem}>
+              <Text style={styles.refundSummaryLabel}>Estado</Text>
+              <Text style={styles.refundSummaryValue}>
+                {refundStatus === "full"
+                  ? "Completo"
+                  : refundStatus === "partial"
+                    ? "Parcial"
+                    : "Sin refunds"}
+              </Text>
+            </View>
+            <View style={styles.refundSummaryItem}>
+              <Text style={styles.refundSummaryLabel}>Refundado</Text>
+              <Text
+                style={[
+                  styles.refundSummaryValue,
+                  styles.refundSummaryValueSuccess,
+                ]}
+              >
+                {formatCurrency(refundedAmount, transaction.currency)}
+              </Text>
+            </View>
+            <View style={styles.refundSummaryItem}>
+              <Text style={styles.refundSummaryLabel}>Disponible</Text>
+              <Text style={styles.refundSummaryValue}>
+                {formatCurrency(refundableAmount, transaction.currency)}
+              </Text>
+            </View>
+          </View>
+
+          {refunds.length === 0 ? (
+            <View style={styles.refundEmptyState}>
+              <Ionicons
+                name="receipt-outline"
+                size={16}
+                color={colors.textSubtle}
+              />
+              <Text style={styles.refundEmptyText}>
+                Aún no hay refunds vinculados a esta compra.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.refundHistoryList}>
+              {refunds.map((refund, index) => (
+                <View
+                  key={refund.id}
+                  style={[
+                    styles.refundHistoryItem,
+                    index === refunds.length - 1 &&
+                      styles.refundHistoryItemLast,
+                  ]}
+                >
+                  <View style={styles.refundHistoryLeft}>
+                    <Text style={styles.refundHistoryTitle}>
+                      Refund {index + 1}
+                    </Text>
+                    <Text style={styles.refundHistoryMeta}>
+                      {formatDate(refund.transactionDate)}
+                    </Text>
+                    {refund.refundReason ? (
+                      <Text style={styles.refundHistoryReason}>
+                        {refund.refundReason}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.refundHistoryAmount}>
+                    {formatCurrency(refund.amount, refund.currency)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
         {/* Category */}
         <View style={styles.sectionCard}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Categoría</Text>
-            <TouchableOpacity
+            <Pressable
               style={styles.editButton}
               onPress={() => setCategoryModalVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Cambiar categoría"
             >
-              <Ionicons name="pencil-outline" size={16} color={colors.secondary} />
+              <Ionicons
+                name="pencil-outline"
+                size={16}
+                color={colors.secondary}
+              />
               <Text style={styles.editButtonText}>Cambiar</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           {transaction.categoryId ? (
             <View
@@ -232,7 +474,11 @@ export default function TransactionDetailScreen({
             </View>
           ) : (
             <View style={styles.uncategorizedPill}>
-              <Ionicons name="pricetag-outline" size={16} color={colors.warning} />
+              <Ionicons
+                name="pricetag-outline"
+                size={16}
+                color={colors.warning}
+              />
               <Text style={styles.uncategorizedText}>Sin categoría</Text>
             </View>
           )}
@@ -259,13 +505,19 @@ export default function TransactionDetailScreen({
               )}
             </View>
             {quotas.length <= 1 && (
-              <TouchableOpacity
+              <Pressable
                 style={styles.splitButton}
                 onPress={() => setShowSplitModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Dividir compra en cuotas"
               >
-                <Ionicons name="git-branch-outline" size={16} color={colors.textPrimary} />
+                <Ionicons
+                  name="git-branch-outline"
+                  size={16}
+                  color={colors.textPrimary}
+                />
                 <Text style={styles.splitButtonText}>Dividir</Text>
-              </TouchableOpacity>
+              </Pressable>
             )}
           </View>
 
@@ -325,7 +577,11 @@ export default function TransactionDetailScreen({
                     )}
                     {overdue && (
                       <View style={styles.statusBadgeOverdue}>
-                        <Ionicons name="warning" size={12} color={colors.destructive} />
+                        <Ionicons
+                          name="warning"
+                          size={12}
+                          color={colors.destructive}
+                        />
                         <Text style={styles.statusBadgeOverdueText}>
                           Vencida
                         </Text>
@@ -413,26 +669,129 @@ export default function TransactionDetailScreen({
             })()}
 
             <View style={styles.modalActions}>
-              <TouchableOpacity
+              <Pressable
                 style={styles.modalCancelButton}
                 onPress={() => setShowSplitModal(false)}
+                accessibilityRole="button"
               >
                 <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </Pressable>
+              <Pressable
                 style={[
                   styles.modalConfirmButton,
                   splitting && { opacity: 0.6 },
                 ]}
                 onPress={handleSplitQuotas}
                 disabled={splitting}
+                accessibilityRole="button"
               >
                 {splitting ? (
                   <ActivityIndicator size="small" color={colors.textPrimary} />
                 ) : (
                   <Text style={styles.modalConfirmText}>Dividir</Text>
                 )}
-              </TouchableOpacity>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Refund Modal */}
+      <Modal
+        visible={showRefundModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRefundModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Registrar refund</Text>
+            <Text style={styles.modalSubtitle}>
+              Disponible:{" "}
+              {formatCurrency(refundableAmount, transaction.currency)}
+            </Text>
+
+            <Text style={styles.modalLabel}>Monto a reintegrar</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="decimal-pad"
+              value={refundAmount}
+              onChangeText={(value) => {
+                setRefundAmount(value);
+                if (refundError) setRefundError(null);
+              }}
+              placeholder="0"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Monto del refund"
+            />
+            <Pressable
+              style={styles.useAvailableButton}
+              onPress={() => setRefundAmount(String(refundableAmount))}
+              accessibilityRole="button"
+              accessibilityLabel="Usar el monto disponible"
+            >
+              <Text style={styles.useAvailableButtonText}>
+                Usar monto disponible
+              </Text>
+            </Pressable>
+
+            <Text style={styles.modalLabel}>Motivo (opcional)</Text>
+            <TextInput
+              style={[styles.modalInput, styles.modalTextarea]}
+              value={refundReason}
+              onChangeText={setRefundReason}
+              placeholder="Ej. devolución parcial del comercio"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              maxLength={140}
+              textAlignVertical="top"
+              accessibilityLabel="Motivo del refund"
+            />
+
+            {(refundError || refundValidationError) && (
+              <Text style={styles.modalErrorText}>
+                {refundError || refundValidationError}
+              </Text>
+            )}
+
+            <View style={styles.refundHelperCard}>
+              <Ionicons
+                name="information-circle-outline"
+                size={16}
+                color={colors.textMuted}
+              />
+              <Text style={styles.refundHelperText}>
+                Se registrará como una transacción negativa vinculada. Si
+                divides esta compra en cuotas, dejará de admitir nuevos refunds.
+              </Text>
+            </View>
+
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.modalCancelButton}
+                onPress={() => setShowRefundModal(false)}
+                disabled={refunding}
+                accessibilityRole="button"
+              >
+                <Text style={styles.modalCancelText}>Cancelar</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.modalConfirmButton,
+                  styles.refundConfirmButton,
+                  (refunding || !!refundValidationError) &&
+                    styles.modalButtonDisabled,
+                ]}
+                onPress={handleCreateRefund}
+                disabled={refunding || !!refundValidationError}
+                accessibilityRole="button"
+              >
+                {refunding ? (
+                  <ActivityIndicator size="small" color={colors.textPrimary} />
+                ) : (
+                  <Text style={styles.modalConfirmText}>Confirmar</Text>
+                )}
+              </Pressable>
             </View>
           </View>
         </View>
@@ -451,7 +810,7 @@ export default function TransactionDetailScreen({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  content: { padding: spacing.md, paddingBottom: 40 },
+  content: { padding: spacing.md, paddingBottom: spacing.xxl },
   centered: {
     flex: 1,
     justifyContent: "center",
@@ -470,9 +829,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderRadius: borderRadius.input,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 10,
+    paddingVertical: BUTTON_VERTICAL_PADDING,
   },
-  retryButtonText: { color: colors.textPrimary, fontWeight: "600", fontSize: 14 },
+  retryButtonText: {
+    color: colors.textPrimary,
+    fontWeight: "600",
+    fontSize: 14,
+  },
 
   // Header Card
   headerCard: {
@@ -492,13 +855,19 @@ const styles = StyleSheet.create({
   headerMeta: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: STATUS_META_GAP,
   },
   headerMetaText: { fontSize: 13, color: colors.textMuted },
+  metaBadgeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: spacing.sm2,
+  },
   dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
+    width: STATUS_DOT_SIZE,
+    height: STATUS_DOT_SIZE,
+    borderRadius: STATUS_DOT_SIZE / 2,
     backgroundColor: colors.border,
     marginHorizontal: spacing.xs,
   },
@@ -516,11 +885,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   amountLabel: { fontSize: 14, color: colors.textMuted },
   amountValue: { fontSize: 20, fontWeight: "700", color: colors.destructive },
-  amountCurrency: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },
+  amountValueRefund: { color: colors.success },
+  amountCurrency: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
   amountDivider: {
     height: 1,
     backgroundColor: colors.borderLight,
@@ -542,13 +916,36 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: spacing.sm2,
   },
+  sectionTitleBlock: { flex: 1, marginRight: spacing.sm2 },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
+  sectionSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
   editButton: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
   editButtonText: { fontSize: 13, color: colors.secondary, fontWeight: "600" },
+  sourceBadge: {
+    borderRadius: borderRadius.pill,
+    paddingHorizontal: spacing.sm2,
+    paddingVertical: STATUS_META_GAP,
+    minHeight: spacing.xxl - spacing.sm2,
+    justifyContent: "center",
+  },
+  sourceBadgeText: { fontSize: fontSizes.xs, fontWeight: "700" },
+  sourceBadgeImported: { backgroundColor: colors.secondary },
+  sourceBadgeImportedText: { color: colors.textPrimary },
+  sourceBadgeRefund: { backgroundColor: colors.successBg },
+  sourceBadgeRefundText: { color: colors.success },
+  sourceBadgeWarning: { backgroundColor: colors.warningBg },
+  sourceBadgeWarningText: { color: colors.warning },
+  sourceBadgeSuccess: { backgroundColor: colors.successBg },
+  sourceBadgeSuccessText: { color: colors.success },
 
   // Category
   categoryPill: {
@@ -556,7 +953,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.sm2,
     paddingVertical: spacing.sm,
-    borderRadius: 20,
+    borderRadius: borderRadius.pill,
     gap: 6,
     alignSelf: "flex-start",
   },
@@ -567,7 +964,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.sm2,
     paddingVertical: spacing.sm,
-    borderRadius: 20,
+    borderRadius: borderRadius.pill,
     borderWidth: 1,
     borderColor: colors.warning,
     borderStyle: "dashed",
@@ -576,6 +973,94 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   uncategorizedText: { fontSize: 14, fontWeight: "600", color: colors.warning },
+
+  // Refunds
+  refundButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    minHeight: 44,
+    paddingHorizontal: spacing.sm2,
+    borderRadius: borderRadius.input,
+    backgroundColor: colors.accent,
+  },
+  refundButtonText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  refundSummaryRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginBottom: spacing.sm2,
+  },
+  refundSummaryItem: {
+    flex: 1,
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm2,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  refundSummaryLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.textSubtle,
+  },
+  refundSummaryValue: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    marginTop: 6,
+  },
+  refundSummaryValueSuccess: { color: colors.success },
+  refundEmptyState: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.md,
+    padding: spacing.sm2,
+  },
+  refundEmptyText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 18,
+  },
+  refundHistoryList: {
+    marginTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  refundHistoryItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: spacing.sm2,
+    paddingVertical: spacing.sm2,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  refundHistoryItemLast: { borderBottomWidth: 0, paddingBottom: 0 },
+  refundHistoryLeft: { flex: 1 },
+  refundHistoryTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  refundHistoryMeta: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  refundHistoryReason: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 6,
+  },
+  refundHistoryAmount: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.success,
+  },
 
   // Quotas Title
   quotasTitleRow: { flex: 1, marginRight: spacing.sm2 },
@@ -586,13 +1071,13 @@ const styles = StyleSheet.create({
   },
   badgePaid: {
     backgroundColor: colors.successBg,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
   badgePending: {
     backgroundColor: colors.warningBg,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
@@ -608,7 +1093,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     gap: 4,
   },
-  splitButtonText: { fontSize: 13, fontWeight: "600", color: colors.textPrimary },
+  splitButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
 
   // Progress
   progressContainer: {
@@ -637,7 +1126,7 @@ const styles = StyleSheet.create({
   // Quota Card
   quotaCard: {
     backgroundColor: colors.bg,
-    borderRadius: 10,
+    borderRadius: borderRadius.md,
     padding: spacing.sm2,
     marginBottom: spacing.sm,
     flexDirection: "row",
@@ -680,7 +1169,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  statusBadgePaidText: { fontSize: 10, fontWeight: "600", color: colors.success },
+  statusBadgePaidText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: colors.success,
+  },
   statusBadgeOverdue: {
     flexDirection: "row",
     alignItems: "center",
@@ -713,7 +1206,7 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: colors.glass.background,
     justifyContent: "center",
     alignItems: "center",
     padding: spacing.md2,
@@ -748,8 +1241,18 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     backgroundColor: colors.bg,
   },
+  modalTextarea: {
+    minHeight: 88,
+    textAlign: "left",
+  },
+  modalErrorText: {
+    marginTop: spacing.sm,
+    fontSize: 12,
+    color: colors.destructive,
+    lineHeight: 18,
+  },
   previewCard: {
-    backgroundColor: "rgba(59,130,246,0.08)",
+    backgroundColor: colors.successBg,
     borderRadius: borderRadius.md,
     padding: spacing.sm2,
     marginTop: spacing.md,
@@ -767,14 +1270,54 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     paddingVertical: spacing.sm2,
     alignItems: "center",
+    minHeight: 44,
+    justifyContent: "center",
   },
-  modalCancelText: { fontSize: 15, fontWeight: "600", color: colors.textSecondary },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
   modalConfirmButton: {
     flex: 1,
     backgroundColor: colors.secondary,
     borderRadius: borderRadius.md,
     paddingVertical: spacing.sm2,
     alignItems: "center",
+    minHeight: 44,
+    justifyContent: "center",
   },
-  modalConfirmText: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
+  modalButtonDisabled: { opacity: 0.5 },
+  modalConfirmText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  refundConfirmButton: { backgroundColor: colors.accent },
+  useAvailableButton: {
+    alignSelf: "flex-start",
+    marginTop: spacing.sm,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  useAvailableButtonText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: colors.secondary,
+  },
+  refundHelperCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    padding: spacing.sm2,
+    backgroundColor: colors.bg,
+    borderRadius: borderRadius.md,
+  },
+  refundHelperText: {
+    flex: 1,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.textMuted,
+  },
 });

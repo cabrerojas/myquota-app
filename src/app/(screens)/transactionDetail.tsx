@@ -1,23 +1,23 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import TransactionDetailScreen from "@/features/transactions/screens/TransactionDetailScreen";
+import {
+  TransactionDetailRouteParams,
+  pickTransactionDetailRouteParams,
+} from "@/shared/types/routeParams";
 
 export default function TransactionDetail() {
-  const { creditCardId, transactionId } = useLocalSearchParams<{
-    creditCardId: string;
-    transactionId: string;
-  }>();
+  const params = pickTransactionDetailRouteParams(
+    useLocalSearchParams<TransactionDetailRouteParams>(),
+  );
 
-  if (!creditCardId || !transactionId) {
+  if (!params.creditCardId || !params.transactionId) {
     return null;
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: "Detalle de Transacción" }} />
-      <TransactionDetailScreen
-        creditCardId={creditCardId}
-        transactionId={transactionId}
-      />
-    </>
+    <TransactionDetailScreen
+      creditCardId={params.creditCardId}
+      transactionId={params.transactionId}
+    />
   );
 }

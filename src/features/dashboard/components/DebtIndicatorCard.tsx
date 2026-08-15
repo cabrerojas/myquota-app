@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { glassSurface, iconContainerSm } from "@/shared/theme/effects";
 import { colors } from "@/shared/theme/colors";
@@ -7,11 +7,24 @@ import { borderRadius, spacing } from "@/shared/theme/tokens";
 import type { DebtSummary } from "@/features/dashboard/services/statsApi";
 
 interface DebtIndicatorCardProps {
-  refreshKey?: number;
   summary?: DebtSummary;
 }
 
-const MONTH_NAMES = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+const MONTH_NAMES = [
+  "",
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
+];
 
 const formatMonthLabel = (month: string): string => {
   if (/^\d{4}-\d{2}$/.test(month)) {
@@ -25,11 +38,9 @@ const formatMonthLabel = (month: string): string => {
   );
 };
 
-export default function DebtIndicatorCard({
-  refreshKey: _refreshKey,
-  summary,
-}: DebtIndicatorCardProps) {
+export default function DebtIndicatorCard({ summary }: DebtIndicatorCardProps) {
   const router = useRouter();
+  const debtForecastRoute: Href = "/(tabs)/proyecciones";
   const hasData = !!summary && (summary.totalCLP > 0 || summary.totalUSD > 0);
   const nextPeriod = hasData ? summary!.monthlyBreakdown?.[0] : undefined;
   const progressCurrency = (summary?.totalCLP ?? 0) > 0 ? "CLP" : "USD";
@@ -49,7 +60,7 @@ export default function DebtIndicatorCard({
   return (
     <TouchableOpacity
       style={styles.card}
-      onPress={() => router.push("/(tabs)/proyecciones" as any)}
+      onPress={() => router.push(debtForecastRoute)}
       activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={
@@ -145,7 +156,7 @@ const styles = StyleSheet.create({
     ...glassSurface(false),
     marginTop: spacing.md,
     padding: spacing.md,
-  } as any,
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",

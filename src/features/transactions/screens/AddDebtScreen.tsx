@@ -32,6 +32,10 @@ import {
 } from "@/features/categories/services/categoryApi";
 
 import { CreditCardBasic } from "@/shared/types/creditCard";
+import {
+  DebtRouteParams,
+  pickDebtRouteParams,
+} from "@/shared/types/routeParams";
 import { colors } from "@/shared/theme/colors";
 import { spacing, borderRadius } from "@/shared/theme/tokens";
 
@@ -53,23 +57,7 @@ const MONTHS = [
 export default function AddDebtScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const params = useLocalSearchParams<{
-    editMode?: string;
-    transactionId?: string;
-    creditCardId?: string;
-    merchant?: string;
-    quotaAmount?: string;
-    totalInstallments?: string;
-    paidInstallments?: string;
-    currency?: string;
-    purchaseDate?: string;
-    lastPaidMonth?: string;
-    lastPaidYear?: string;
-    selectedCategoryId?: string;
-    selectedCategoryName?: string;
-    readOnlyFields?: string;
-    source?: string;
-  }>();
+  const params = pickDebtRouteParams(useLocalSearchParams<DebtRouteParams>());
 
   const isEdit = params.editMode === "true";
   const isReadOnly = params.readOnlyFields === "true";
@@ -130,7 +118,9 @@ export default function AddDebtScreen() {
   );
   const [statementYear, setStatementYear] = useState<number>(
     Number.isFinite(Number(params.lastPaidYear))
-      ? (Number(params.lastPaidMonth) === 11 ? Number(params.lastPaidYear) + 1 : Number(params.lastPaidYear))
+      ? Number(params.lastPaidMonth) === 11
+        ? Number(params.lastPaidYear) + 1
+        : Number(params.lastPaidYear)
       : new Date().getFullYear(),
   );
   const [currency, setCurrency] = useState<"CLP" | "USD">(
@@ -372,7 +362,11 @@ export default function AddDebtScreen() {
       >
         {isReadOnly && (
           <View style={styles.readOnlyBanner}>
-            <Ionicons name="information-circle" size={16} color={colors.secondary} />
+            <Ionicons
+              name="information-circle"
+              size={16}
+              color={colors.secondary}
+            />
             <Text style={styles.readOnlyBannerText}>
               Esta compra fue importada. Solo puedes modificar sus cuotas.
             </Text>
@@ -381,7 +375,12 @@ export default function AddDebtScreen() {
 
         {/* Card Selector */}
         <Text style={styles.sectionLabel}>Tarjeta de Crédito</Text>
-        <View style={[styles.cardSelector, (isEdit || isReadOnly) && { opacity: 0.6 }]}>
+        <View
+          style={[
+            styles.cardSelector,
+            (isEdit || isReadOnly) && { opacity: 0.6 },
+          ]}
+        >
           {cards.map((card) => (
             <TouchableOpacity
               key={card.id}
@@ -389,7 +388,9 @@ export default function AddDebtScreen() {
                 styles.cardChip,
                 selectedCardId === card.id && styles.cardChipSelected,
               ]}
-              onPress={() => !isEdit && !isReadOnly && setSelectedCardId(card.id)}
+              onPress={() =>
+                !isEdit && !isReadOnly && setSelectedCardId(card.id)
+              }
               disabled={isEdit || isReadOnly}
             >
               <Ionicons
@@ -414,7 +415,7 @@ export default function AddDebtScreen() {
         </View>
 
         {/* Merchant */}
-         <Text style={styles.label}>Comercio</Text>
+        <Text style={styles.label}>Comercio</Text>
         <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
           <TextInput
             style={[styles.input, { flex: 1 }, isReadOnly && { opacity: 0.5 }]}
@@ -452,12 +453,20 @@ export default function AddDebtScreen() {
               router.push(categorySelectHref);
             }}
           >
-            <Ionicons name="pricetag-outline" size={22} color={colors.secondary} />
+            <Ionicons
+              name="pricetag-outline"
+              size={22}
+              color={colors.secondary}
+            />
           </TouchableOpacity>
         </View>
         {chosenCategoryId ? (
           <View style={styles.categorySelectedBadge}>
-            <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+            <Ionicons
+              name="checkmark-circle"
+              size={14}
+              color={colors.success}
+            />
             <Text style={styles.categorySelectedText}>
               Categoría: {chosenCategoryName || "Seleccionada"}
             </Text>
@@ -535,7 +544,10 @@ export default function AddDebtScreen() {
               value={statementQuota}
               onChangeText={(t) => {
                 // Only allow valid numbers, default to 1 if empty
-                if (t === "") { setStatementQuota(""); return; }
+                if (t === "") {
+                  setStatementQuota("");
+                  return;
+                }
                 const n = parseInt(t, 10);
                 if (!isNaN(n) && n >= 1) setStatementQuota(String(n));
               }}
@@ -550,11 +562,14 @@ export default function AddDebtScreen() {
           statementQuota !== "" &&
           Number(totalInstallments) >= Number(statementQuota) && (
             <View style={styles.infoBox}>
-              <Ionicons name="information-circle" size={16} color={colors.secondary} />
+              <Ionicons
+                name="information-circle"
+                size={16}
+                color={colors.secondary}
+              />
               <Text style={styles.infoText}>
                 Cuota {statementQuota}/{totalInstallments} es la actual. Quedan{" "}
-                {Number(totalInstallments) - Number(statementQuota)}{" "}
-                pendientes
+                {Number(totalInstallments) - Number(statementQuota)} pendientes
                 {quotaAmount
                   ? ` = $${((Number(totalInstallments) - Number(statementQuota)) * Number(quotaAmount)).toLocaleString("es-CL")} total`
                   : ""}
@@ -618,8 +633,8 @@ export default function AddDebtScreen() {
           <View style={styles.explanationCard}>
             <Ionicons name="bulb-outline" size={18} color={colors.warning} />
             <Text style={styles.explanationText}>
-              La cuota {statementQuota}/{totalInstallments} es la que pagarás ahora.{" "}
-              Ya pagaste {Math.max(0, Number(statementQuota) - 1)} cuota
+              La cuota {statementQuota}/{totalInstallments} es la que pagarás
+              ahora. Ya pagaste {Math.max(0, Number(statementQuota) - 1)} cuota
               {Number(statementQuota) - 1 !== 1 ? "s" : ""}.
             </Text>
           </View>
@@ -656,7 +671,11 @@ export default function AddDebtScreen() {
               onPress={() => setPurchaseDate(null)}
               style={styles.dateClearBtn}
             >
-              <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+              <Ionicons
+                name="close-circle"
+                size={18}
+                color={colors.textMuted}
+              />
             </TouchableOpacity>
           )}
         </TouchableOpacity>
@@ -734,8 +753,8 @@ export default function AddDebtScreen() {
             <View
               style={{
                 backgroundColor: colors.surface,
-    borderRadius: borderRadius.card,
-    padding: spacing.md,
+                borderRadius: borderRadius.card,
+                padding: spacing.md,
               }}
             >
               <Text
@@ -754,13 +773,13 @@ export default function AddDebtScreen() {
 
               <TouchableOpacity
                 style={{
-                   backgroundColor: colors.secondary,
-                   padding: spacing.sm2,
-                   borderRadius: borderRadius.input,
-                   marginBottom: 8,
-                 }}
-                 onPress={async () => {
-                   if (!suggestedMatch) return;
+                  backgroundColor: colors.secondary,
+                  padding: spacing.sm2,
+                  borderRadius: borderRadius.input,
+                  marginBottom: 8,
+                }}
+                onPress={async () => {
+                  if (!suggestedMatch) return;
                   setSuggestionProcessing(true);
                   try {
                     // Copiar la categoría global a las del usuario y usarla
@@ -791,12 +810,12 @@ export default function AddDebtScreen() {
 
               <TouchableOpacity
                 style={{
-                   backgroundColor: colors.success,
-                   padding: spacing.sm2,
-                   borderRadius: borderRadius.input,
-                   marginBottom: 8,
-                 }}
-                 onPress={async () => {
+                  backgroundColor: colors.success,
+                  padding: spacing.sm2,
+                  borderRadius: borderRadius.input,
+                  marginBottom: 8,
+                }}
+                onPress={async () => {
                   // Crear nueva categoría personal y asociar el merchant
                   setSuggestionProcessing(true);
                   try {
@@ -903,7 +922,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
-  cardChipText: { fontSize: 14, fontWeight: "600", color: colors.textSecondary },
+  cardChipText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
   cardChipTextSelected: { color: colors.textPrimary },
   currencyToggle: { flexDirection: "row", gap: 4 },
   currencyBtn: {
@@ -918,7 +941,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
-  currencyText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
+  currencyText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.textSecondary,
+  },
   currencyTextActive: { color: colors.textPrimary },
   infoBox: {
     flexDirection: "row",
@@ -960,7 +987,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
-  monthChipText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  monthChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
   monthChipTextSelected: { color: colors.textPrimary },
   yearRow: { flexDirection: "row", gap: 6 },
   yearChip: {
@@ -975,7 +1006,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.secondary,
     borderColor: colors.secondary,
   },
-  yearChipText: { fontSize: 13, fontWeight: "600", color: colors.textSecondary },
+  yearChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.textSecondary,
+  },
   yearChipTextSelected: { color: colors.textPrimary },
   submitBtn: {
     flexDirection: "row",

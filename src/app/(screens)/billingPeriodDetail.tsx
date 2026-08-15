@@ -1,28 +1,29 @@
-import { Stack, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import BillingPeriodDetailScreen from "@/features/billingPeriods/screens/BillingPeriodDetailScreen";
+import {
+  BillingPeriodDetailRouteParams,
+  pickBillingPeriodDetailRouteParams,
+} from "@/shared/types/routeParams";
 
 export default function BillingPeriodDetail() {
-  const { creditCardId, periodMonth, periodStartDate, periodEndDate } =
-    useLocalSearchParams<{
-      creditCardId: string;
-      periodMonth: string;
-      periodStartDate: string;
-      periodEndDate: string;
-    }>();
+  const params = pickBillingPeriodDetailRouteParams(
+    useLocalSearchParams<BillingPeriodDetailRouteParams>(),
+  );
 
-  if (!creditCardId || !periodStartDate || !periodEndDate) {
+  if (
+    !params.creditCardId ||
+    !params.periodStartDate ||
+    !params.periodEndDate
+  ) {
     return null;
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: "Detalle del Período" }} />
-      <BillingPeriodDetailScreen
-        creditCardId={creditCardId}
-        periodMonth={periodMonth || ""}
-        periodStartDate={periodStartDate}
-        periodEndDate={periodEndDate}
-      />
-    </>
+    <BillingPeriodDetailScreen
+      creditCardId={params.creditCardId}
+      periodMonth={params.periodMonth ?? ""}
+      periodStartDate={params.periodStartDate}
+      periodEndDate={params.periodEndDate}
+    />
   );
 }

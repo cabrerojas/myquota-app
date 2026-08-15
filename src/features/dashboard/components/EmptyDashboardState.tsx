@@ -14,10 +14,11 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRef } from "react";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import Svg, { Circle, Defs, LinearGradient, Stop, Rect } from "react-native-svg";
 import { colors } from "@/shared/theme/colors";
 import { borderRadius } from "@/shared/theme/tokens";
+import { creditCardsRoute, profileRoute } from "@/shared/utils/routes";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ interface ActionItem {
   bgColor: string;
   title: string;
   description: string;
-  route?: { pathname: string; params?: Record<string, string> };
+  route?: Href;
   onPress?: () => void;
 }
 
@@ -81,7 +82,7 @@ function ActionCard({ item }: { item: ActionItem }) {
     if (item.onPress) {
       item.onPress();
     } else if (item.route) {
-      router.push(item.route.pathname as any);
+      router.push(item.route);
     }
   };
 
@@ -128,7 +129,7 @@ export default function EmptyDashboardState({
       bgColor: "rgba(59,130,246,0.15)",
       title: "Agregar tarjeta",
       description: "Registra tu primera tarjeta de crédito para empezar",
-      onPress: onAddCard ?? (() => router.push("/(tabs)/inicio/creditCards" as any)),
+      onPress: onAddCard ?? (() => router.push(creditCardsRoute)),
     },
     {
       id: "import",
@@ -146,7 +147,7 @@ export default function EmptyDashboardState({
       bgColor: "rgba(59,130,246,0.1)",
       title: "Configurar presupuesto",
       description: "Define tus límites mensuales para controlar gastos",
-      route: { pathname: "/(tabs)/perfil" },
+      route: profileRoute,
     },
   ];
 

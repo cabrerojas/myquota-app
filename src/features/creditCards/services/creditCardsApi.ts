@@ -1,7 +1,7 @@
 import { requestWithAuth } from "@/features/auth/hooks/useAuth";
 import { API_BASE_URL } from "@/config/api";
-import { CreditCard } from "@/shared/types/creditCard";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CreditCard, CreditCardSummary } from "@/shared/types/creditCard";
+import { useQuery } from "@tanstack/react-query";
 
 export interface PaginatedResponse<T> {
   items: T[];
@@ -33,7 +33,12 @@ export const getCreditCards = async (
   }
 
   // Handle both array response (backward compat) and paginated response
-  if (data && typeof data === "object" && "items" in data && "metadata" in data) {
+  if (
+    data &&
+    typeof data === "object" &&
+    "items" in data &&
+    "metadata" in data
+  ) {
     return data as PaginatedResponse<CreditCard>;
   }
   // Legacy: wrap array response
@@ -49,7 +54,20 @@ export const getCreditCards = async (
 export const useCreditCards = () => {
   return useQuery({
     queryKey: ["creditCards"],
-    queryFn: () => getCreditCards().then(r => r.items),
+    queryFn: () => getCreditCards().then((r) => r.items),
+  });
+};
+
+export const useCreditCardSummary = () => {
+  return useQuery({
+    queryKey: ["creditCards"],
+    queryFn: () => getCreditCards().then((response) => response.items),
+    select: (cards): CreditCardSummary => {
+      return {
+        total: cards.length,
+        active: cards.filter((card) => card.status === "active").length,
+      };
+    },
   });
 };
 

@@ -26,6 +26,7 @@ import { borderRadius } from "@/shared/theme/tokens";
 import { typography } from "@/shared/theme/typography";
 import { glassSurface } from "@/shared/theme/effects";
 import type { MonthBucket } from "@/features/quotas/types/quota";
+import { chartsRoute } from "@/shared/utils/routes";
 
 export default function DebtForecastScreen() {
   const router = useRouter();
@@ -256,7 +257,7 @@ export default function DebtForecastScreen() {
               </View>
               <Pressable
                 style={styles.pillItem}
-                onPress={() => router.push("/(tabs)/proyecciones/charts" as any)}
+                onPress={() => router.push(chartsRoute)}
                 accessibilityLabel="Ver gráficos"
                 accessibilityRole="button"
               >

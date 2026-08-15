@@ -1,40 +1,18 @@
-import { Stack, router } from "expo-router";
-import { Pressable, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@/shared/theme/colors";
+import { Stack } from "expo-router";
+import {
+  addDebtHeaderRight,
+  largeTitleScreenOptions,
+  stackScreenOptions,
+} from "@/shared/utils/routeOptions";
 
 export default function ProyeccionesLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerTintColor: colors.accent,
-        headerTitleStyle: { fontWeight: "600", color: colors.textPrimary },
-        headerStyle: { backgroundColor: colors.bg },
-      }}
-    >
+    <Stack screenOptions={stackScreenOptions}>
       <Stack.Screen
         name="index"
         options={{
-          title: "Proyecciones",
-          headerLargeTitleEnabled: true,
-          headerLargeStyle: { backgroundColor: colors.bg },
-          headerLargeTitleStyle: {
-            color: colors.textPrimary,
-            fontWeight: "700",
-          },
-          headerLargeTitleShadowVisible: false,
-          headerRight: () => (
-            <View style={{ width: 44, height: 44, alignItems: "center", justifyContent: "center" }}>
-              <Pressable
-                onPress={() => router.push("/(screens)/addDebt" as any)}
-                hitSlop={8}
-                accessibilityLabel="Agregar deuda"
-                accessibilityRole="button"
-              >
-                <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-              </Pressable>
-            </View>
-          ),
+          ...largeTitleScreenOptions("Proyecciones"),
+          headerRight: addDebtHeaderRight("Agregar deuda"),
         }}
       />
       <Stack.Screen

@@ -43,3 +43,14 @@ export const updateMyProfile = async (data: UserUpdate): Promise<User> => {
   }
   return response.json();
 };
+
+export const useUpdateMyProfileMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateMyProfile,
+    onSuccess: (profile) => {
+      queryClient.setQueryData(["myProfile"], profile);
+    },
+  });
+};

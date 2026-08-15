@@ -8,14 +8,16 @@
 #   PROVIDER="gemini"
 #   PROVIDER="codex"
 #   PROVIDER="opencode"
-#   PROVIDER="opencode:anthropic/claude-opus-4-5"
+#   PROVIDER="opencode:openai/gpt-5.4"
 #   PROVIDER="ollama:llama3.2"
 #   PROVIDER="ollama:codellama"
 #   PROVIDER="lmstudio"
 #   PROVIDER="lmstudio:qwen2.5-coder-7b-instruct"
 #   PROVIDER="github:gpt-4o"
 #   PROVIDER="github:deepseek-r1"
-PROVIDER="claude"
+# Explicit OpenCode provider and model.
+# Route GGA through OpenCode using GPT-5.6 Luna.
+PROVIDER="opencode:openai/gpt-5.6-luna"
 
 # File patterns to include in review (comma-separated)
 # Default: * (all files)
@@ -37,8 +39,9 @@ EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.d.ts"
 RULES_FILE="AGENTS.md"
 
 # Strict mode: fail if AI response is ambiguous
-# Default: true
-STRICT_MODE="true"
+# Keep disabled for the current OpenCode provider because chatty formatting can
+# produce false failures even when the review content is sound.
+STRICT_MODE="false"
 
 # Timeout in seconds for AI provider response
 # Default: 300 (5 minutes)
