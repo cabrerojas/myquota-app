@@ -156,13 +156,26 @@ export default function TransactionDetailScreen({
 
   useEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <TransactionMoreActionsMenu
-          onRegisterRefund={() => setShowRefundSheet(true)}
-          submitting={refunding}
-          visible={canRegisterRefund}
-        />
+      headerLeft: () => (
+        <Pressable
+          accessibilityLabel="Volver"
+          accessibilityRole="button"
+          hitSlop={8}
+          onPress={() => navigation.goBack()}
+          style={styles.headerBackButton}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+        </Pressable>
       ),
+      headerRight: canRegisterRefund
+        ? () => (
+            <TransactionMoreActionsMenu
+              onRegisterRefund={() => setShowRefundSheet(true)}
+              submitting={refunding}
+              visible
+            />
+          )
+        : undefined,
     });
   }, [canRegisterRefund, navigation, refunding]);
 
@@ -643,6 +656,12 @@ export default function TransactionDetailScreen({
 }
 
 const styles = StyleSheet.create({
+  headerBackButton: {
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.md, paddingBottom: spacing.xxl },
   centered: {
