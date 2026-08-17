@@ -5,7 +5,7 @@ import {
   isSuccessResponse,
 } from "@react-native-google-signin/google-signin";
 import * as WebBrowser from "expo-web-browser";
-import { Router } from "expo-router";
+import { useRouter } from "expo-router";
 import { API_BASE_URL } from "@/config/api";
 import {
   buildGoogleAuthUrl,
@@ -25,6 +25,8 @@ import {
   resetSessionExpired,
 } from "@/shared/utils/authEvents";
 import { parseIdTokenFromFragment } from "./useAuth.utils";
+
+type AppRouter = ReturnType<typeof useRouter>;
 
 // ── PKCE helpers ───────────────────────────────────────────────────────────
 
@@ -69,7 +71,7 @@ async function authenticateWithBackend(
     email?: string | null;
     photo?: string | null;
   },
-  router: Router,
+  router: AppRouter,
   nonce?: string,
   code?: string,
   codeVerifier?: string,
@@ -122,7 +124,7 @@ async function authenticateWithBackend(
   }
 }
 
-export const useGoogleSignIn = (router: Router) => {
+export const useGoogleSignIn = (router: AppRouter) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignIn = useCallback(async () => {
@@ -196,7 +198,7 @@ export const useGoogleSignIn = (router: Router) => {
  * reads code_verifier from sessionStorage, authenticates,
  * and cleans the URL.
  */
-export async function parseOAuthReturn(router: Router): Promise<void> {
+export async function parseOAuthReturn(router: AppRouter): Promise<void> {
   const isReturn =
     sessionStorage.getItem(googleAuthRuntimeConfig.storageKeys.returnFlag) ===
     "1";
@@ -252,7 +254,7 @@ export async function parseOAuthReturn(router: Router): Promise<void> {
   window.history.replaceState(null, "", "/");
 }
 
-export const signOut = async (router: Router) => {
+export const signOut = async (router: AppRouter) => {
   try {
     // Revocar refresh token en el backend antes de limpiar localmente
     try {

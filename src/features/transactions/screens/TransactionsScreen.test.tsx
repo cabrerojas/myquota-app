@@ -15,13 +15,10 @@ jest.mock("@expo/vector-icons", () => ({
 }));
 
 jest.mock("expo-router", () => ({
+  useFocusEffect: (callback: () => void) => callback(),
   useLocalSearchParams: () => ({}),
   useNavigation: () => ({ setOptions: mockSetOptions }),
   useRouter: () => ({ push: mockPush }),
-}));
-
-jest.mock("@react-navigation/native", () => ({
-  useFocusEffect: (callback: () => void) => callback(),
 }));
 
 jest.mock("@/features/creditCards/services/creditCardsApi", () => ({

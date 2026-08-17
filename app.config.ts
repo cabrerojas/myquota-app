@@ -28,7 +28,7 @@ try {
  * IMPORTANT: All EXPO_PUBLIC_* vars are injected at build time by Expo.
  * For local development, ensure .env is present (see .env.example).
  */
-const defineConfig = (ctx: ConfigContext): ExpoConfig => {
+const defineConfig = (_ctx: ConfigContext): ExpoConfig => {
   // Validate env vars at build time
   const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
   const appScheme = process.env.EXPO_PUBLIC_APP_SCHEME;
@@ -52,7 +52,11 @@ const defineConfig = (ctx: ConfigContext): ExpoConfig => {
   return {
     name: "myQuota",
     slug: "myQuota",
-    version: "1.0.0",
+    // Bump the runtime boundary so SDK 54 updates cannot target SDK 57 binaries.
+    version: "1.1.0",
+    runtimeVersion: {
+      policy: "appVersion",
+    },
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: appScheme,
@@ -61,9 +65,6 @@ const defineConfig = (ctx: ConfigContext): ExpoConfig => {
     ios: {
       supportsTablet: true,
       bundleIdentifier: "cl.cabrerojas.myquota",
-      runtimeVersion: {
-        policy: "appVersion",
-      },
     },
     android: {
       adaptiveIcon: {
@@ -71,7 +72,6 @@ const defineConfig = (ctx: ConfigContext): ExpoConfig => {
         backgroundColor: "#ffffff",
       },
       package: "cl.cabrerojas.myquota",
-      runtimeVersion: "1.0.0",
     },
     web: {
       bundler: "metro",

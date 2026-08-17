@@ -11,8 +11,12 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
-import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useLocalSearchParams,
+  useNavigation,
+  useRouter,
+} from "expo-router";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
 import { useCreditCards } from "@/features/creditCards/services/creditCardsApi";
 import {
