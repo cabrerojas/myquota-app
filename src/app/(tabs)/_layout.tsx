@@ -1,11 +1,4 @@
-import { Platform } from "react-native";
-import {
-  NativeTabs,
-  Icon,
-  Label,
-  VectorIcon,
-} from "expo-router/build/native-tabs";
-import Ionicons from "@expo/vector-icons/Ionicons";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 import { colors } from "@/shared/theme/colors";
 
 /**
@@ -36,43 +29,35 @@ export default function TabLayout() {
       minimizeBehavior="onScrollDown"
     >
       <NativeTabs.Trigger name="inicio">
-        <Icon
+        <NativeTabs.Trigger.Icon
           sf={{ default: "house", selected: "house.fill" }}
-          androidSrc={
-            <VectorIcon family={Ionicons} name="home-outline" />
-          }
+          md="home"
         />
-        <Label>Inicio</Label>
+        <NativeTabs.Trigger.Label>Inicio</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="transacciones">
-        <Icon
+        <NativeTabs.Trigger.Icon
           sf={{ default: "doc.text", selected: "doc.text.fill" }}
-          androidSrc={
-            <VectorIcon family={Ionicons} name="receipt-outline" />
-          }
+          md="receipt_long"
         />
-        <Label>Transacciones</Label>
+        <NativeTabs.Trigger.Label>Transacciones</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="proyecciones">
-        <Icon
+        <NativeTabs.Trigger.Icon
           sf={{ default: "chart.bar", selected: "chart.bar.fill" }}
-          androidSrc={
-            <VectorIcon family={Ionicons} name="trending-up-outline" />
-          }
+          md="trending_up"
         />
-        <Label>Proyecciones</Label>
+        <NativeTabs.Trigger.Label>Proyecciones</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="perfil">
-        <Icon
+        <NativeTabs.Trigger.Icon
           sf={{ default: "person", selected: "person.fill" }}
-          androidSrc={
-            <VectorIcon family={Ionicons} name="person-outline" />
-          }
+          md="person"
         />
-        <Label>Perfil</Label>
+        <NativeTabs.Trigger.Label>Perfil</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

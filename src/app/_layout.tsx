@@ -1,5 +1,10 @@
 import { useEffect } from "react";
-import { Stack, useRouter } from "expo-router";
+import {
+  DarkTheme,
+  Stack,
+  ThemeProvider as NavigationThemeProvider,
+  useRouter,
+} from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import Constants, { ExecutionEnvironment } from "expo-constants";
 import {
@@ -12,7 +17,6 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { View, ActivityIndicator, Text, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { DarkTheme, ThemeProvider as NavigationThemeProvider } from "@react-navigation/native";
 import { onSessionExpired } from "@/shared/utils/authEvents";
 import { SessionExpiredError } from "@/features/auth/hooks/useAuth";
 import { ThemeProvider } from "@/shared/theme/ThemeContext";
