@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,12 +12,9 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import CategorySuggestModal from "@/features/categories/components/CategorySuggestModal";
-import { RefundEntrySheet } from "@/features/transactions/components/RefundEntrySheet";
-import { TransactionMoreActionsMenu } from "@/features/transactions/components/TransactionMoreActionsMenu";
 import {
-  useCreateRefundMutation,
   useSplitQuotasMutation,
   useTransactionDetail,
   useUpdateTransactionMutation,
@@ -35,6 +32,7 @@ import {
   spacing,
 } from "@/shared/theme/tokens";
 import { formatCurrency, formatDate } from "@/shared/utils/format";
+import { buildRefundEntryRoute } from "@/shared/utils/routes";
 
 const STATUS_DOT_SIZE = 3;
 const STATUS_META_GAP = spacing.sm - spacing.xxs;
@@ -54,7 +52,6 @@ export default function TransactionDetailScreen({
     transactionId,
   );
   const updateTransactionMutation = useUpdateTransactionMutation();
-  const createRefundMutation = useCreateRefundMutation();
   const splitQuotasMutation = useSplitQuotasMutation();
 
   // Category modal
@@ -64,10 +61,9 @@ export default function TransactionDetailScreen({
   const [showSplitModal, setShowSplitModal] = useState(false);
   const [numQuotas, setNumQuotas] = useState("3");
 
-  const [showRefundSheet, setShowRefundSheet] = useState(false);
   const transaction = data?.transaction ?? null;
   const quotas = data?.quotas ?? [];
-  const navigation = useNavigation();
+  const router = useRouter();
 
   const onRefresh = async () => {
     await refetch();
@@ -151,46 +147,7 @@ export default function TransactionDetailScreen({
   const canRegisterRefund = transaction
     ? canShowRefundAction(transaction)
     : false;
-  const refunding = createRefundMutation.isPending;
   const splitting = splitQuotasMutation.isPending;
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <Pressable
-          accessibilityLabel="Volver"
-          accessibilityRole="button"
-          hitSlop={8}
-          onPress={() => navigation.goBack()}
-          style={styles.headerBackButton}
-        >
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-      ),
-      headerRight: canRegisterRefund
-        ? () => (
-            <TransactionMoreActionsMenu
-              onRegisterRefund={() => setShowRefundSheet(true)}
-              submitting={refunding}
-              visible
-            />
-          )
-        : undefined,
-    });
-  }, [canRegisterRefund, navigation, refunding]);
-
-  const handleCreateRefund = async (input: {
-    amount: number;
-    reason?: string;
-  }) => {
-    await createRefundMutation.mutateAsync({
-      creditCardId,
-      transactionId,
-      data: input,
-    });
-
-    await refetch();
-  };
 
   if (isLoading) {
     return (
@@ -217,6 +174,33 @@ export default function TransactionDetailScreen({
 
   return (
     <View style={styles.container}>
+      {canRegisterRefund && (
+        <Stack.Toolbar placement="right">
+          <Stack.Toolbar.Menu
+            accessibilityLabel="Más acciones"
+            icon={
+              process.env.EXPO_OS === "ios"
+                ? "ellipsis.circle"
+                : require("../../../../assets/icons/more-vert.xml")
+            }
+          >
+            <Stack.Toolbar.MenuAction
+              icon={
+                process.env.EXPO_OS === "ios"
+                  ? "arrow.uturn.backward.circle"
+                  : require("../../../../assets/icons/undo.xml")
+              }
+              onPress={() =>
+                router.push(
+                  buildRefundEntryRoute({ creditCardId, transactionId }),
+                )
+              }
+            >
+              Registrar reembolso
+            </Stack.Toolbar.MenuAction>
+          </Stack.Toolbar.Menu>
+        </Stack.Toolbar>
+      )}
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -635,15 +619,6 @@ export default function TransactionDetailScreen({
         </View>
       </Modal>
 
-      <RefundEntrySheet
-        currency={transaction.currency}
-        onClose={() => setShowRefundSheet(false)}
-        onSubmit={handleCreateRefund}
-        refundableAmount={refundableAmount}
-        submitting={refunding}
-        visible={showRefundSheet}
-      />
-
       {/* Category Modal */}
       <CategorySuggestModal
         visible={categoryModalVisible}
@@ -656,12 +631,6 @@ export default function TransactionDetailScreen({
 }
 
 const styles = StyleSheet.create({
-  headerBackButton: {
-    minHeight: 44,
-    minWidth: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
   container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.md, paddingBottom: spacing.xxl },
   centered: {
