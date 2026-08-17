@@ -28,6 +28,17 @@ export default function ScreensLayout() {
           title: "Detalle de Transacción",
         }}
       />
+      <Stack.Screen
+        name="refundEntry"
+        options={{
+          title: "Registrar reembolso",
+          presentation: "formSheet",
+          sheetAllowedDetents: [0.6, 1],
+          sheetInitialDetentIndex: 0,
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 24,
+        }}
+      />
     </Stack>
   );
 }

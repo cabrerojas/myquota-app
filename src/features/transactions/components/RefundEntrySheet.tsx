@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -17,7 +16,6 @@ import { borderRadius, colors, spacing } from "@/shared/theme/tokens";
 import { formatCurrency } from "@/shared/utils/format";
 
 interface RefundEntrySheetProps {
-  visible: boolean;
   currency: string;
   refundableAmount: number;
   submitting: boolean;
@@ -26,7 +24,6 @@ interface RefundEntrySheetProps {
 }
 
 export function RefundEntrySheet({
-  visible,
   currency,
   refundableAmount,
   submitting,
@@ -37,16 +34,6 @@ export function RefundEntrySheet({
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!visible) {
-      return;
-    }
-
-    setAmount("");
-    setReason("");
-    setSubmitError(null);
-  }, [visible]);
 
   const parsedAmount = useMemo(
     () => Number(amount.replace(",", ".")),
@@ -114,164 +101,131 @@ export function RefundEntrySheet({
   };
 
   return (
-    <Modal
-      animationType="slide"
-      onRequestClose={closeSheet}
-      presentationStyle="pageSheet"
-      transparent
-      visible={visible}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.overlay}
+      <View
+        style={[
+          styles.sheet,
+          { paddingBottom: Math.max(insets.bottom, spacing.md2) },
+        ]}
       >
-        <Pressable
-          accessibilityLabel="Cerrar hoja de reembolso"
-          onPress={closeSheet}
-          style={styles.backdrop}
-        />
-        <View
-          style={[
-            styles.sheet,
-            { paddingBottom: Math.max(insets.bottom, spacing.md2) },
-          ]}
-        >
-          <View style={styles.handle} />
-          <Text accessibilityRole="header" style={styles.title}>
-            Registrar reembolso
-          </Text>
-          <Text style={styles.subtitle}>
-            Disponible para reembolso:{" "}
-            {formatCurrency(refundableAmount, currency)}
-          </Text>
+        <Text accessibilityRole="header" style={styles.title}>
+          Registrar reembolso
+        </Text>
+        <Text style={styles.subtitle}>
+          Disponible para reembolso:{" "}
+          {formatCurrency(refundableAmount, currency)}
+        </Text>
 
-          <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
-            <Text style={styles.label}>Monto reembolsado</Text>
-            <TextInput
-              accessibilityLabel="Monto del reembolso"
-              keyboardType="decimal-pad"
-              onChangeText={handleAmountChange}
-              placeholder="0"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-              value={amount}
+        <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
+          <Text style={styles.label}>Monto reembolsado</Text>
+          <TextInput
+            accessibilityLabel="Monto del reembolso"
+            keyboardType="decimal-pad"
+            onChangeText={handleAmountChange}
+            placeholder="0"
+            placeholderTextColor={colors.textMuted}
+            style={styles.input}
+            value={amount}
+          />
+
+          <Pressable
+            accessibilityLabel="Usar el monto disponible"
+            accessibilityRole="button"
+            onPress={() => handleAmountChange(String(refundableAmount))}
+            style={({ pressed }) => [
+              styles.helperButton,
+              pressed && styles.helperButtonPressed,
+            ]}
+          >
+            <Text style={styles.helperButtonText}>
+              Usar el monto disponible
+            </Text>
+          </Pressable>
+
+          <Text style={styles.label}>Motivo (opcional)</Text>
+          <TextInput
+            accessibilityLabel="Motivo del reembolso"
+            multiline
+            onChangeText={handleReasonChange}
+            placeholder="Describe el motivo del reembolso"
+            placeholderTextColor={colors.textMuted}
+            style={[styles.input, styles.textarea]}
+            textAlignVertical="top"
+            value={reason}
+          />
+
+          {(submitError || validationError) && (
+            <Text style={styles.errorText}>
+              {submitError || validationError}
+            </Text>
+          )}
+
+          <View style={styles.helperCard}>
+            <Ionicons
+              color={colors.textMuted}
+              name="information-circle-outline"
+              size={16}
             />
-
-            <Pressable
-              accessibilityLabel="Usar el monto disponible"
-              accessibilityRole="button"
-              onPress={() => handleAmountChange(String(refundableAmount))}
-              style={({ pressed }) => [
-                styles.helperButton,
-                pressed && styles.helperButtonPressed,
-              ]}
-            >
-              <Text style={styles.helperButtonText}>
-                Usar el monto disponible
-              </Text>
-            </Pressable>
-
-            <Text style={styles.label}>Motivo (opcional)</Text>
-            <TextInput
-              accessibilityLabel="Motivo del reembolso"
-              multiline
-              onChangeText={handleReasonChange}
-              placeholder="Describe el motivo del reembolso"
-              placeholderTextColor={colors.textMuted}
-              style={[styles.input, styles.textarea]}
-              textAlignVertical="top"
-              value={reason}
-            />
-
-            {(submitError || validationError) && (
-              <Text style={styles.errorText}>
-                {submitError || validationError}
-              </Text>
-            )}
-
-            <View style={styles.helperCard}>
-              <Ionicons
-                color={colors.textMuted}
-                name="information-circle-outline"
-                size={16}
-              />
-              <Text style={styles.helperText}>
-                El reembolso se registrará como un movimiento vinculado y
-                actualizará el estado de la compra.
-              </Text>
-            </View>
-          </ScrollView>
-
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityLabel="Cancelar reembolso"
-              accessibilityRole="button"
-              disabled={submitting}
-              onPress={closeSheet}
-              style={({ pressed }) => [
-                styles.secondaryButton,
-                pressed && !submitting && styles.buttonPressed,
-                submitting && styles.buttonDisabled,
-              ]}
-            >
-              <Text style={styles.secondaryButtonText}>Cancelar</Text>
-            </Pressable>
-            <Pressable
-              accessibilityLabel="Confirmar reembolso"
-              accessibilityRole="button"
-              disabled={submitting || !!validationError}
-              onPress={handleSubmit}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                pressed &&
-                  !submitting &&
-                  !validationError &&
-                  styles.buttonPressed,
-                (submitting || validationError) && styles.buttonDisabled,
-              ]}
-            >
-              {submitting ? (
-                <ActivityIndicator color={colors.textPrimary} size="small" />
-              ) : (
-                <Text style={styles.primaryButtonText}>
-                  Registrar reembolso
-                </Text>
-              )}
-            </Pressable>
+            <Text style={styles.helperText}>
+              El reembolso se registrará como un movimiento vinculado y
+              actualizará el estado de la compra.
+            </Text>
           </View>
+        </ScrollView>
+
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityLabel="Cancelar reembolso"
+            accessibilityRole="button"
+            disabled={submitting}
+            onPress={closeSheet}
+            style={({ pressed }) => [
+              styles.secondaryButton,
+              pressed && !submitting && styles.buttonPressed,
+              submitting && styles.buttonDisabled,
+            ]}
+          >
+            <Text style={styles.secondaryButtonText}>Cancelar</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Confirmar reembolso"
+            accessibilityRole="button"
+            disabled={submitting || !!validationError}
+            onPress={handleSubmit}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed &&
+                !submitting &&
+                !validationError &&
+                styles.buttonPressed,
+              (submitting || validationError) && styles.buttonDisabled,
+            ]}
+          >
+            {submitting ? (
+              <ActivityIndicator color={colors.textPrimary} size="small" />
+            ) : (
+              <Text style={styles.primaryButtonText}>Registrar reembolso</Text>
+            )}
+          </Pressable>
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    justifyContent: "flex-end",
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.45)",
   },
   sheet: {
+    flex: 1,
     backgroundColor: colors.surface,
-    borderTopLeftRadius: borderRadius.glass,
-    borderTopRightRadius: borderRadius.glass,
-    borderTopWidth: 1,
-    borderColor: colors.borderLight,
     paddingHorizontal: spacing.md2,
     paddingTop: spacing.sm2,
     gap: spacing.sm,
-    maxHeight: "88%",
-  },
-  handle: {
-    alignSelf: "center",
-    width: 36,
-    height: 4,
-    borderRadius: borderRadius.pill,
-    backgroundColor: colors.border,
-    marginBottom: spacing.xs,
   },
   title: {
     fontSize: 20,

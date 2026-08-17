@@ -21,6 +21,11 @@ export interface TransactionDetailRouteParams {
   transactionId?: string;
 }
 
+export interface RefundEntryRouteParams {
+  creditCardId?: string;
+  transactionId?: string;
+}
+
 export interface BillingPeriodDetailRouteParams {
   creditCardId?: string;
   periodMonth?: string;
@@ -62,6 +67,13 @@ export const pickDebtRouteParams = (
 export const pickTransactionDetailRouteParams = (
   params: Partial<Record<keyof TransactionDetailRouteParams, RouteParamValue>>,
 ): TransactionDetailRouteParams => ({
+  creditCardId: readRouteParam(params.creditCardId),
+  transactionId: readRouteParam(params.transactionId),
+});
+
+export const pickRefundEntryRouteParams = (
+  params: Partial<Record<keyof RefundEntryRouteParams, RouteParamValue>>,
+): RefundEntryRouteParams => ({
   creditCardId: readRouteParam(params.creditCardId),
   transactionId: readRouteParam(params.transactionId),
 });

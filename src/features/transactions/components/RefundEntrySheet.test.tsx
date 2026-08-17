@@ -3,6 +3,7 @@ import renderer, { act } from "react-test-renderer";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Text,
 } from "react-native";
@@ -31,7 +32,7 @@ const renderSheet = (
         onClose={onClose}
         onSubmit={onSubmit}
         refundableAmount={12000}
-        visible
+        submitting={props?.submitting ?? false}
         {...props}
       />,
     );
@@ -77,6 +78,7 @@ describe("RefundEntrySheet", () => {
     expect(textContent).toContain("Disponible para reembolso");
     expect(textContent).toContain("Motivo (opcional)");
     expect(textContent).toContain("Cancelar");
+    expect(tree.root.findAllByType(Modal)).toHaveLength(0);
   });
 
   it("blocks invalid amounts and shows Spanish validation errors", async () => {
@@ -122,7 +124,7 @@ describe("RefundEntrySheet", () => {
         .disabled,
     ).toBe(true);
 
-    await pressByLabel(tree, "Cerrar hoja de reembolso");
+    await pressByLabel(tree, "Cancelar reembolso");
     expect(onClose).not.toHaveBeenCalled();
   });
 
