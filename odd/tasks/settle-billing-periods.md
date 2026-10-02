@@ -34,11 +34,12 @@ Settlement is a state-recording operation, not a bank-payment operation. For eac
 
 ## Verification and Commit Evidence
 
-- Status: SBP-01 through SBP-04 implemented and verified; commit pending.
+- Status: SBP-01 through SBP-04 implemented, verified, and committed.
 - Route/response evidence: backend commit `fb8ab76d28d3e62cf99e111256570d04dceb876b` returns `settlementId`, card/period IDs, `settledAt`, `alreadySettled`, `settledQuotaCount`, `settledTotalAmount`, and eligible-quota lines. The local app sends `Idempotency-Key: settle:<creditCardId>:<billingPeriodId>`; the backend's immutable period-level settlement is itself idempotent.
 - Query-key evidence: invalidates existing `debtForecast`, `debtSummary`, `monthlyStats`, `transactions`, and each affected `billingPeriods/<creditCardId>` cache. No quota-specific React Query key exists in this app, so none was invented.
 - RED observation: `npx jest src/features/billingPeriods/services/billingPeriodsApi.test.ts src/features/quotas/screens/DebtForecastScreen.test.tsx --runInBand --watchAll=false` failed before implementation: missing `settleBillingPeriod` / `executeBillingPeriodSettlements` exports and the old visible “Pagar período” label.
 - GREEN observation: the same focused command passed after implementation (2 suites, 3 tests).
 - Verification: focused Jest GREEN (2 suites, 3 tests), `git diff --check` GREEN, and Prettier GREEN after formatting. Full `npm run lint` exceeded 120 seconds without a result; a direct changed-file ESLint run was blocked by the repository's missing `unrs-resolver` native optional dependency. `npx tsc --noEmit` remains blocked by pre-existing route/navigation and `StyleSheet.absoluteFillObject` errors outside this work unit. `npx expo export -p web` started Metro/static rendering but exceeded 120 seconds before completion.
 - Commit boundary: one app-only conventional work-unit commit containing the completed behavior, tests, and this tracking document.
+- Commit evidence: `9e30cd7 feat(quotas): record billing period settlements` on `feat/settle-billing-periods-app`; this follow-up tracking update is committed separately as documentation evidence.
 - Rollback boundary: settlement client/orchestration, forecast review UI, focused tests, and this ODD task document; no backend or database changes are included.
