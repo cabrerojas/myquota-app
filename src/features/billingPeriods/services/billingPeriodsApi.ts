@@ -24,7 +24,10 @@ export interface CreateBillingPeriodDto {
 
 export const getBillingPeriodsByCreditCard = async (
   creditCardId: string,
-): Promise<{ items: BillingPeriod[]; metadata: { hasMore: boolean; nextCursor: string | null } }> => {
+): Promise<{
+  items: BillingPeriod[];
+  metadata: { hasMore: boolean; nextCursor: string | null };
+}> => {
   const response = await requestWithAuth(
     `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods`,
   );
@@ -91,19 +94,107 @@ export const deleteBillingPeriod = async (
   }
 };
 
-export const payBillingPeriod = async (
+export interface BillingPeriodSettlementLine {
+  quotaId: string;
+  transactionId: string;
+  amount: number;
+  currency: string;
+  dueDate: string;
+}
+
+export interface BillingPeriodSettlementOutcome {
+  settlementId: string;
+  billingPeriodId: string;
+  creditCardId: string;
+  settledAt: string;
+  alreadySettled: boolean;
+  settledQuotaCount: number;
+  settledTotalAmount: number;
+  lines: BillingPeriodSettlementLine[];
+}
+
+export interface BillingPeriodSettlementTarget {
+  creditCardId: string;
+  billingPeriodId: string;
+}
+
+export interface BillingPeriodSettlementResult {
+  period: BillingPeriodSettlementTarget;
+  status: "settled" | "already-settled" | "failed";
+  outcome?: BillingPeriodSettlementOutcome;
+  error?: string;
+}
+
+const getSettlementIdempotencyKey = (
   creditCardId: string,
   billingPeriodId: string,
-): Promise<{ paidCount: number; totalAmount: number }> => {
+): string => `settle:${creditCardId}:${billingPeriodId}`;
+
+export const settleBillingPeriod = async (
+  creditCardId: string,
+  billingPeriodId: string,
+): Promise<BillingPeriodSettlementOutcome> => {
   const response = await requestWithAuth(
-    `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods/${billingPeriodId}/pay`,
-    { method: "POST" },
+    `${API_BASE_URL}/creditCards/${creditCardId}/billingPeriods/${billingPeriodId}/settle`,
+    {
+      method: "POST",
+      headers: {
+        "Idempotency-Key": getSettlementIdempotencyKey(
+          creditCardId,
+          billingPeriodId,
+        ),
+      },
+    },
   );
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.message || "Error al pagar el período");
+    throw new Error(error.message || "Error al registrar el pago del período");
   }
   return response.json();
+};
+
+export const executeBillingPeriodSettlements = async (
+  periods: BillingPeriodSettlementTarget[],
+  settle: (
+    creditCardId: string,
+    billingPeriodId: string,
+  ) => Promise<BillingPeriodSettlementOutcome> = settleBillingPeriod,
+): Promise<BillingPeriodSettlementResult[]> => {
+  const uniquePeriods = Array.from(
+    new Map(
+      periods.map((period) => [
+        `${period.creditCardId}:${period.billingPeriodId}`,
+        period,
+      ]),
+    ).values(),
+  );
+
+  return Promise.all(
+    uniquePeriods.map(
+      async (period): Promise<BillingPeriodSettlementResult> => {
+        try {
+          const outcome = await settle(
+            period.creditCardId,
+            period.billingPeriodId,
+          );
+          return {
+            period,
+            outcome,
+            status: outcome.alreadySettled ? "already-settled" : "settled",
+          };
+        } catch (error) {
+          return {
+            period,
+            status: "failed",
+            error:
+              error instanceof Error
+                ? error.message
+                : "No se pudo registrar el pago del período",
+          };
+        }
+      },
+    ),
+  );
 };
 
 // React Query hooks for billing periods

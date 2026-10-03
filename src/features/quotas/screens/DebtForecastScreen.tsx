@@ -18,7 +18,9 @@ import {
   DebtForecastResponse,
 } from "@/features/quotas/services/quotasApi";
 import {
-  payBillingPeriod,
+  executeBillingPeriodSettlements,
+  type BillingPeriodSettlementResult,
+  type BillingPeriodSettlementTarget,
 } from "@/features/billingPeriods/services/billingPeriodsApi";
 import { formatCurrency } from "@/shared/utils/format";
 import { colors } from "@/shared/theme/colors";
@@ -54,6 +56,97 @@ export default function DebtForecastScreen() {
     await queryClient.invalidateQueries({ queryKey: ["debtForecast"] });
   }, [queryClient]);
 
+  const invalidateSettlementQueries = useCallback(
+    async (periods: BillingPeriodSettlementTarget[]) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["debtForecast"] }),
+        queryClient.invalidateQueries({ queryKey: ["debtSummary"] }),
+        queryClient.invalidateQueries({ queryKey: ["monthlyStats"] }),
+        queryClient.invalidateQueries({ queryKey: ["transactions"] }),
+        ...Array.from(
+          new Set(periods.map((period) => period.creditCardId)),
+        ).map((creditCardId) =>
+          queryClient.invalidateQueries({
+            queryKey: ["billingPeriods", creditCardId],
+          }),
+        ),
+      ]);
+    },
+    [queryClient],
+  );
+
+  const showSettlementResult = (
+    month: MonthBucket,
+    results: BillingPeriodSettlementResult[],
+  ) => {
+    const settled = results.filter((result) => result.status === "settled");
+    const alreadySettled = results.filter(
+      (result) => result.status === "already-settled",
+    );
+    const failed = results.filter((result) => result.status === "failed");
+    const settledQuotaCount = results.reduce(
+      (count, result) => count + (result.outcome?.settledQuotaCount ?? 0),
+      0,
+    );
+    const resultLines = results.map((result) => {
+      const scope = `Período ${result.period.billingPeriodId}`;
+      if (result.status === "settled") {
+        return `${scope}: ${result.outcome?.settledQuotaCount ?? 0} cuotas registradas.`;
+      }
+      if (result.status === "already-settled") {
+        return `${scope}: ya estaba registrado.`;
+      }
+      return `${scope}: no se pudo registrar (${result.error}).`;
+    });
+
+    const message = [
+      `Mes: ${month.label}.`,
+      `${settled.length} registrado(s), ${alreadySettled.length} ya registrado(s), ${failed.length} con error.`,
+      `${settledQuotaCount} cuota(s) elegible(s) marcada(s) como pagada(s).`,
+      ...resultLines,
+      "Las cuotas futuras no se modificaron.",
+    ].join("\n");
+
+    Alert.alert(
+      failed.length > 0
+        ? "Registro parcialmente actualizado"
+        : "Registro actualizado",
+      message,
+      [
+        ...(failed.length > 0
+          ? [
+              {
+                text: "Reintentar fallidos",
+                onPress: () => {
+                  void settlePeriods(
+                    month,
+                    failed.map((result) => result.period),
+                  );
+                },
+              },
+            ]
+          : []),
+        { text: "Cerrar", style: "cancel" },
+      ],
+    );
+  };
+
+  const settlePeriods = async (
+    month: MonthBucket,
+    periods: BillingPeriodSettlementTarget[],
+  ) => {
+    setPaying(month.key);
+    try {
+      const results = await executeBillingPeriodSettlements(periods);
+      if (results.some((result) => result.status !== "failed")) {
+        await invalidateSettlementQueries(periods);
+      }
+      showSettlementResult(month, results);
+    } finally {
+      setPaying(null);
+    }
+  };
+
   const handlePayPeriod = (month: MonthBucket) => {
     if (month.periodsByCard.length === 0) {
       Alert.alert("Sin período", "No hay período de facturación asociado.");
@@ -66,37 +159,35 @@ export default function DebtForecastScreen() {
       .filter(Boolean)
       .join(" + ");
 
+    const periodCount = month.periodsByCard.length;
+    const cardCount = new Set(
+      month.periodsByCard.map((period) => period.creditCardId),
+    ).size;
+
     Alert.alert(
-      "Confirmar Pago",
-      `¿Marcar las ${month.count} cuotas de ${month.label}?\n\nTotal: ${amountText}`,
+      "Revisar registro de pago",
+      [
+        `Mes: ${month.label}`,
+        `Alcance: ${periodCount} período${periodCount === 1 ? "" : "s"} en ${cardCount} tarjeta${cardCount === 1 ? "" : "s"}.`,
+        `Se marcarán como pagadas hasta ${month.count} cuotas elegibles.`,
+        `Total proyectado: ${amountText || "sin montos disponibles"}.`,
+        "Esto registra el estado de las cuotas y actualiza las proyecciones; no realiza un pago bancario.",
+        "Las cuotas futuras no se modificarán.",
+      ].join("\n\n"),
       [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Pagar",
+          text: "Registrar pago",
           onPress: async () => {
-            setPaying(month.key);
             try {
-              let totalPaid = 0;
-              for (const pb of month.periodsByCard) {
-                const result = await payBillingPeriod(
-                  pb.creditCardId,
-                  pb.billingPeriodId,
-                );
-                totalPaid += result.paidCount;
-              }
-              Alert.alert("Éxito", `${totalPaid} cuotas pagadas`);
-              await queryClient.invalidateQueries({
-                queryKey: ["debtForecast"],
-              });
+              await settlePeriods(month, month.periodsByCard);
             } catch (error) {
               Alert.alert(
                 "Error",
                 error instanceof Error
                   ? error.message
-                  : "No se pudo procesar el pago",
+                  : "No se pudo registrar el pago",
               );
-            } finally {
-              setPaying(null);
             }
           },
         },
@@ -247,13 +338,19 @@ export default function DebtForecastScreen() {
               tus finanzas al día!
             </Text>
           </View>
-          ) : (
+        ) : (
           <>
             {/* Quick-access pill bar */}
             <View style={styles.pillBar}>
               <View style={[styles.pillItem, styles.pillActive]}>
-                <Ionicons name="trending-up-outline" size={15} color={colors.accent} />
-                <Text style={[styles.pillText, styles.pillTextActive]}>Proyección</Text>
+                <Ionicons
+                  name="trending-up-outline"
+                  size={15}
+                  color={colors.accent}
+                />
+                <Text style={[styles.pillText, styles.pillTextActive]}>
+                  Proyección
+                </Text>
               </View>
               <Pressable
                 style={styles.pillItem}
@@ -261,7 +358,11 @@ export default function DebtForecastScreen() {
                 accessibilityLabel="Ver gráficos"
                 accessibilityRole="button"
               >
-                <Ionicons name="stats-chart" size={15} color={colors.textSecondary} />
+                <Ionicons
+                  name="stats-chart"
+                  size={15}
+                  color={colors.textSecondary}
+                />
                 <Text style={styles.pillText}>Gráficos</Text>
               </Pressable>
             </View>
@@ -337,7 +438,7 @@ export default function DebtForecastScreen() {
 
                   {/* Actions */}
                   <View style={styles.monthActions}>
-                    {/* Pay button — first (current) month gets emphasis */}
+                    {/* Settlement action — first (current) month gets emphasis */}
                     {month.periodsByCard.length > 0 && (
                       <Pressable
                         style={[
@@ -347,7 +448,8 @@ export default function DebtForecastScreen() {
                         ]}
                         onPress={() => handlePayPeriod(month)}
                         disabled={paying === month.key}
-                        accessibilityLabel="Pagar período"
+                        accessibilityLabel={`Registrar pago de ${month.label}`}
+                        accessibilityHint="Abre una revisión que marca las cuotas elegibles como pagadas y actualiza las proyecciones; no realiza un pago bancario."
                         accessibilityRole="button"
                       >
                         {paying === month.key ? (
@@ -372,7 +474,7 @@ export default function DebtForecastScreen() {
                                 !isCurrent && styles.payButtonTextOutline,
                               ]}
                             >
-                              Pagar período
+                              Registrar pago
                             </Text>
                           </>
                         )}
@@ -735,6 +837,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
+    minHeight: 44,
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: borderRadius.input,
@@ -902,5 +1005,4 @@ const styles = StyleSheet.create({
     color: colors.textSubtle,
     marginTop: 1,
   },
-
 });
