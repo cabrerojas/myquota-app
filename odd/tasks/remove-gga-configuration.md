@@ -33,7 +33,7 @@ Remove only active Gentleman Guardian Angel (GGA) configuration and invocation f
 1. [completed] Create and persist this task record before removals.
 2. [completed] Remove confirmed app GGA configuration and invocation only.
 3. [completed] Run focused validation and syntax checks.
-4. [in_progress] Commit only tracked app changes for this work unit.
+4. [completed] Commit only tracked app changes for this work unit.
 
 ## Status and Progress
 
@@ -46,7 +46,8 @@ Remove only active Gentleman Guardian Angel (GGA) configuration and invocation f
 - 2026-10-10: Task record created and verified in Engram before GGA removal. Engram mirror: `odd/remove-gga-configuration/tasks` (observation 669).
 - 2026-10-10: Deleted `.gga` and the isolated non-blocking `gga run` block. No other pre-commit behavior changed.
 - 2026-10-10: `bash -n scripts/pre-commit.sh` and `git diff --check` passed. `git grep` found no active tracked GGA invocation outside `odd/`; the focused repository search found only this historical task record. `rg` is unavailable in this environment, so the dedicated search tool was used as the fallback.
+- 2026-10-10: Created `a0e0b20` (`chore: remove GGA configuration`) with only `.gga`, `scripts/pre-commit.sh`, and this task record. Existing staged OAuth work was preserved and excluded.
 
 ## Next Step
 
-Stage only `.gga`, `scripts/pre-commit.sh`, and this task record; commit after reviewing the focused diff.
+No further configuration removal is needed. Retain the existing unrelated OAuth work for its own work unit.
