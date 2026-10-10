@@ -47,6 +47,10 @@ Remove only active Gentleman Guardian Angel (GGA) configuration and invocation f
 - 2026-10-10: Deleted `.gga` and the isolated non-blocking `gga run` block. No other pre-commit behavior changed.
 - 2026-10-10: `bash -n scripts/pre-commit.sh` and `git diff --check` passed. `git grep` found no active tracked GGA invocation outside `odd/`; the focused repository search found only this historical task record. `rg` is unavailable in this environment, so the dedicated search tool was used as the fallback.
 - 2026-10-10: Created `a0e0b20` (`chore: remove GGA configuration`) with only `.gga`, `scripts/pre-commit.sh`, and this task record. Existing staged OAuth work was preserved and excluded.
+- 2026-10-10: Global GGA removal phase: inspected `/home/gcabr/.config/gga/` (GGA rules and generated GGA configuration only) and `/home/gcabr/.local/share/gga/` (GGA cache, PR-mode, and provider libraries only) before deleting both complete directories. No historical backups or documentation were removed.
+- 2026-10-10: Removed only the `"gga"` component entry from `/home/gcabr/.gentle-ai/state.json`; all other state keys and components were retained. `python3` JSON validation passed and confirmed that `components` excludes `gga`.
+- 2026-10-10: Post-removal checks passed: both inspected global GGA directories are absent; `state.json` contains no `gga` text; and `git grep -n -i -e 'gga run' -e 'Gentleman Guardian Angel' -- ':!odd/**'` returned no active tracked invocation in either repository. `gga` remains discoverable on `PATH`, but no configuration or invocation was found in the inspected active locations and the executable was outside the authorized deletion scope.
+- 2026-10-10: No native review was started or retried. The prior provider-default review block remains recorded; this phase was explicitly performed without GGA or review execution.
 
 ## Next Step
 
