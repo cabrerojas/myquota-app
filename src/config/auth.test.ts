@@ -41,6 +41,7 @@ describe("auth config", () => {
     const authUrl = buildGoogleAuthUrl({
       origin: "https://myquota.app",
       codeChallenge: "challenge-123",
+      state: "state-123",
     });
     const parsedUrl = new URL(authUrl);
 
@@ -54,6 +55,7 @@ describe("auth config", () => {
       "https://myquota.app/login",
     );
     expect(parsedUrl.searchParams.get("code_challenge")).toBe("challenge-123");
+    expect(parsedUrl.searchParams.get("state")).toBe("state-123");
     expect(parsedUrl.searchParams.get("scope")).toContain(
       "https://www.googleapis.com/auth/gmail.readonly",
     );
