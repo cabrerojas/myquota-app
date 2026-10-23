@@ -6,7 +6,28 @@
  * via integration/E2E — unit tests cover only the pure logic.
  */
 
-import { parseIdTokenFromFragment, shouldUseRedirectFallback } from "./useAuth.utils";
+import {
+  consumeWebOAuthCorrelation,
+  createWebOAuthCorrelation,
+  parseIdTokenFromFragment,
+  shouldUseRedirectFallback,
+} from "./useAuth.utils";
+
+class MemoryStorage {
+  private readonly values = new Map<string, string>();
+
+  getItem(key: string): string | null {
+    return this.values.get(key) ?? null;
+  }
+
+  setItem(key: string, value: string): void {
+    this.values.set(key, value);
+  }
+
+  removeItem(key: string): void {
+    this.values.delete(key);
+  }
+}
 
 describe("parseIdTokenFromFragment", () => {
   it("extracts id_token from hash fragment", () => {
@@ -65,8 +86,104 @@ describe("shouldUseRedirectFallback", () => {
   });
 
   it("returns false when popup succeeds", () => {
+    expect(shouldUseRedirectFallback({ type: "success" })).toBe(false);
+  });
+});
+
+describe("web OAuth correlation", () => {
+  const storageKey = "oauth_web_correlation";
+  const fixedNow = 1_000_000;
+
+  it("generates distinct state and verifier values through Web Crypto", () => {
+    const getRandomValues = jest.fn((values: Uint8Array) => {
+      values.fill(getRandomValues.mock.calls.length);
+      return values;
+    });
+    const originalCrypto = globalThis.crypto;
+    Object.defineProperty(globalThis, "crypto", {
+      configurable: true,
+      value: { getRandomValues },
+    });
+
+    try {
+      const first = createWebOAuthCorrelation(fixedNow);
+      const second = createWebOAuthCorrelation(fixedNow);
+
+      expect(getRandomValues).toHaveBeenCalledTimes(4);
+      expect(first.state).not.toBe(first.codeVerifier);
+      expect(first.state).not.toBe(second.state);
+      expect(first.createdAt).toBe(fixedNow);
+    } finally {
+      Object.defineProperty(globalThis, "crypto", {
+        configurable: true,
+        value: originalCrypto,
+      });
+    }
+  });
+
+  it("consumes a valid state once and returns its verifier", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      storageKey,
+      JSON.stringify({
+        state: "expected-state",
+        codeVerifier: "expected-verifier",
+        createdAt: fixedNow,
+      }),
+    );
+
     expect(
-      shouldUseRedirectFallback({ type: "success" })
-    ).toBe(false);
+      consumeWebOAuthCorrelation(
+        storage,
+        storageKey,
+        "expected-state",
+        fixedNow,
+      ),
+    ).toEqual({ codeVerifier: "expected-verifier" });
+    expect(storage.getItem(storageKey)).toBeNull();
+  });
+
+  it("rejects a state mismatch and clears the correlation", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      storageKey,
+      JSON.stringify({
+        state: "expected-state",
+        codeVerifier: "expected-verifier",
+        createdAt: fixedNow,
+      }),
+    );
+
+    expect(
+      consumeWebOAuthCorrelation(
+        storage,
+        storageKey,
+        "unexpected-state",
+        fixedNow,
+      ),
+    ).toEqual({ error: "invalid_state" });
+    expect(storage.getItem(storageKey)).toBeNull();
+  });
+
+  it("rejects expired correlations and clears stored data", () => {
+    const storage = new MemoryStorage();
+    storage.setItem(
+      storageKey,
+      JSON.stringify({
+        state: "expected-state",
+        codeVerifier: "expected-verifier",
+        createdAt: fixedNow - 600_001,
+      }),
+    );
+
+    expect(
+      consumeWebOAuthCorrelation(
+        storage,
+        storageKey,
+        "expected-state",
+        fixedNow,
+      ),
+    ).toEqual({ error: "invalid_state" });
+    expect(storage.getItem(storageKey)).toBeNull();
   });
 });

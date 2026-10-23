@@ -10,7 +10,7 @@ import {
   Dimensions,
   Platform,
 } from "react-native";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import Svg, { Circle, Defs, LinearGradient, Stop, Rect, Line } from "react-native-svg";
 import { useGoogleSignIn, parseOAuthReturn } from "../hooks/useAuth";
@@ -64,6 +64,7 @@ const bgStyles = StyleSheet.create({
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn, isLoading } = useGoogleSignIn(router);
+  const [oauthError, setOauthError] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -85,7 +86,7 @@ export default function LoginScreen() {
   // Detect OAuth redirect return (popup-blocker fallback)
   useEffect(() => {
     if (Platform.OS === "web") {
-      parseOAuthReturn(router);
+      void parseOAuthReturn(router).then(setOauthError);
     }
   }, [router]);
 
@@ -160,6 +161,7 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
         )}
+        {oauthError && <Text style={styles.oauthError}>{oauthError}</Text>}
 
         {/* ── Footer ────────────────────────────────────────── */}
         <View style={styles.footer}>
@@ -317,6 +319,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
     color: colors.textPrimary,
+  },
+  oauthError: {
+    color: colors.destructive,
+    fontSize: 13,
+    marginTop: spacing.sm,
+    textAlign: "center",
   },
 
   // ── Footer ────────────────────────────────────────────

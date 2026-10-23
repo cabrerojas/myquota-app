@@ -8,11 +8,6 @@ if [[ -z "$STAGED_FILES" ]]; then
   exit 0
 fi
 
-# Run gga if available (non-blocking)
-if command -v gga &>/dev/null; then
-  gga run 2>/dev/null || true
-fi
-
 FAILED=0
 
 declare -A PATTERNS=(

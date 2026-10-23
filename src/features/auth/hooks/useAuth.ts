@@ -24,7 +24,10 @@ import {
   isSessionExpired,
   resetSessionExpired,
 } from "@/shared/utils/authEvents";
-import { parseIdTokenFromFragment } from "./useAuth.utils";
+import {
+  consumeWebOAuthCorrelation,
+  createWebOAuthCorrelation,
+} from "./useAuth.utils";
 
 type AppRouter = ReturnType<typeof useRouter>;
 
@@ -103,7 +106,6 @@ async function authenticateWithBackend(
     const data = await res.json();
 
     if (data.accessToken) {
-      console.log("Access token recibido");
       resetSessionExpired();
       await persistSession({
         accessToken: data.accessToken,
@@ -117,7 +119,7 @@ async function authenticateWithBackend(
       });
       router.replace("/");
     } else {
-      console.error("Error al autenticar con el backend:", data);
+      console.error("Backend authentication failed.");
     }
   } finally {
     clearTimeout(timeout);
@@ -134,19 +136,20 @@ export const useGoogleSignIn = (router: AppRouter) => {
         // ── Web OAuth: Authorization Code + PKCE (OAuth 2.1, modern flow) ──
         console.log("Iniciando sesión con Google (web)...");
 
-        const codeVerifier =
-          Math.random().toString(36).substring(2, 15) +
-          Math.random().toString(36).substring(2, 15);
-        const codeChallenge = await generateCodeChallenge(codeVerifier);
+        const correlation = createWebOAuthCorrelation();
+        const codeChallenge = await generateCodeChallenge(
+          correlation.codeVerifier,
+        );
 
         sessionStorage.setItem(
-          googleAuthRuntimeConfig.storageKeys.codeVerifier,
-          codeVerifier,
+          googleAuthRuntimeConfig.storageKeys.correlation,
+          JSON.stringify(correlation),
         );
 
         const authUrl = buildGoogleAuthUrl({
           origin: window.location.origin,
           codeChallenge,
+          state: correlation.state,
         });
 
         sessionStorage.setItem(
@@ -167,11 +170,6 @@ export const useGoogleSignIn = (router: AppRouter) => {
             console.error("Error: No se obtuvo el idToken de Google.");
             return;
           }
-          console.log("idToken obtenido:", idToken);
-          console.log(
-            "serverAuthCode obtenido:",
-            serverAuthCode ? "✅" : "❌ no disponible",
-          );
           await authenticateWithBackend(
             idToken,
             serverAuthCode ?? undefined,
@@ -180,8 +178,8 @@ export const useGoogleSignIn = (router: AppRouter) => {
           );
         }
       }
-    } catch (error) {
-      console.error("Error en Google Sign-In:", error);
+    } catch {
+      console.error("Google Sign-In failed.");
     } finally {
       setIsLoading(false);
     }
@@ -195,63 +193,57 @@ export const useGoogleSignIn = (router: AppRouter) => {
  *
  * Called on LoginScreen mount when Platform.OS === "web".
  * Extracts authorization code from URL query params,
- * reads code_verifier from sessionStorage, authenticates,
- * and cleans the URL.
+ * validates and consumes the stored state/verifier correlation,
+ * authenticates, and cleans the URL.
  */
-export async function parseOAuthReturn(router: AppRouter): Promise<void> {
+export async function parseOAuthReturn(
+  router: AppRouter,
+): Promise<string | null> {
   const isReturn =
     sessionStorage.getItem(googleAuthRuntimeConfig.storageKeys.returnFlag) ===
     "1";
-  if (!isReturn) return;
 
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
 
   if (!code) {
-    // Fallback: try legacy id_token hash flow
-    const tokenResult = parseIdTokenFromFragment(window.location.href);
-    if (!tokenResult) return;
+    if (!isReturn) return null;
 
-    const payload = JSON.parse(atob(tokenResult.idToken.split(".")[1]));
-    const nonce: string | undefined = payload.nonce;
-    await authenticateWithBackend(
-      tokenResult.idToken,
-      undefined,
-      {
-        givenName: payload.given_name,
-        familyName: payload.family_name,
-        email: payload.email,
-        photo: payload.picture,
-      },
-      router,
-      nonce,
-    );
-
+    sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.correlation);
     sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.returnFlag);
     window.history.replaceState(null, "", "/");
-    return;
+    return "Unable to complete sign-in. Please try again.";
   }
 
-  const codeVerifier =
-    sessionStorage.getItem(googleAuthRuntimeConfig.storageKeys.codeVerifier) ??
-    undefined;
+  const correlation = consumeWebOAuthCorrelation(
+    sessionStorage,
+    googleAuthRuntimeConfig.storageKeys.correlation,
+    params.get("state"),
+  );
+  sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.returnFlag);
+  window.history.replaceState(null, "", "/");
+
+  if ("error" in correlation) {
+    return "Unable to complete sign-in. Please try again.";
+  }
+
   const redirectUri = getGoogleAuthRedirectUri(window.location.origin);
 
-  await authenticateWithBackend(
-    null,
-    undefined,
-    {},
-    router,
-    undefined,
-    code,
-    codeVerifier,
-    redirectUri,
-  );
-
-  // Clean up
-  sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.returnFlag);
-  sessionStorage.removeItem(googleAuthRuntimeConfig.storageKeys.codeVerifier);
-  window.history.replaceState(null, "", "/");
+  try {
+    await authenticateWithBackend(
+      null,
+      undefined,
+      {},
+      router,
+      undefined,
+      code,
+      correlation.codeVerifier,
+      redirectUri,
+    );
+    return null;
+  } catch {
+    return "Unable to complete sign-in. Please try again.";
+  }
 }
 
 export const signOut = async (router: AppRouter) => {

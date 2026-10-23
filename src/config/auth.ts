@@ -9,7 +9,7 @@ export const googleAuthConfig = {
 export const googleAuthRuntimeConfig = {
   redirectPath: "/login",
   storageKeys: {
-    codeVerifier: "oauth_code_verifier",
+    correlation: "oauth_web_correlation",
     returnFlag: "oauth_return",
   },
 } as const;
@@ -21,6 +21,7 @@ export function getGoogleAuthRedirectUri(origin: string): string {
 export function buildGoogleAuthUrl(params: {
   codeChallenge: string;
   origin: string;
+  state: string;
 }): string {
   const redirectUri = getGoogleAuthRedirectUri(params.origin);
 
@@ -33,6 +34,7 @@ export function buildGoogleAuthUrl(params: {
       scope: `openid profile email ${googleAuthConfig.scopes.join(" ")}`,
       code_challenge: params.codeChallenge,
       code_challenge_method: "S256",
+      state: params.state,
       access_type: "offline",
       prompt: "consent",
     }).toString()
