@@ -57,7 +57,6 @@ const MONTH_FILTERS = [
   "Diciembre",
 ];
 
-const MAX_ITEMS_IN_MEMORY = 200;
 const TOUCH_TARGET_SIZE = spacing.xxl + spacing.xs;
 const PILL_ITEM_GAP = spacing.xs + 1;
 const PILL_ITEM_VERTICAL_PADDING = spacing.sm - 1;
@@ -151,7 +150,8 @@ export default function TransactionsScreen() {
     categoryFilter?.id,
   );
 
-  // Flat list from all pages, deduplicated by id, capped at MAX_ITEMS_IN_MEMORY
+  // Flatten all loaded pages and deduplicate page-boundary repeats without
+  // truncating older transactions as the user continues loading pages.
   const transactions = useMemo(() => {
     const seen = new Set<string>();
     const all: Transaction[] = [];
@@ -163,7 +163,7 @@ export default function TransactionsScreen() {
         }
       }
     }
-    return all.slice(0, MAX_ITEMS_IN_MEMORY);
+    return all;
   }, [data]);
 
   const filterParamRef = useRef(params.filter);

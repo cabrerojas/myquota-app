@@ -174,4 +174,36 @@ describe("TransactionsScreen", () => {
     expect(output).not.toContain("Admite refund");
     expect(output).not.toContain('"Refund"');
   });
+
+  it("keeps transactions loaded after the former 200-item in-memory limit", () => {
+    const items = Array.from({ length: 201 }, (_, index) => ({
+      id: `tx-${index}`,
+      amount: 1000,
+      bank: "bank",
+      cardLastDigits: "4242",
+      cardType: "Visa",
+      creditCardId: "card-1",
+      currency: "CLP" as const,
+      merchant: `Merchant ${index}`,
+      transactionDate: "2026-08-14T10:00:00.000Z",
+    }));
+
+    mockUseInfiniteTransactions.mockReturnValue({
+      data: { pages: [{ items }] },
+      error: null,
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+      isError: false,
+      isFetching: false,
+      isFetchingNextPage: false,
+      refetch: jest.fn(),
+    });
+
+    let tree!: renderer.ReactTestRenderer;
+    act(() => {
+      tree = renderer.create(<TransactionsScreen />);
+    });
+
+    expect(getRenderedText(tree)).toContain("Merchant 200");
+  });
 });
